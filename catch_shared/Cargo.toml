@@ -1,0 +1,10 @@
+[package]
+name = "catch_shared"
+version = "0.1.0"
+authors = [
+    "leod <subtle.frustration@proton.me>"
+]
+
+[dependencies]
+ecs = "0.20.0"
+cereal = "0.2.1"

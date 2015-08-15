@@ -1,0 +1,17 @@
+[package]
+name = "catch_client"
+version = "0.1.0"
+authors = [
+    "leod <subtle.frustration@proton.me>"
+]
+
+[dependencies]
+piston = "0.9.0"
+piston2d-graphics = "0.4.1"
+pistoncore-glutin_window = "0.11.0"
+piston2d-opengl_graphics = "0.6.0"
+ecs = "0.20.0"
+
+[dependencies.catch_shared]
+path = "../catch_shared"
+
