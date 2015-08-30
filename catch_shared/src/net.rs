@@ -7,15 +7,16 @@ use ecs::{Aspect, EntityData, DataHelper, ComponentManager};
 pub type NetEntityId = i32;
 pub type NetEntityTypeId = i32;
 pub type PlayerId = i32;
-pub type TickNumber = i32;
 
 enum NetComponentType {
     Position,
 }
 
+const NET_COMPONENT_TYPES: &[NetComponentType] = [NetComponentType::Position];
+
 struct NetEntityType {
     pub id: NetEntityTypeId,
-    pub net_components: Vec<NetComponentType>,
+    pub net_component_types: Vec<NetComponentType>,
 }
 
 type NetEntityTypes = HashMap<NetEntityTypeId, NetEntityType>;
