@@ -9,6 +9,7 @@ extern crate cereal;
 extern crate catch_shared as shared;
 
 mod client;
+mod player_input;
 
 use piston::window::WindowSettings;
 use piston::input::*;
