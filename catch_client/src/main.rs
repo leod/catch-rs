@@ -17,7 +17,10 @@ use piston::event_loop::*;
 use glutin_window::GlutinWindow;
 use opengl_graphics::{ GlGraphics, OpenGL };
 
+use shared::player::PlayerInput;
+use shared::net::ClientMessage;
 use client::Client;
+use player_input::InputMap;
 
 pub struct App {
     client: Client,
@@ -89,10 +92,19 @@ fn main() {
         rotation: 0.0
     };
 
+    let player_input_map = InputMap::new();
+    let mut player_input = PlayerInput::new();
+
     for e in window.events().ups(100).max_fps(60) {
         match e {
-            Event::Render(render_args) => app.render(&render_args),
-            Event::Update(update_args) => app.update(&update_args),
+            Event::Render(render_args) =>
+                app.render(&render_args),
+            Event::Update(update_args) => {
+                app.client.send(&ClientMessage::PlayerInput(player_input.clone()));
+                app.update(&update_args);
+            }
+            Event::Input(input) =>
+                player_input_map.update_player_input(&input, &mut player_input),
             _ => ()
         };
     }

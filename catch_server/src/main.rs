@@ -218,8 +218,10 @@ impl Server {
                 let player_info = PlayerInfo::new(player_id, name.clone());
                 self.game_state.add_player(player_info);
             }
-            &ClientMessage::PlayerInput { ref input } => {
-                println!("Received input from {}: {:?}", player_id, input);
+            &ClientMessage::PlayerInput(ref input) => {
+                if input.any() {
+                    println!("Received input from {}: {:?}", player_id, input);
+                }
             }
         }
     }
@@ -232,7 +234,7 @@ impl Server {
 
             while self.tick_timer.next() {
                 self.tick_number += 1;
-                println!("Starting tick {}", self.tick_number);
+                //println!("Starting tick {}", self.tick_number);
             }
 
             let new_time = time::get_time();

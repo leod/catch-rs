@@ -45,7 +45,7 @@ impl Client {
         })
     }
 
-    fn send(&self, message: &ClientMessage) {
+    pub fn send(&self, message: &ClientMessage) {
         let mut data = Vec::new();
         match message.write(&mut data) {
             Err(_) => {

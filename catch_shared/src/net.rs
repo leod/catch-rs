@@ -14,12 +14,6 @@ pub struct GameInfo {
     pub ticks_per_second: u64,
 }
 
-impl fmt::Debug for GameInfo {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "GameInfo {{ map_name: {}, ... }}", self.map_name)
-    }
-}
-
 #[derive(Debug, Clone)]
 pub enum Channel {
     Messages,
@@ -34,9 +28,7 @@ pub enum ClientMessage {
     WishConnect {
         name: String,
     },
-    PlayerInput {
-        input: PlayerInput
-    }
+    PlayerInput(PlayerInput)
 }
 
 #[derive(Debug, Clone, CerealData)]
@@ -88,3 +80,10 @@ pub fn all_entity_types() -> EntityTypes {
 
     entity_types
 }
+
+impl fmt::Debug for GameInfo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "GameInfo {{ map_name: {}, ... }}", self.map_name)
+    }
+}
+

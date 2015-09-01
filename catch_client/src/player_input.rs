@@ -10,6 +10,16 @@ pub struct InputMap {
 }
 
 impl InputMap {
+    pub fn new() -> InputMap {
+        InputMap {
+            left_button: Button::Keyboard(Key::A),
+            right_button: Button::Keyboard(Key::D),
+            forward_button: Button::Keyboard(Key::W),
+            back_button: Button::Keyboard(Key::S),
+            use_button: Button::Keyboard(Key::Space),
+        }
+    }
+
     pub fn update_player_input(&self, input: &Input, player_input: &mut PlayerInput) {
         match *input {
             Input::Press(button) => {
