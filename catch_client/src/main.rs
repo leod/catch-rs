@@ -2,11 +2,13 @@ extern crate piston;
 extern crate graphics;
 extern crate glutin_window;
 extern crate opengl_graphics;
-
-#[macro_use]
-extern crate ecs;
+extern crate cereal;
+#[macro_use] extern crate ecs;
+extern crate renet as enet;
 
 extern crate catch_shared as shared;
+
+mod client;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -18,8 +20,11 @@ use glutin_window::GlutinWindow;
 use opengl_graphics::{ GlGraphics, OpenGL };
 
 use shared::net::*;
+use client::Client;
 
 pub struct App {
+    client: Client,
+
     gl: GlGraphics, // OpenGL drawing backend.
     rotation: f64   // Rotation for the square.
 }
@@ -50,6 +55,8 @@ impl App {
     }
 
     fn update(&mut self, args: &UpdateArgs) {
+        self.client.service();
+
         // Rotate 2 radians per second.
         self.rotation += 2.0 * args.dt;
     }
@@ -69,13 +76,21 @@ fn main() {
         .exit_on_esc(true)
     ).unwrap();
 
+    // Connect
+    enet::initialize();
+
+    let mut client = Client::connect(5000, "127.0.0.1".to_string(), 2338, "leo".to_string())
+        .unwrap();
+    let my_player_id = client.finish_connecting(5000).unwrap();
+
+    println!("Connected to server! My id: {}", my_player_id);
+
     // Create a new game and run it.
     let mut app = App {
+        client: client,
         gl: GlGraphics::new(opengl),
         rotation: 0.0
     };
-
-    let bla: NetEntityId = 0;
 
     for e in window.events() {
         match e {

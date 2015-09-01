@@ -25,11 +25,11 @@ pub enum ServerMessage {
     },
 
     // Broadcast messages
-    PlayerConnected {
+    PlayerConnect {
         id: PlayerId,
         name: String,
     },
-    PlayerDisconnected {
+    PlayerDisconnect {
         id: PlayerId,
     },
 }

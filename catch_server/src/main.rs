@@ -47,7 +47,7 @@ struct Server {
 
 impl Server {
     fn start(port: u16,
-             peer_count: u32) -> Result<Server, &'static str> {
+             peer_count: u32) -> Result<Server, String> {
         let host = try!(enet::Host::new_server(port, peer_count, 2, 0, 0));
 
         println!("Server started");
@@ -60,66 +60,67 @@ impl Server {
         })
     }
 
-    fn service(&mut self) {
-        match self.host.service(0) {
-            Ok(event) => {
-                match event {
-                    enet::Event::Connect(peer) => {
-                        self.player_id_counter += 1;
+    fn service(&mut self) -> bool {
+        let event = self.host.service(0); 
+        match event {
+            Ok(enet::Event::Connect(peer)) => {
+                self.player_id_counter += 1;
 
-                        println!("Client {} is connecting", self.player_id_counter);
+                println!("Client {} is connecting", self.player_id_counter);
 
-                        assert!(self.clients.get(&self.player_id_counter).is_none());
-                        peer.set_user_data(self.player_id_counter as *mut libc::c_void);
-                        self.clients.insert(self.player_id_counter,
-                            Client {
-                                peer: peer,
-                                state: ClientState::Connecting,
-                                ping_sent_time: None,
-                                ping: None,
-                            });
-                    },
+                assert!(self.clients.get(&self.player_id_counter).is_none());
+                peer.set_user_data(self.player_id_counter as *mut libc::c_void);
+                self.clients.insert(self.player_id_counter,
+                    Client {
+                        peer: peer,
+                        state: ClientState::Connecting,
+                        ping_sent_time: None,
+                        ping: None,
+                    });
 
-                    enet::Event::Disconnect(peer) => {
-                        let player_id = peer.get_user_data() as u32; 
-                        let client_state = self.clients[&player_id].state;
-
-                        println!("Client {} disconnected", player_id);
-
-                        if client_state == ClientState::Normal {
-                            // The client was already fully connected, so tell the other
-                            // clients about the disconnection
-                            self.broadcast(&ServerMessage::PlayerDisconnected {
-                                id: player_id
-                            });
-                        }
-
-                        self.clients.remove(&player_id);
-                    },
-
-                    enet::Event::Receive(peer, packet) => {
-                        let player_id = peer.get_user_data() as u32;
-                        assert!(self.clients.get(&player_id).is_some());
-
-                        let mut data = packet.data().clone();
-                        let message = match CerealData::read(&mut data) {
-                            Ok(message) => message,
-                            Err(_) => {
-                                println!("Received invalid message from client {}", player_id);
-                                return;
-                            }
-                        };
-
-                        //self.client_messages.push((player_id, message));
-                        self.process_client_message(player_id, &message);
-                    },
-
-                    enet::Event::None => (),
-                }
+                return true;
             },
 
-            Err(error) =>
-                println!("Error servicing: {}", error),
+            Ok(enet::Event::Disconnect(peer)) => {
+                let player_id = peer.get_user_data() as u32; 
+                let client_state = self.clients[&player_id].state;
+
+                println!("Client {} disconnected", player_id);
+
+                if client_state == ClientState::Normal {
+                    // The client was already fully connected, so tell the other
+                    // clients about the disconnection
+                    self.broadcast(&ServerMessage::PlayerDisconnect {
+                        id: player_id
+                    });
+                }
+
+                self.clients.remove(&player_id);
+
+                return true;
+            },
+
+            Ok(enet::Event::Receive(peer, packet)) => {
+                let player_id = peer.get_user_data() as u32;
+                assert!(self.clients.get(&player_id).is_some());
+                
+                let mut data = packet.data().clone();
+                match ClientMessage::read(&mut data) {
+                    Ok(message) => 
+                        self.process_client_message(player_id, &message),
+                    Err(_) => 
+                        println!("Received invalid message from client {}", player_id),
+                };
+
+                return true;
+            },
+            
+            Ok(enet::Event::None) => return false,
+
+            Err(error) => {
+                println!("Error servicing: {}", error);
+                return false;
+            }
         }
     }
 
@@ -129,7 +130,7 @@ impl Server {
                 let mut data = Vec::new();
                 match message.write(&mut data) {
                     Err(_) => {
-                        println!("Error sending message {:?}", message);
+                        println!("Error encoding message {:?}", message);
                         return;
                     },
                     Ok(_) => ()
@@ -138,6 +139,21 @@ impl Server {
                 client.peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE, 0);
             }
         }
+    }
+
+    fn send(&self, client: &Client, message: &ServerMessage) {
+        assert!(client.state == ClientState::Normal);
+
+        let mut data = Vec::new();
+        match message.write(&mut data) {
+            Err(_) => {
+                println!("Error encoding message {:?}", message);
+                return;
+            },
+            Ok(_) => ()
+        }
+
+        client.peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE, 0);
     }
 
     fn process_client_message(&mut self, player_id: PlayerId, message: &ClientMessage) {
@@ -169,13 +185,19 @@ impl Server {
                 println!("Player {} connected with name {}",
                          player_id, name);
 
-                self.broadcast(&ServerMessage::PlayerConnected {
+                self.broadcast(&ServerMessage::PlayerConnect {
                     id: player_id,
                     name: name.clone()
                 });
 
                 self.clients.get_mut(&player_id).unwrap().state = ClientState::Normal;
-                self.game_state.add_player(PlayerInfo::new(player_id, name.clone()));
+                self.send(&self.clients[&player_id],
+                          &ServerMessage::AcceptConnect {
+                              your_id: player_id
+                          });
+
+                let player_info = PlayerInfo::new(player_id, name.clone());
+                self.game_state.add_player(player_info);
             }
 
             &ClientMessage::PlayerInput { ref input } => {
@@ -192,6 +214,8 @@ impl Server {
 }
 
 fn main() {
+    enet::initialize();
+
     match Server::start(2338, 32).as_mut() {
         Ok(server) =>
             server.run(),
