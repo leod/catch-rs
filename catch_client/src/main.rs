@@ -1,5 +1,3 @@
-#![feature(libc)]
-
 extern crate piston;
 extern crate graphics;
 extern crate glutin_window;
@@ -12,16 +10,12 @@ extern crate catch_shared as shared;
 
 mod client;
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use piston::window::WindowSettings;
 use piston::input::*;
 use piston::event_loop::*;
 use glutin_window::GlutinWindow;
 use opengl_graphics::{ GlGraphics, OpenGL };
 
-use shared::net::*;
 use client::Client;
 
 pub struct App {
@@ -57,7 +51,7 @@ impl App {
     }
 
     fn update(&mut self, args: &UpdateArgs) {
-        self.client.service();
+        self.client.service().unwrap();
 
         // Rotate 2 radians per second.
         self.rotation += 2.0 * args.dt;
@@ -79,7 +73,7 @@ fn main() {
     ).unwrap();
 
     // Connect
-    enet::initialize();
+    enet::initialize().unwrap();
 
     let mut client = Client::connect(5000, "127.0.0.1".to_string(), 2338, "leo".to_string())
         .unwrap();
@@ -94,7 +88,7 @@ fn main() {
         rotation: 0.0
     };
 
-    for e in window.events() {
+    for e in window.events().ups(100).max_fps(60) {
         match e {
             Event::Render(render_args) => app.render(&render_args),
             Event::Update(update_args) => app.update(&update_args),

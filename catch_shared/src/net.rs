@@ -11,6 +11,7 @@ pub type TickNumber = u32;
 pub struct GameInfo {
     pub map_name: String,
     pub entity_types: EntityTypes,
+    pub ticks_per_second: u64,
 }
 
 impl fmt::Debug for GameInfo {

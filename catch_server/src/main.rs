@@ -15,12 +15,14 @@ pub mod state;
 
 use std::collections::HashMap;
 use std::io::Read;
+use time::{Duration, Timespec};
 
 use cereal::CerealData;
 
 use shared::net;
 use shared::player::{PlayerId, PlayerInfo};
-use shared::net::{GameInfo, ClientMessage, ServerMessage};
+use shared::net::{TickNumber, GameInfo, ClientMessage, ServerMessage};
+use shared::util::PeriodicTimer;
 use state::GameState;
 
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -34,8 +36,8 @@ struct Client {
     peer: enet::Peer,
     state: ClientState,
 
-    ping_sent_time: Option<time::Timespec>,
-    ping: Option<time::Duration>,
+    ping_sent_time: Option<Timespec>,
+    ping: Option<Duration>,
 }
 
 struct Server {
@@ -46,6 +48,9 @@ struct Server {
     clients: HashMap<PlayerId, Client>,
 
     game_state: GameState,
+
+    tick_timer: PeriodicTimer,
+    tick_number: TickNumber,
 }
 
 impl Server {
@@ -58,12 +63,17 @@ impl Server {
 
         println!("Server started");
 
+        let tick_duration_ns = (1.0 / (game_info.ticks_per_second as f64)) * 10E8;
+        let tick_duration = Duration::nanoseconds(tick_duration_ns as i64);
+
         Ok(Server {
             game_info: game_info,
             host: host,
             player_id_counter: 0,
             clients: HashMap::new(),
             game_state: GameState::new(),
+            tick_timer: PeriodicTimer::new(tick_duration),
+            tick_number: 0,
         })
     }
 
@@ -86,8 +96,7 @@ impl Server {
                     });
 
                 return true;
-            },
-
+            }
             Ok(enet::Event::Disconnect(peer)) => {
                 let player_id = peer.get_user_data() as u32; 
                 let client_state = self.clients[&player_id].state;
@@ -105,8 +114,7 @@ impl Server {
                 self.clients.remove(&player_id);
 
                 return true;
-            },
-
+            }
             Ok(enet::Event::Receive(peer, channel_id, packet)) => {
                 let player_id = peer.get_user_data() as u32;
                 assert!(self.clients.get(&player_id).is_some());
@@ -124,10 +132,8 @@ impl Server {
                 };
 
                 return true;
-            },
-            
+            }
             Ok(enet::Event::None) => return false,
-
             Err(error) => {
                 println!("Error servicing: {}", error);
                 return false;
@@ -143,7 +149,7 @@ impl Server {
                     Err(_) => {
                         println!("Error encoding message {:?}", message);
                         return;
-                    },
+                    }
                     Ok(_) => ()
                 }
 
@@ -161,7 +167,7 @@ impl Server {
             Err(_) => {
                 println!("Error encoding message {:?}", message);
                 return;
-            },
+            }
             Ok(_) => ()
         }
 
@@ -180,12 +186,11 @@ impl Server {
                         client.ping = Some(time::get_time() - ping_sent_time),
                     None =>
                         println!("Received unwarranted pong from {}",
-                                 player_id),
+                                 player_id)
                 };
 
                 client.ping_sent_time = None;
-            },
-
+            }
             &ClientMessage::WishConnect { ref name } => {
                 let client_state = self.clients[&player_id].state;
 
@@ -213,7 +218,6 @@ impl Server {
                 let player_info = PlayerInfo::new(player_id, name.clone());
                 self.game_state.add_player(player_info);
             }
-
             &ClientMessage::PlayerInput { ref input } => {
                 println!("Received input from {}: {:?}", player_id, input);
             }
@@ -221,25 +225,39 @@ impl Server {
     }
 
     fn run(&mut self) {
+        let mut loop_time = time::get_time();
+
         loop {
             self.service();
+
+            while self.tick_timer.next() {
+                self.tick_number += 1;
+                println!("Starting tick {}", self.tick_number);
+            }
+
+            let new_time = time::get_time();
+            self.tick_timer.add(new_time - loop_time);
+
+            //println!("Delta: {:?}", new_time - loop_time);
+
+            loop_time = new_time;
         }
     }
 }
 
 fn main() {
-    enet::initialize();
+    enet::initialize().unwrap();
 
     let entity_types = net::all_entity_types();
     let game_info = GameInfo {
         map_name: "foobar.map".to_string(),
         entity_types: entity_types,
+        ticks_per_second: 64
     };
 
     match Server::start(game_info, 2338, 32).as_mut() {
         Ok(server) =>
             server.run(),
-
         Err(error) =>
             println!("Couldn't start server: {}", error),
     };

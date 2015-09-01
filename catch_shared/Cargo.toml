@@ -7,6 +7,7 @@ authors = [
 
 [dependencies]
 ecs = "0.20.0"
+time = "0.1.32"
 #cereal = "0.2.2"
 #cereal_macros = "0.2.1"
 

@@ -28,7 +28,7 @@ impl NetState {
 }
 
 impl Tick {
-    fn read(entity_types: &net::EntityTypes, r: &mut Read) -> CerealResult<Tick> {
+    pub fn read(entity_types: &net::EntityTypes, r: &mut Read) -> CerealResult<Tick> {
         let tick_number: net::TickNumber = try!(CerealData::read(r));
         let events: Vec<GameEvent> = try!(CerealData::read(r));
         let num_entities: i32 = try!(CerealData::read(r));

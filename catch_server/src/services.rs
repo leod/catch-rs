@@ -2,7 +2,7 @@ use shared::tick::Tick;
 
 services! {
     struct Services {
-        cur_tick: Option<Tick> = None
+        next_tick: Option<Tick> = None
     }
 }
 

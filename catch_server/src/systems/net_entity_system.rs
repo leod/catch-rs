@@ -62,9 +62,9 @@ impl EntityProcess for NetEntitySystem {
                 match *component_type {
                     net::ComponentType::Position => {
                         let position = data.position[e].clone();
-                        data.services.cur_tick.as_mut().unwrap().net_state.position.insert(
+                        data.services.next_tick.as_mut().unwrap().net_state.position.insert(
                             net_id, position);
-                    },
+                    }
                 };
             }
         }
