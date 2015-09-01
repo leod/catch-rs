@@ -1,10 +1,23 @@
 use std::collections::HashMap;
+use std::fmt;
 
 use player::{PlayerId, PlayerInput};
 
 pub type EntityId = u32;
 pub type EntityTypeId = u32;
 pub type TickNumber = u32;
+
+#[derive(Clone, CerealData)]
+pub struct GameInfo {
+    pub map_name: String,
+    pub entity_types: EntityTypes,
+}
+
+impl fmt::Debug for GameInfo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "GameInfo {{ map_name: {}, ... }}", self.map_name)
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum Channel {
@@ -29,7 +42,8 @@ pub enum ClientMessage {
 pub enum ServerMessage {
     Ping,
     AcceptConnect {
-        your_id: PlayerId
+        your_id: PlayerId,
+        game_info: GameInfo,
     },
 
     // Broadcast messages

@@ -5,7 +5,7 @@ use cereal::CerealData;
 use enet;
 
 use shared::net;
-use shared::net::{ClientMessage, ServerMessage};
+use shared::net::{GameInfo, ClientMessage, ServerMessage};
 use shared::player::{PlayerId, PlayerInfo};
 use shared::tick::Tick;
 
@@ -16,6 +16,8 @@ pub struct Client {
 
     my_name: String,
     my_id: Option<PlayerId>,
+
+    game_info: Option<GameInfo>,
 
     // Ticks received from the server
     tick_queue: Vec<Tick>,
@@ -39,6 +41,7 @@ impl Client {
             connected: false,
             my_name: my_name,
             my_id: None,
+            game_info: None,
             tick_queue: Vec::new(),
         })
     }
@@ -54,6 +57,14 @@ impl Client {
         }
 
         self.server_peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE, 0);
+    }
+
+    pub fn get_my_id(&self) -> PlayerId {
+        self.my_id.unwrap()
+    }
+
+    pub fn get_game_info(&self) -> &GameInfo {
+        self.game_info.as_ref().unwrap()
     }
 
     pub fn finish_connecting(&mut self, timeout_ms: u32) -> Result<PlayerId, String> {
@@ -83,9 +94,11 @@ impl Client {
 
                 let mut data = packet.data().clone();
                 match ServerMessage::read(&mut data) {
-                    Ok(ServerMessage::AcceptConnect { your_id: my_id }) => {
+                    Ok(ServerMessage::AcceptConnect { your_id: my_id, game_info }) => {
                         self.connected = true;
                         self.my_id = Some(my_id);
+                        self.game_info = Some(game_info);
+
                         Ok(my_id)
                     },
                     Ok(_) =>

@@ -20,7 +20,7 @@ use cereal::CerealData;
 
 use shared::net;
 use shared::player::{PlayerId, PlayerInfo};
-use shared::net::{ClientMessage, ServerMessage};
+use shared::net::{GameInfo, ClientMessage, ServerMessage};
 use state::GameState;
 
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -39,7 +39,7 @@ struct Client {
 }
 
 struct Server {
-    entity_types: net::EntityTypes,
+    game_info: GameInfo,
 
     host: enet::Host,
     player_id_counter: PlayerId,
@@ -49,7 +49,7 @@ struct Server {
 }
 
 impl Server {
-    fn start(entity_types: net::EntityTypes,
+    fn start(game_info: GameInfo,
              port: u16,
              peer_count: u32) -> Result<Server, String> {
         let host = try!(enet::Host::new_server(port, peer_count,
@@ -59,7 +59,7 @@ impl Server {
         println!("Server started");
 
         Ok(Server {
-            entity_types: entity_types,
+            game_info: game_info,
             host: host,
             player_id_counter: 0,
             clients: HashMap::new(),
@@ -206,7 +206,8 @@ impl Server {
                 self.clients.get_mut(&player_id).unwrap().state = ClientState::Normal;
                 self.send(&self.clients[&player_id],
                           &ServerMessage::AcceptConnect {
-                              your_id: player_id
+                              your_id: player_id,
+                              game_info: self.game_info.clone(),
                           });
 
                 let player_info = PlayerInfo::new(player_id, name.clone());
@@ -230,8 +231,12 @@ fn main() {
     enet::initialize();
 
     let entity_types = net::all_entity_types();
+    let game_info = GameInfo {
+        map_name: "foobar.map".to_string(),
+        entity_types: entity_types,
+    };
 
-    match Server::start(entity_types, 2338, 32).as_mut() {
+    match Server::start(game_info, 2338, 32).as_mut() {
         Ok(server) =>
             server.run(),
 
