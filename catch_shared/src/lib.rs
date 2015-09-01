@@ -11,3 +11,4 @@ pub mod net;
 pub mod event;
 pub mod components;
 pub mod tick;
+pub mod player;

@@ -1,28 +1,60 @@
 use std::collections::HashMap;
 
-pub type EntityId = i32;
-pub type EntityTypeId = i32;
-pub type PlayerId = i32;
-pub type TickNumber = i32;
+use player::{PlayerId, PlayerInput};
+
+pub type EntityId = u32;
+pub type EntityTypeId = u32;
+pub type TickNumber = u32;
+
+#[derive(Debug, Clone, CerealData)]
+pub enum ClientMessage {
+    Pong,
+    WishConnect {
+        player_name: String,
+    },
+    PlayerInput {
+        input: PlayerInput
+    }
+}
+
+#[derive(Debug, Clone, CerealData)]
+pub enum ServerMessage {
+    Ping,
+    AcceptConnect {
+        player_id: PlayerId
+    },
+
+    // Broadcast messages
+    PlayerConnected {
+        player_id: PlayerId,
+        player_name: String,
+    },
+    PlayerDisconnected {
+        player_id: PlayerId,
+    },
+}
 
 // Components whose state can be synchronized over the net
-#[derive(Copy, Clone)]
+#[derive(Clone, CerealData)]
 pub enum ComponentType {
     Position,
 }
 
 pub const COMPONENT_TYPES: &'static [ComponentType] = &[ComponentType::Position];
 
-#[derive(Clone)]
+#[derive(Clone, CerealData)]
 pub struct EntityType {
     pub component_types: Vec<ComponentType>,
 }
 
+/// Every entity that wants its component state synchronized needs to have this component
+pub struct NetEntity {
+    pub id: EntityId,
+    pub type_id: EntityTypeId,
+}
+
 pub type EntityTypes = HashMap<EntityTypeId, EntityType>;
 pub type EntityTypeNames = HashMap<String, EntityTypeId>;
-
-pub const ENTITY_TYPES_BY_NAME: &'static [(&'static str, EntityType)] = &[
-];
 
 pub fn entity_types_by_name() -> Vec<(String, EntityType)> {
     let mut entity_types: Vec<(String, EntityType)> = Vec::new();
@@ -53,8 +85,3 @@ pub fn create_entity_type_maps(types_by_name: &Vec<(String, EntityType)>) -> (En
     (types, type_names)
 }
 
-/// Every entity that wants its component state synchronized needs to have this component
-pub struct NetEntity {
-    pub id: EntityId,
-    pub type_id: EntityTypeId,
-}

@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use ecs::{System, EntityData, EntityIter, DataHelper};
 use ecs::system::EntityProcess;
 
+use ::shared::net;
 use components::Components;
 use services::Services;
-use ::shared::net;
 
 pub struct NetEntitySystem {
     entities: HashMap<net::EntityId, ::ecs::entity::Id>,

@@ -1,12 +1,13 @@
-use net;
+use player::PlayerId;
+use net::{EntityId, EntityTypeId};
 
 #[derive(CerealData)]
 pub enum GameEvent {
-    PlayerJoin(net::PlayerId, String),
-    PlayerLeave(net::PlayerId),
+    PlayerJoin(PlayerId, String),
+    PlayerLeave(PlayerId),
     
-    CreateEntity(net::PlayerId, net::EntityId, net::EntityTypeId),
-    RemoveEntity(net::EntityId),
+    CreateEntity(PlayerId, EntityId, EntityTypeId),
+    RemoveEntity(EntityId),
 
     PlaySound(String)
 }
