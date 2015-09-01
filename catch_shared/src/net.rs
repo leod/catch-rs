@@ -10,7 +10,7 @@ pub type TickNumber = u32;
 pub enum ClientMessage {
     Pong,
     WishConnect {
-        player_name: String,
+        name: String,
     },
     PlayerInput {
         input: PlayerInput
@@ -21,16 +21,16 @@ pub enum ClientMessage {
 pub enum ServerMessage {
     Ping,
     AcceptConnect {
-        player_id: PlayerId
+        your_id: PlayerId
     },
 
     // Broadcast messages
     PlayerConnected {
-        player_id: PlayerId,
-        player_name: String,
+        id: PlayerId,
+        name: String,
     },
     PlayerDisconnected {
-        player_id: PlayerId,
+        id: PlayerId,
     },
 }
 

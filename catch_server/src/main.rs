@@ -18,7 +18,7 @@ use std::io::Read;
 
 use cereal::CerealData;
 
-use shared::player::PlayerId;
+use shared::player::{PlayerId, PlayerInfo};
 use shared::net::{ClientMessage, ServerMessage};
 use state::GameState;
 
@@ -82,17 +82,16 @@ impl Server {
 
                     enet::Event::Disconnect(peer) => {
                         let player_id = peer.get_user_data() as u32; 
-                        let client_state = self.clients.get(&player_id).unwrap().state;
+                        let client_state = self.clients[&player_id].state;
 
                         println!("Client {} disconnected", player_id);
 
                         if client_state == ClientState::Normal {
                             // The client was already fully connected, so tell the other
                             // clients about the disconnection
-                            self.broadcast(
-                                &ServerMessage::PlayerDisconnected {
-                                    player_id: player_id
-                                });
+                            self.broadcast(&ServerMessage::PlayerDisconnected {
+                                id: player_id
+                            });
                         }
 
                         self.clients.remove(&player_id);
@@ -158,19 +157,25 @@ impl Server {
                 client.ping_sent_time = None;
             },
 
-            &ClientMessage::WishConnect { ref player_name } => {
-                let client = self.clients.get_mut(&player_id).unwrap();
+            &ClientMessage::WishConnect { ref name } => {
+                let client_state = self.clients[&player_id].state;
 
-                if client.state != ClientState::Connecting {
+                if client_state != ClientState::Connecting {
                     println!("Connected player {} is trying to connect again, ignoring",
                              player_id);
                     return;
                 }
 
                 println!("Player {} connected with name {}",
-                         player_id, player_name);
+                         player_id, name);
 
-                client.state = ClientState::Normal;
+                self.broadcast(&ServerMessage::PlayerConnected {
+                    id: player_id,
+                    name: name.clone()
+                });
+
+                self.clients.get_mut(&player_id).unwrap().state = ClientState::Normal;
+                self.game_state.add_player(PlayerInfo::new(player_id, name.clone()));
             }
 
             &ClientMessage::PlayerInput { ref input } => {
