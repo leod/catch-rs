@@ -18,6 +18,7 @@ use std::io::Read;
 
 use cereal::CerealData;
 
+use shared::net;
 use shared::player::{PlayerId, PlayerInfo};
 use shared::net::{ClientMessage, ServerMessage};
 use state::GameState;
@@ -38,6 +39,8 @@ struct Client {
 }
 
 struct Server {
+    entity_types: net::EntityTypes,
+
     host: enet::Host,
     player_id_counter: PlayerId,
     clients: HashMap<PlayerId, Client>,
@@ -46,13 +49,17 @@ struct Server {
 }
 
 impl Server {
-    fn start(port: u16,
+    fn start(entity_types: net::EntityTypes,
+             port: u16,
              peer_count: u32) -> Result<Server, String> {
-        let host = try!(enet::Host::new_server(port, peer_count, 2, 0, 0));
+        let host = try!(enet::Host::new_server(port, peer_count,
+                                               net::NUM_CHANNELS as u32,
+                                               0, 0));
 
         println!("Server started");
 
         Ok(Server {
+            entity_types: entity_types,
             host: host,
             player_id_counter: 0,
             clients: HashMap::new(),
@@ -100,9 +107,13 @@ impl Server {
                 return true;
             },
 
-            Ok(enet::Event::Receive(peer, packet)) => {
+            Ok(enet::Event::Receive(peer, channel_id, packet)) => {
                 let player_id = peer.get_user_data() as u32;
                 assert!(self.clients.get(&player_id).is_some());
+
+                if channel_id != net::Channel::Messages as u8 {
+                    println!("Received packet on non-message channel from client {}", player_id);
+                }
                 
                 let mut data = packet.data().clone();
                 match ClientMessage::read(&mut data) {
@@ -136,7 +147,8 @@ impl Server {
                     Ok(_) => ()
                 }
 
-                client.peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE, 0);
+                client.peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE,
+                                 net::Channel::Messages as u8);
             }
         }
     }
@@ -153,7 +165,8 @@ impl Server {
             Ok(_) => ()
         }
 
-        client.peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE, 0);
+        client.peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE,
+                         net::Channel::Messages as u8);
     }
 
     fn process_client_message(&mut self, player_id: PlayerId, message: &ClientMessage) {
@@ -201,7 +214,7 @@ impl Server {
             }
 
             &ClientMessage::PlayerInput { ref input } => {
-                println!("Received input from {}", player_id);
+                println!("Received input from {}: {:?}", player_id, input);
             }
         }
     }
@@ -216,7 +229,9 @@ impl Server {
 fn main() {
     enet::initialize();
 
-    match Server::start(2338, 32).as_mut() {
+    let entity_types = net::all_entity_types();
+
+    match Server::start(entity_types, 2338, 32).as_mut() {
         Ok(server) =>
             server.run(),
 

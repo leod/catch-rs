@@ -1,26 +1,23 @@
 use std::collections::HashMap;
 
+use ecs;
 use ecs::{System, EntityData, EntityIter, DataHelper};
 use ecs::system::EntityProcess;
 
-use ::shared::net;
+use shared::net;
 use components::Components;
 use services::Services;
 
 pub struct NetEntitySystem {
-    entities: HashMap<net::EntityId, ::ecs::entity::Id>,
+    entities: HashMap<net::EntityId, ecs::entity::Id>,
     entity_types: net::EntityTypes,
-    entity_type_names: net::EntityTypeNames,
 }
 
 impl NetEntitySystem {
     pub fn new() -> NetEntitySystem {
-        let (entity_types, entity_type_names) = net::create_entity_type_maps(&net::entity_types_by_name());
-
         NetEntitySystem {
             entities: HashMap::new(),
-            entity_types: entity_types,
-            entity_type_names: entity_type_names
+            entity_types: net::all_entity_types(),
         }
     }
 }
@@ -35,7 +32,7 @@ impl System for NetEntitySystem {
 
             assert!(self.entities.get(&net_entity.id).is_none(),
                     "Net entity ID already in use");
-            assert!(self.entity_types.get(&net_entity.type_id).is_some(),
+            assert!(self.entity_types.get(net_entity.type_id as usize).is_some(),
                     "Net entity with invalid net entity type ID was created");
 
             self.entities.insert(net_entity.id, entity.id());
@@ -58,7 +55,7 @@ impl System for NetEntitySystem {
 impl EntityProcess for NetEntitySystem {
     fn process(&mut self, entities: EntityIter<Components>, data: &mut DataHelper<Components, Services>) {
         for e in entities {
-            let entity_type = &self.entity_types[&data.net_entity[e].type_id];
+            let &(_, ref entity_type) = &self.entity_types[data.net_entity[e].type_id as usize];
             let net_id = data.net_entity[e].id;
 
             for component_type in &entity_type.component_types {

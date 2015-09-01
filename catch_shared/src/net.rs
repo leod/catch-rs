@@ -6,6 +6,14 @@ pub type EntityId = u32;
 pub type EntityTypeId = u32;
 pub type TickNumber = u32;
 
+#[derive(Debug, Clone)]
+pub enum Channel {
+    Messages,
+    Ticks,
+}
+
+pub const NUM_CHANNELS: usize = 2;
+
 #[derive(Debug, Clone, CerealData)]
 pub enum ClientMessage {
     Pong,
@@ -42,7 +50,7 @@ pub enum ComponentType {
 
 pub const COMPONENT_TYPES: &'static [ComponentType] = &[ComponentType::Position];
 
-#[derive(Clone, CerealData)]
+#[derive(CerealData, Clone)]
 pub struct EntityType {
     pub component_types: Vec<ComponentType>,
 }
@@ -53,10 +61,9 @@ pub struct NetEntity {
     pub type_id: EntityTypeId,
 }
 
-pub type EntityTypes = HashMap<EntityTypeId, EntityType>;
-pub type EntityTypeNames = HashMap<String, EntityTypeId>;
+pub type EntityTypes = Vec<(String, EntityType)>;
 
-pub fn entity_types_by_name() -> Vec<(String, EntityType)> {
+pub fn all_entity_types() -> EntityTypes {
     let mut entity_types: Vec<(String, EntityType)> = Vec::new();
 
     entity_types.push(("player".to_string(),
@@ -66,22 +73,3 @@ pub fn entity_types_by_name() -> Vec<(String, EntityType)> {
 
     entity_types
 }
-
-pub fn create_entity_type_maps(types_by_name: &Vec<(String, EntityType)>) -> (EntityTypes, EntityTypeNames) {
-    let mut id: EntityTypeId = 0;
-    let mut types: EntityTypes = HashMap::new();
-    let mut type_names: EntityTypeNames = HashMap::new();
-
-    for &(ref type_name, ref entity_type) in types_by_name {
-        assert!(type_names.get(type_name).is_none(),
-                "Duplicate net entity type name");
-
-        types.insert(id, entity_type.clone());
-        type_names.insert(type_name.clone(), id);
-        
-        id += 1;
-    }
-
-    (types, type_names)
-}
-

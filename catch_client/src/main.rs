@@ -1,10 +1,12 @@
+#![feature(libc)]
+
 extern crate piston;
 extern crate graphics;
 extern crate glutin_window;
 extern crate opengl_graphics;
+extern crate renet as enet;
 extern crate cereal;
 #[macro_use] extern crate ecs;
-extern crate renet as enet;
 
 extern crate catch_shared as shared;
 

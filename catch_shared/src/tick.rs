@@ -37,8 +37,8 @@ impl Tick {
         for _ in 0..num_entities {
             let entity_id: net::EntityId = try!(CerealData::read(r));
             let entity_type_id: net::EntityTypeId = try!(CerealData::read(r)); 
-            let entity_type: &net::EntityType = match entity_types.get(&entity_type_id) {
-                Some(entity_type) =>
+            let entity_type: &net::EntityType = match entity_types.get(entity_type_id as usize) {
+                Some(&(ref name, ref entity_type)) =>
                     entity_type,
                 None =>
                     return Err(CerealError::Msg("Invalid entity type id in net state".to_string())),

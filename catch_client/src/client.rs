@@ -4,8 +4,10 @@ use std::io::Read;
 use cereal::CerealData;
 use enet;
 
-use shared::player::{PlayerId, PlayerInfo};
+use shared::net;
 use shared::net::{ClientMessage, ServerMessage};
+use shared::player::{PlayerId, PlayerInfo};
+use shared::tick::Tick;
 
 pub struct Client {
     host: enet::Host,
@@ -14,6 +16,9 @@ pub struct Client {
 
     my_name: String,
     my_id: Option<PlayerId>,
+
+    // Ticks received from the server
+    tick_queue: Vec<Tick>,
 }
 
 impl Client {
@@ -25,7 +30,7 @@ impl Client {
             try!(enet::Host::connect(timeout_ms,
                                      host_name,
                                      port,
-                                     2,
+                                     net::NUM_CHANNELS as u32,
                                      0, 0));
 
         Ok(Client {
@@ -33,7 +38,8 @@ impl Client {
             server_peer: server_peer,
             connected: false,
             my_name: my_name,
-            my_id: None
+            my_id: None,
+            tick_queue: Vec::new(),
         })
     }
 
@@ -70,7 +76,11 @@ impl Client {
             Ok(enet::Event::Disconnect(_)) =>
                 Err("Got disconnected".to_string()),
 
-            Ok(enet::Event::Receive(_, packet)) => {
+            Ok(enet::Event::Receive(_, channel_id, packet)) => {
+                if channel_id != net::Channel::Messages as u8 {
+                    return Err("Received tick data while not yet fully connected".to_string());
+                }
+
                 let mut data = packet.data().clone();
                 match ServerMessage::read(&mut data) {
                     Ok(ServerMessage::AcceptConnect { your_id: my_id }) => {
@@ -103,14 +113,22 @@ impl Client {
                 Err("Got disconnected".to_string())
             },
 
-            Ok(enet::Event::Receive(_, packet)) => {
-                let mut data = packet.data().clone();
+            Ok(enet::Event::Receive(_, channel_id, packet)) => {
+                if channel_id == net::Channel::Messages as u8 {
+                    let mut data = packet.data().clone();
 
-                match ServerMessage::read(&mut data) {
-                    Ok(message) =>
-                        Ok(Some(message)),
-                    Err(_) =>
-                        Err("Received invalid message".to_string())
+                    match ServerMessage::read(&mut data) {
+                        Ok(message) =>
+                            Ok(Some(message)),
+                        Err(_) =>
+                            Err("Received invalid message".to_string())
+                    }
+                } else if channel_id == net::Channel::Ticks as u8 {
+                    
+                    // We received a tick, but still need a Option<ServerMessage>... kind of stupid
+                    self.service()
+                } else {
+                    Err("Invalid channel id".to_string())
                 }
             }
         }
