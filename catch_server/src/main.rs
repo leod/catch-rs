@@ -252,7 +252,7 @@ fn main() {
 
     let entity_types = net::all_entity_types();
     let game_info = GameInfo {
-        map_name: "foobar.map".to_string(),
+        map_name: "../data/maps/test.tmx".to_string(),
         entity_types: entity_types,
         ticks_per_second: 64
     };

@@ -21,3 +21,7 @@ path = "../../renet"
 
 [dependencies.cereal]
 path = "../../cereal"
+
+[dependencies.image]
+version = "*"
+features = ["png_codec"]

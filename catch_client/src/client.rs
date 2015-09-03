@@ -66,7 +66,7 @@ impl Client {
         self.game_info.as_ref().unwrap()
     }
 
-    pub fn finish_connecting(&mut self, timeout_ms: u32) -> Result<PlayerId, String> {
+    pub fn finish_connecting(&mut self, timeout_ms: u32) -> Result<(), String> {
         assert!(!self.connected);
 
         self.send(&ClientMessage::WishConnect {
@@ -94,7 +94,7 @@ impl Client {
                         self.my_id = Some(my_id);
                         self.game_info = Some(game_info);
 
-                        Ok(my_id)
+                        Ok(())
                     },
                     Ok(_) =>
                         Err("Received unexpected message from server while connecting".to_string()),

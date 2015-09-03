@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" width="30" height="30" tilewidth="32" tileheight="32">
+ <tileset firstgid="1" name="floor" tilewidth="32" tileheight="32">
+  <image source="../tilesets/floor.png" width="256" height="256"/>
+ </tileset>
+ <tileset firstgid="65" name="block" tilewidth="32" tileheight="32">
+  <image source="../tilesets/block.png" width="128" height="128"/>
+ </tileset>
+ <layer name="Tile Layer 1" width="30" height="30">
+  <data encoding="base64" compression="zlib">
+   eJztwwENAAAMw6DOv+kLOSSsmqqqqu8ezqADhQ==
+  </data>
+ </layer>
+ <layer name="Tile Layer 2" width="30" height="30">
+  <data encoding="base64" compression="zlib">
+   eJxjYKAecKSiWaP2Dj4w0sJ5oOPXkQg8CkYOICY9kItHwcgFo+lqFFALDPY0MdLaEgMd3vQGIy2cqW0vAAJcE00=
+  </data>
+ </layer>
+ <objectgroup name="Object Layer 1" width="30" height="30">
+  <object type="item_spawn" x="480" y="480"/>
+  <object type="player_spawn" x="31" y="769" width="255" height="157"/>
+  <object type="player_spawn" x="673" y="33" width="255" height="158"/>
+  <object type="item_spawn" x="32" y="32"/>
+  <object type="item_spawn" x="928" y="928"/>
+ </objectgroup>
+</map>

@@ -11,6 +11,9 @@ time = "0.1.32"
 #cereal = "0.2.2"
 #cereal_macros = "0.2.1"
 
+[dependencies.tiled]
+path = "../../rs-tiled"
+
 [dependencies.renet]
 path = "../../renet"
 
