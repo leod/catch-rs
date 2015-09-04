@@ -1,4 +1,5 @@
 use std::io::Read;
+use std::collections::VecDeque;
 
 use cereal::CerealData;
 use enet;
@@ -19,7 +20,7 @@ pub struct Client {
     game_info: Option<GameInfo>,
 
     // Ticks received from the server
-    tick_queue: Vec<Tick>,
+    tick_deque: VecDeque<Tick>,
 }
 
 impl Client {
@@ -41,7 +42,7 @@ impl Client {
             my_name: my_name,
             my_id: None,
             game_info: None,
-            tick_queue: Vec::new(),
+            tick_deque: VecDeque::new(),
         })
     }
 
@@ -66,6 +67,14 @@ impl Client {
         self.game_info.as_ref().unwrap()
     }
 
+    pub fn num_ticks(&self) -> usize {
+        self.tick_deque.len()         
+    }
+
+    pub fn pop_next_tick(&mut self) -> Tick {
+        self.tick_deque.pop_front().unwrap() 
+    }
+
     pub fn finish_connecting(&mut self, timeout_ms: u32) -> Result<(), String> {
         assert!(!self.connected);
 
@@ -73,6 +82,7 @@ impl Client {
             name: self.my_name.clone()
         });
 
+        // Wait for an AcceptConnect reply to our WishConnect
         match self.host.service(timeout_ms) {
             Err(error) =>
                 Err(error),
@@ -95,7 +105,7 @@ impl Client {
                         self.game_info = Some(game_info);
 
                         Ok(())
-                    },
+                    }
                     Ok(_) =>
                         Err("Received unexpected message from server while connecting".to_string()),
                     Err(_) => 
@@ -128,11 +138,13 @@ impl Client {
                             Err("Received invalid message".to_string())
                     }
                 } else if channel_id == net::Channel::Ticks as u8 {
-                    let tick_result = Tick::read(&self.game_info.as_ref().unwrap().entity_types, &mut data);
+                    let tick_result = Tick::read(&mut data);
+
+                    println!("Received tick");
 
                     match tick_result {
                         Ok(tick) =>
-                            self.tick_queue.push(tick),
+                            self.tick_deque.push_back(tick),
                         Err(_) =>
                             return Err("Received invalid tick".to_string())
                     };

@@ -1,6 +1,7 @@
 use std::fmt;
 
 pub type PlayerId = u32;
+pub type PlayerInputNumber = u32;
 
 #[derive(Clone, CerealData)]
 pub struct PlayerInput {

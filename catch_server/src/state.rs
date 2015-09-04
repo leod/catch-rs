@@ -2,15 +2,22 @@ use std::collections::HashMap;
 
 use ecs;
 
-use shared::player::{PlayerId, PlayerInfo};
+use shared::net;
+use shared::math;
+use shared::net::TickNumber;
+use shared::tick::Tick;
+use shared::player::{PlayerId, PlayerInfo, PlayerInput};
 use systems::Systems;
 
 pub struct Player {
     pub info: PlayerInfo,
+    pub next_input: Option<(TickNumber, PlayerInput)>,
+    pub controlled_entity: Option<net::EntityId>
 }
 
 pub struct GameState {
     pub world: ecs::World<Systems>, 
+    pub tick_number: TickNumber,
 
     players: HashMap<PlayerId, Player>,
 }
@@ -19,6 +26,7 @@ impl GameState {
     pub fn new() -> GameState {
         GameState {
             world: ecs::World::new(),
+            tick_number: 0,
             players: HashMap::new(),
         }
     }
@@ -29,9 +37,22 @@ impl GameState {
 
         let player = Player {
             info: info,
+            next_input: None,
+            controlled_entity: None,
         };
 
         self.players.insert(id, player);
+    }
+
+    pub fn spawn_player(&mut self, id: PlayerId) {
+        assert!(self.players[&id].controlled_entity.is_none(),
+                "Can't spawn a player that is already controlling an entity");
+
+        let net_entity_type_id = self.world.systems.net_entity_system.type_id("player".to_string());
+        let (net_entity_id, _) = 
+            self.world.systems.net_entity_system
+                .create_entity(net_entity_type_id, id, &mut self.world.data);
+        self.players.get_mut(&id).unwrap().controlled_entity = Some(net_entity_id);
     }
 
     pub fn remove_player(&mut self, id: PlayerId) {
@@ -41,5 +62,43 @@ impl GameState {
 
     pub fn get_player_info(&self, id: PlayerId) -> &PlayerInfo {
         &self.players[&id].info
+    }
+
+    pub fn on_player_input(&mut self, id: PlayerId, input_client_tick: TickNumber, input: &PlayerInput) {
+        // TODO: Should we be able to queue multiple inputs for each player?
+        // Currently, the idea is for the clients to send one PlayerInput per tick.
+        // Is it enough for the server to be able to execute one PlayerInput per tick?
+        // It's probably a better idea to process PlayerInput as soon as it arrives at the
+        // server...
+
+        if self.players[&id].next_input.is_some() {
+            println!("Warning: already have player input for {}", id);
+        }
+
+        self.players.get_mut(&id).as_mut().unwrap().next_input = Some((input_client_tick, input.clone()));
+    }
+
+    // For now, the resulting tick data will be written in Services::next_tick
+    pub fn tick(&mut self) {
+        self.tick_number += 1;
+        self.world.services.next_tick = Some(Tick::new(self.tick_number)); 
+
+        for (player_id, player) in self.players.iter() {
+            match (player.controlled_entity, &player.next_input) {
+                (Some(net_entity_id), &Some((ref input_client_tick, ref player_input))) => {
+                    let entity = self.world.systems.net_entity_system.get_entity(net_entity_id);
+
+                    self.world.with_entity_data(&entity, |e, c| {
+                        // TODO: This is just for testing
+                        if player_input.forward_pressed {
+                            c.position[e].p = math::add(c.position[e].p, [1.0, 0.0]);
+                        }
+                    });
+               }
+                _ => {}
+            }
+        }
+
+        process!(self.world, net_entity_system);
     }
 }

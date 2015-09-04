@@ -12,12 +12,16 @@ extern crate catch_shared as shared;
 mod client;
 mod player_input;
 mod draw_map;
+mod components;
+mod services;
+mod systems;
+mod state;
 
 use piston::window::WindowSettings;
 use piston::input::*;
 use piston::event_loop::*;
 use glutin_window::GlutinWindow;
-use opengl_graphics::{ GlGraphics, OpenGL };
+use opengl_graphics::{GlGraphics, OpenGL};
 
 use shared::player::PlayerInput;
 use shared::net::ClientMessage;
@@ -25,26 +29,12 @@ use shared::map::Map;
 use client::Client;
 use player_input::InputMap;
 use draw_map::DrawMap;
+use state::GameState;
 
 pub struct App {
     client: Client,
     map: Map,
     draw_map: DrawMap,
-}
-
-impl App {
-    fn render(&mut self, args: &RenderArgs, gl: &mut GlGraphics) {
-        gl.draw(args.viewport(), |c, gl| {
-            // Clear the screen.
-            graphics::clear([0.0, 0.0, 0.0, 0.0], gl);
-
-            self.draw_map.draw(&self.map, c, gl);
-        });
-    }
-
-    fn update(&mut self, args: &UpdateArgs) {
-        self.client.service().unwrap();
-    }
 }
 
 fn main() {
@@ -54,7 +44,7 @@ fn main() {
     // Create an Glutin window.
     let window = GlutinWindow::new(
         WindowSettings::new(
-            "spinning-square",
+            "catching game",
             [1024, 768]
         )
         .opengl(opengl)
@@ -74,27 +64,47 @@ fn main() {
     let draw_map = DrawMap::load(&map).unwrap();
 
     // Create a new game and run it.
-    let mut app = App {
-        client: client,
-        map: map,
-        draw_map: draw_map,
-    };
-
     let player_input_map = InputMap::new();
     let mut player_input = PlayerInput::new();
+    let tick_number = None;
+    let mut game_state = GameState::new(client.get_game_info());
 
     let mut gl = GlGraphics::new(opengl);
 
-    for e in window.events().ups(100).max_fps(60) {
+    for e in window.events().ups(client.get_game_info().ticks_per_second as u64).max_fps(60) {
         match e {
-            Event::Render(render_args) =>
-                app.render(&render_args, &mut gl),
-            Event::Update(update_args) => {
-                app.client.send(&ClientMessage::PlayerInput(player_input.clone()));
-                app.update(&update_args);
+            Event::Render(render_args) => {
+                gl.draw(render_args.viewport(), |c, gl| {
+                    // Clear the screen.
+                    graphics::clear([0.0, 0.0, 0.0, 0.0], gl);
+
+                    draw_map.draw(&map, c, gl);
+                });
             }
-            Event::Input(input) =>
-                player_input_map.update_player_input(&input, &mut player_input),
+            Event::Update(update_args) => {
+                loop {
+                    match client.service().unwrap() {
+                        Some(message) => continue,
+                        None => break
+                    };
+                }
+
+                if let Some(tick) = tick_number {
+                    client.send(&ClientMessage::PlayerInput {
+                        tick: tick,
+                        input: player_input.clone()
+                    });
+                }
+
+                if client.num_ticks() > 0 {
+                    let tick = client.pop_next_tick();
+                    println!("Starting tick {}", tick.tick_number);
+                    game_state.run_tick(&tick);
+                }
+            }
+            Event::Input(input) => {
+                player_input_map.update_player_input(&input, &mut player_input);
+            }
             _ => ()
         };
     }

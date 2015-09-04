@@ -217,10 +217,13 @@ impl Server {
 
                 let player_info = PlayerInfo::new(player_id, name.clone());
                 self.game_state.add_player(player_info);
+                self.game_state.spawn_player(player_id);
             }
-            &ClientMessage::PlayerInput(ref input) => {
+            &ClientMessage::PlayerInput { ref tick, ref input } => {
                 if input.any() {
                     println!("Received input from {}: {:?}", player_id, input);
+
+                    self.game_state.on_player_input(player_id, *tick, input);
                 }
             }
         }
@@ -235,6 +238,25 @@ impl Server {
             while self.tick_timer.next() {
                 self.tick_number += 1;
                 //println!("Starting tick {}", self.tick_number);
+                self.game_state.tick();
+                
+                // Broadcast tick to clients
+                let mut data = Vec::new(); 
+
+                match self.game_state.world.services.next_tick.write(&mut data) {
+                    Err(_) => {
+                        println!("Error encoding tick");
+                        continue;
+                    }
+                    Ok(_) => ()
+                }
+
+                for (_, client) in self.clients.iter() {
+                    if client.state == ClientState::Normal {
+                        client.peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE,
+                                         net::Channel::Ticks as u8);
+                    }
+                }
             }
 
             let new_time = time::get_time();
@@ -254,7 +276,7 @@ fn main() {
     let game_info = GameInfo {
         map_name: "../data/maps/test.tmx".to_string(),
         entity_types: entity_types,
-        ticks_per_second: 64
+        ticks_per_second: 3
     };
 
     match Server::start(game_info, 2338, 32).as_mut() {

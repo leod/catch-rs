@@ -3,16 +3,21 @@ use std::io::{Read};
 
 use cereal::{CerealData, CerealError, CerealResult};
 
-use components::{Position};
+use components::{Position, Orientation, PlayerState};
 use event::GameEvent;
 use net;
 
 /// Stores the state of all net components in a tick
 pub type ComponentsNetState<T> = HashMap<net::EntityId, T>;
+
+#[derive(CerealData)]
 pub struct NetState {
     pub position: ComponentsNetState<Position>, 
+    pub orientation: ComponentsNetState<Orientation>,
+    pub player_state: ComponentsNetState<PlayerState>,
 }
 
+#[derive(CerealData)]
 pub struct Tick {
     pub tick_number: net::TickNumber,
     pub events: Vec<GameEvent>,
@@ -20,42 +25,21 @@ pub struct Tick {
 }
 
 impl NetState {
-    fn new() -> NetState {
+    pub fn new() -> NetState {
         NetState {
             position: HashMap::new(),
+            orientation: HashMap::new(),
+            player_state: HashMap::new(),
         }
     }
 }
 
 impl Tick {
-    pub fn read(entity_types: &net::EntityTypes, r: &mut Read) -> CerealResult<Tick> {
-        let tick_number: net::TickNumber = try!(CerealData::read(r));
-        let events: Vec<GameEvent> = try!(CerealData::read(r));
-        let num_entities: i32 = try!(CerealData::read(r));
-        let mut net_state = NetState::new();
-
-        for _ in 0..num_entities {
-            let entity_id: net::EntityId = try!(CerealData::read(r));
-            let entity_type_id: net::EntityTypeId = try!(CerealData::read(r)); 
-            let entity_type: &net::EntityType = match entity_types.get(entity_type_id as usize) {
-                Some(&(ref name, ref entity_type)) =>
-                    entity_type,
-                None =>
-                    return Err(CerealError::Msg("Invalid entity type id in net state".to_string())),
-            };
-
-            for component_type in &entity_type.component_types {
-                match *component_type {
-                    net::ComponentType::Position =>
-                        net_state.position.insert(entity_id, try!(CerealData::read(r))),
-                };
-            }
-        }
-
-        Ok(Tick {
+    pub fn new(tick_number: net::TickNumber) -> Tick {
+        Tick {
             tick_number: tick_number,
-            events: events,
-            net_state: net_state
-        })
+            events: Vec::new(),
+            net_state: NetState::new(),
+        }
     }
 }
