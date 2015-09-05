@@ -6,8 +6,11 @@ authors = [
 ]
 
 [dependencies]
-ecs = "0.20.0"
+#ecs = "*"
 time = "0.1.32"
+
+[dependencies.ecs]
+git = "https://github.com/HeroesGrave/ecs-rs.git"
 
 [dependencies.catch_shared]
 path = "../catch_shared"

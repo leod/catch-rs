@@ -50,7 +50,6 @@ struct Server {
     game_state: GameState,
 
     tick_timer: PeriodicTimer,
-    tick_number: TickNumber,
 }
 
 impl Server {
@@ -73,7 +72,6 @@ impl Server {
             clients: HashMap::new(),
             game_state: GameState::new(),
             tick_timer: PeriodicTimer::new(tick_duration),
-            tick_number: 0,
         })
     }
 
@@ -160,6 +158,7 @@ impl Server {
     }
 
     fn send(&self, client: &Client, message: &ServerMessage) {
+        //print!("sending message {:?}", message);
         assert!(client.state == ClientState::Normal);
 
         let mut data = Vec::new();
@@ -217,7 +216,6 @@ impl Server {
 
                 let player_info = PlayerInfo::new(player_id, name.clone());
                 self.game_state.add_player(player_info);
-                self.game_state.spawn_player(player_id);
             }
             &ClientMessage::PlayerInput { ref tick, ref input } => {
                 if input.any() {
@@ -236,20 +234,20 @@ impl Server {
             self.service();
 
             while self.tick_timer.next() {
-                self.tick_number += 1;
-                //println!("Starting tick {}", self.tick_number);
                 self.game_state.tick();
                 
                 // Broadcast tick to clients
                 let mut data = Vec::new(); 
 
-                match self.game_state.world.services.next_tick.write(&mut data) {
+                match self.game_state.world.services.next_tick.as_mut().unwrap().write(&mut data) {
                     Err(_) => {
                         println!("Error encoding tick");
                         continue;
                     }
                     Ok(_) => ()
-                }
+                };
+
+                //println!("Sending tick {} with size {}: {:?}", self.game_state.world.services.next_tick.as_mut().unwrap().tick_number, data.len(), &data);
 
                 for (_, client) in self.clients.iter() {
                     if client.state == ClientState::Normal {
@@ -276,7 +274,7 @@ fn main() {
     let game_info = GameInfo {
         map_name: "../data/maps/test.tmx".to_string(),
         entity_types: entity_types,
-        ticks_per_second: 3
+        ticks_per_second: 32
     };
 
     match Server::start(game_info, 2338, 32).as_mut() {

@@ -44,7 +44,7 @@ impl GameState {
         self.players.insert(id, player);
     }
 
-    pub fn spawn_player(&mut self, id: PlayerId) {
+    fn spawn_player(&mut self, id: PlayerId) {
         assert!(self.players[&id].controlled_entity.is_none(),
                 "Can't spawn a player that is already controlling an entity");
 
@@ -83,6 +83,24 @@ impl GameState {
         self.tick_number += 1;
         self.world.services.next_tick = Some(Tick::new(self.tick_number)); 
 
+        // Spawn player entities if needed
+        {
+            let mut respawn = Vec::new();
+            for (player_id, player) in self.players.iter_mut() {
+                if !player.info.alive {
+                    respawn.push(*player_id);
+                    player.info.alive = true;
+                }
+            }
+            for player_id in respawn {
+                self.spawn_player(player_id); 
+            }
+        }
+
+        // Let all the systems know about any new entities
+        self.world.flush_queue();
+
+        // Run input of players
         for (player_id, player) in self.players.iter() {
             match (player.controlled_entity, &player.next_input) {
                 (Some(net_entity_id), &Some((ref input_client_tick, ref player_input))) => {
@@ -95,8 +113,12 @@ impl GameState {
                         }
                     });
                }
-                _ => {}
+               _ => {}
             }
+        }
+
+        for (_, player) in self.players.iter_mut() {
+            player.next_input = None;
         }
 
         process!(self.world, net_entity_system);

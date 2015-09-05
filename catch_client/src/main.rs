@@ -66,7 +66,7 @@ fn main() {
     // Create a new game and run it.
     let player_input_map = InputMap::new();
     let mut player_input = PlayerInput::new();
-    let tick_number = None;
+    let mut tick_number = None;
     let mut game_state = GameState::new(client.get_game_info());
 
     let mut gl = GlGraphics::new(opengl);
@@ -79,6 +79,7 @@ fn main() {
                     graphics::clear([0.0, 0.0, 0.0, 0.0], gl);
 
                     draw_map.draw(&map, c, gl);
+                    game_state.world.systems.draw_player_system.draw(&mut game_state.world.data, c, gl);
                 });
             }
             Event::Update(update_args) => {
@@ -89,18 +90,21 @@ fn main() {
                     };
                 }
 
+                if client.num_ticks() > 0 {
+                    let tick = client.pop_next_tick();
+                    //println!("Starting tick {}", tick.tick_number);
+                    game_state.run_tick(&tick);
+                    tick_number = Some(tick.tick_number);
+                }
+
                 if let Some(tick) = tick_number {
+                    //println!("Sending input {:?}", &player_input);
                     client.send(&ClientMessage::PlayerInput {
                         tick: tick,
                         input: player_input.clone()
                     });
                 }
 
-                if client.num_ticks() > 0 {
-                    let tick = client.pop_next_tick();
-                    println!("Starting tick {}", tick.tick_number);
-                    game_state.run_tick(&tick);
-                }
             }
             Event::Input(input) => {
                 player_input_map.update_player_input(&input, &mut player_input);

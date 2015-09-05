@@ -149,16 +149,20 @@ impl NetEntitySystem {
                             c.interp_state_position[e] = 
                                 match (tick_a.net_state.position.get(&net_entity_id),
                                        tick_b.net_state.position.get(&net_entity_id)) {
-                                    (Some(a), Some(b)) => InterpolationState::some(a.clone(), b.clone()),
-                                    _ => InterpolationState::none() 
+                                    (Some(a), Some(b)) =>
+                                        InterpolationState::some(a.clone(), b.clone()),
+                                    _ =>
+                                        InterpolationState::none() 
                                 };
                         }
                         net::ComponentType::Orientation => {
                             c.interp_state_orientation[e] = 
                                 match (tick_a.net_state.orientation.get(&net_entity_id),
                                        tick_b.net_state.orientation.get(&net_entity_id)) {
-                                    (Some(a), Some(b)) => InterpolationState::some(a.clone(), b.clone()),
-                                    _ => InterpolationState::none() 
+                                    (Some(a), Some(b)) =>
+                                        InterpolationState::some(a.clone(), b.clone()),
+                                    _ =>
+                                        InterpolationState::none() 
                                 };
                         }
                         _ => {}

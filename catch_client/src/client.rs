@@ -132,21 +132,24 @@ impl Client {
 
                 if channel_id == net::Channel::Messages as u8 {
                     match ServerMessage::read(&mut data) {
-                        Ok(message) =>
-                            Ok(Some(message)),
+                        Ok(message) => {
+                            //println!("Received message {:?}", message);
+                            Ok(Some(message))
+                        }
                         Err(_) =>
                             Err("Received invalid message".to_string())
                     }
                 } else if channel_id == net::Channel::Ticks as u8 {
-                    let tick_result = Tick::read(&mut data);
+                    //println!("Received tick of size {}: {:?}", data.len(), &data);
 
-                    println!("Received tick");
+                    let tick_result = Tick::read(&mut data);
 
                     match tick_result {
                         Ok(tick) =>
                             self.tick_deque.push_back(tick),
-                        Err(_) =>
-                            return Err("Received invalid tick".to_string())
+                        Err(e) => {
+                            return Err("Received invalid tick".to_string());
+                        }
                     };
                     
                     // We received a tick, but still need a Option<ServerMessage>... kind of awkward

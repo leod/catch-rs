@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::io::{Read};
+use std::io::{Write, Read};
 
 use cereal::{CerealData, CerealError, CerealResult};
 

@@ -48,12 +48,22 @@ impl GameState {
     }
 
     pub fn run_tick(&mut self, tick: &Tick) {
-        let net_entity_system = self.world.systems.net_entity_system.inner.as_mut().unwrap();
-        // Create new entities, remove dead ones
-        net_entity_system.process_entity_events(tick, &mut self.world.data);
+        {
+            let net_entity_system = self.world.systems.net_entity_system.inner.as_mut().unwrap();
 
-        // Load net state
-        net_entity_system.load_tick_state(tick, &mut self.world.data);
+            // Create new entities, remove dead ones
+            net_entity_system.process_entity_events(tick, &mut self.world.data);
+        }
+
+        // Let all the systems know about any new entities
+        self.world.flush_queue();
+
+        {
+            let net_entity_system = self.world.systems.net_entity_system.inner.as_mut().unwrap();
+
+            // Load net state
+            net_entity_system.load_tick_state(tick, &mut self.world.data);
+        }
 
         // TODO: Process other events, interpolation
     }
