@@ -22,6 +22,7 @@ use piston::input::*;
 use piston::event_loop::*;
 use glutin_window::GlutinWindow;
 use opengl_graphics::{GlGraphics, OpenGL};
+use graphics::Transformed;
 
 use shared::player::PlayerInput;
 use shared::net::ClientMessage;
@@ -30,12 +31,6 @@ use client::Client;
 use player_input::InputMap;
 use draw_map::DrawMap;
 use state::GameState;
-
-pub struct App {
-    client: Client,
-    map: Map,
-    draw_map: DrawMap,
-}
 
 fn main() {
     // Change this to OpenGL::V2_1 if not working.
@@ -67,7 +62,7 @@ fn main() {
     let player_input_map = InputMap::new();
     let mut player_input = PlayerInput::new();
     let mut tick_number = None;
-    let mut game_state = GameState::new(client.get_game_info());
+    let mut game_state = GameState::new(client.get_my_id(), client.get_game_info());
 
     let mut gl = GlGraphics::new(opengl);
 
@@ -78,6 +73,18 @@ fn main() {
                     // Clear the screen.
                     graphics::clear([0.0, 0.0, 0.0, 0.0], gl);
 
+                    let trans = match game_state.world.systems.net_entity_system.inner.as_mut().unwrap().my_player_entity_id() {
+                        Some(player_entity_id) => {
+                            let player_entity = game_state.world.systems.net_entity_system.inner.as_mut().unwrap().get_entity(player_entity_id).unwrap();
+
+                            game_state.world.with_entity_data(&player_entity, |e, c| {
+                                c.position[e].p
+                            }).unwrap()
+                        }
+                        None => [0.0, 0.0]
+                    };
+
+                    let c = c.trans(-trans[0], -trans[1]);
                     draw_map.draw(&map, c, gl);
                     game_state.world.systems.draw_player_system.draw(&mut game_state.world.data, c, gl);
                 });

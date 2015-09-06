@@ -17,9 +17,10 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn new(game_info: &GameInfo) -> GameState {
+    pub fn new(my_id: PlayerId, game_info: &GameInfo) -> GameState {
         let mut world = ecs::World::<Systems>::new();
-        world.systems.net_entity_system.init(NetEntitySystem::new(&game_info.entity_types));
+        world.systems.net_entity_system.init(
+            NetEntitySystem::new(my_id, &game_info.entity_types));
 
         GameState {
             world: world,

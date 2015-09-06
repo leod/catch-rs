@@ -14,23 +14,36 @@ use services::Services;
 pub struct NetEntitySystem {
     entities: HashMap<net::EntityId, ecs::Entity>,
     entity_types: net::EntityTypes,
+
+    my_id: PlayerId,
+    my_player_entity_id: Option<net::EntityId>,
 }
 
 impl NetEntitySystem {
-    pub fn new(entity_types: &net::EntityTypes) -> NetEntitySystem {
+    pub fn new(my_id: PlayerId, entity_types: &net::EntityTypes) -> NetEntitySystem {
         NetEntitySystem {
             entities: HashMap::new(),
             entity_types: entity_types.clone(),
+            my_id: my_id,
+            my_player_entity_id: None,
         }
+    }
+
+    pub fn my_player_entity_id(&self) -> Option<net::EntityId> {
+        self.my_player_entity_id
+    }
+
+    pub fn get_entity(&self, id: net::EntityId) -> Option<ecs::Entity> {
+        self.entities.get(&id).map(|entity| *entity)
     }
     
     fn create_entity(&mut self,
                      entity_id: net::EntityId,
                      entity_type_id: net::EntityTypeId,
-                     player_id: PlayerId,
+                     owner: PlayerId,
                      data: &mut DataHelper<Components, Services>) -> ecs::Entity {
         println!("Creating entity {} of type {} with owner {}",
-                 entity_id, entity_type_id, player_id);
+                 entity_id, entity_type_id, owner);
 
         assert!(self.entities.get(&entity_id).is_none(),
                 "Already have a net entity with that id");
@@ -41,7 +54,7 @@ impl NetEntitySystem {
             data.net_entity.add(&entity, NetEntity {
                 id: entity_id,
                 type_id: entity_type_id,
-                owner: player_id,
+                owner: owner,
             });
 
             for net_component in &self.entity_types[entity_type_id as usize].1.component_types {
@@ -70,6 +83,11 @@ impl NetEntitySystem {
             }
         });
 
+        // TODO: detection of player entities
+        if owner == self.my_id {
+            self.my_player_entity_id = Some(entity_id);
+        }
+
         self.entities.insert(entity_id, entity);
         entity
     }
@@ -77,6 +95,10 @@ impl NetEntitySystem {
     fn remove_entity(&mut self,
                      entity_id: net::EntityId,
                      data: &mut DataHelper<Components, Services>) {
+        if self.my_player_entity_id == Some(entity_id) {
+            self.my_player_entity_id = None;
+        }
+
         if self.entities.get(&entity_id).is_some() {
             data.remove_entity(self.entities[&entity_id]);
             self.entities.remove(&entity_id);
@@ -90,8 +112,8 @@ impl NetEntitySystem {
     pub fn process_entity_events(&mut self, tick: &Tick, data: &mut DataHelper<Components, Services>) {
         for event in tick.events.iter() {
             match *event {
-                GameEvent::CreateEntity(entity_id, entity_type_id, player_id) => {
-                    self.create_entity(entity_id, entity_type_id, player_id, data);
+                GameEvent::CreateEntity(entity_id, entity_type_id, owner) => {
+                    self.create_entity(entity_id, entity_type_id, owner, data);
                 }
                 GameEvent::RemoveEntity(entity_id) => {
                     self.remove_entity(entity_id, data); 
