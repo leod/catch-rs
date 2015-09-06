@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 use std::fmt;
 
+use ecs::{ComponentManager, DataHelper, EntityData, BuildData};
+
 use player::{PlayerId, PlayerInput, PlayerInputNumber};
+use tick::NetState;
 
 pub type EntityId = u32;
 pub type EntityTypeId = u32;
@@ -56,21 +59,25 @@ pub enum ServerMessage {
 }
 
 // Components whose state can be synchronized over the net.
-// Currently, adding a new ComponentType means you'll need to modify a bunch
-// of methods/data types that are kind of all over the place:
-// - shared::tick::Tick::{read, write},
-// - shared::tick::NetState,
-// - client::systems::NetEntitySystem::load_tick_state,
-// - client::systems::NetEntitySystem::load_interp_tick_state,
-// - server::systems::NetEntitySystem::process
-//
-// This isn't so pretty, but all the 'dynamic' solutions I could think of weren't either.
-// Maybe I need some kind of crazy macro.
-#[derive(Clone, CerealData)]
+// When adding a new net state component X, we need to do the following:
+// * Add a new entry X here in ComponentType and COMPONENT_TYPES,
+// * Add a new trait HasX in shared::components,
+// * Implement that trait for both client::Components and server::Components,
+// * Add an entry for X in tick::NetState,
+// * Implement StateComponent<T> for StateComponentImpl<X> in shared::components,
+// * Add an entry for StateComponentImpl<X> in shared::component_type_traits,
+// * Optionally, make sure X is interpolated on the client side
+#[derive(Clone, Copy, CerealData)]
 pub enum ComponentType {
     Position,
     Orientation,
     PlayerState
+}
+
+pub trait StateComponent<T: ComponentManager> {
+    fn add(&self, entity: BuildData<T>, c: &mut T);
+    fn write(&self, entity: EntityData<T>, id: EntityId, net_state: &mut NetState, c: &T);
+    fn read(&self, entity: EntityData<T>, id: EntityId, net_state: &NetState, c: &mut T);
 }
 
 pub const COMPONENT_TYPES: &'static [ComponentType] = &[
@@ -82,13 +89,6 @@ pub const COMPONENT_TYPES: &'static [ComponentType] = &[
 #[derive(CerealData, Clone)]
 pub struct EntityType {
     pub component_types: Vec<ComponentType>,
-}
-
-/// Every entity that wants its component state synchronized needs to have this component
-pub struct NetEntity {
-    pub id: EntityId,
-    pub type_id: EntityTypeId,
-    pub owner: PlayerId,
 }
 
 pub type EntityTypes = Vec<(String, EntityType)>;

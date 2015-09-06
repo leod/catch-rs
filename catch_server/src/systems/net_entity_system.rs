@@ -7,13 +7,15 @@ use ecs::system::EntityProcess;
 use shared::net;
 use shared::player::PlayerId;
 use shared::event::GameEvent;
-use components::*;
+use components;
+use components::{Components, NetEntity};
 use services::Services;
 
 pub struct NetEntitySystem {
     id_counter: net::EntityId,
     entities: HashMap<net::EntityId, ecs::Entity>,
     entity_types: net::EntityTypes,
+    component_type_traits: components::ComponentTypeTraits<Components>,
 }
 
 impl NetEntitySystem {
@@ -22,6 +24,7 @@ impl NetEntitySystem {
             id_counter: 0,
             entities: HashMap::new(),
             entity_types: net::all_entity_types(),
+            component_type_traits: components::component_type_traits(),
         }
     }
 
@@ -31,6 +34,10 @@ impl NetEntitySystem {
             .find(|&(i, &(ref name, _))| name == &type_name)
             .unwrap()
             .0 as net::EntityTypeId
+    }
+
+    fn component_type_trait(&self, component_type: net::ComponentType) -> &Box<net::StateComponent<Components>> {
+        &self.component_type_traits[component_type as usize]
     }
 
     pub fn create_entity(&mut self,
@@ -59,17 +66,7 @@ impl NetEntitySystem {
             });
 
             for net_component in &self.entity_types[entity_type_id as usize].1.component_types {
-                match *net_component {
-                    net::ComponentType::Position => {
-                        data.position.add(&entity, Position::default());
-                    }
-                    net::ComponentType::Orientation => {
-                        data.orientation.add(&entity, Orientation::default());
-                    }
-                    net::ComponentType::PlayerState => {
-                        data.player_state.add(&entity, PlayerState::default());
-                    }
-                };
+                self.component_type_trait(*net_component).add(entity, data);
             }
 
             let type_name = self.entity_types[entity_type_id as usize].0.clone();
@@ -117,30 +114,6 @@ impl NetEntitySystem {
 impl System for NetEntitySystem {
     type Components = Components;
     type Services = Services;
-
-    /*fn activated(&mut self, entity: &EntityData<Components>, c: &Components, services: &mut Services) {
-        if c.net_entity.has(entity) {
-            let net_entity = &c.net_entity[*entity];
-
-            assert!(self.entities.get(&net_entity.id).is_none(),
-                    "Net entity ID already in use");
-            assert!(self.entity_types.get(net_entity.type_id as usize).is_some(),
-                    "Net entity with invalid net entity type ID was created");
-
-            self.entities.insert(net_entity.id, entity.0);
-        }
-    }
-
-    fn deactivated(&mut self, entity: &EntityData<Components>, c: &Components, services: &mut Services) {
-        if c.net_entity.has(entity) {
-            let net_entity = &c.net_entity[*entity];
-
-            assert!(self.entities.get(&net_entity.id).is_some(),
-                    "Net entity with invalid net entity ID");
-
-            self.entities.remove(&net_entity.id);
-        }
-    }*/
 }
 
 // Once the tick has been processed, NetEntitySystem writes the current tick component state into the global Tick
@@ -151,23 +124,10 @@ impl EntityProcess for NetEntitySystem {
             let net_id = data.net_entity[e].id;
 
             for component_type in &entity_type.component_types {
-                match *component_type {
-                    net::ComponentType::Position => {
-                        let position = data.position[e].clone();
-                        data.services.next_tick.as_mut().unwrap().net_state.position.insert(
-                            net_id, position);
-                    }
-                    net::ComponentType::Orientation => {
-                        let orientation = data.orientation[e].clone();
-                        data.services.next_tick.as_mut().unwrap().net_state.orientation.insert(
-                            net_id, orientation);
-                    }
-                    net::ComponentType::PlayerState => {
-                        let player_state = data.player_state[e].clone();
-                        data.services.next_tick.as_mut().unwrap().net_state.player_state.insert(
-                            net_id, player_state);
-                    }
-                };
+                let next_net_state = &mut data.services.next_tick.as_mut().unwrap().net_state;
+
+                self.component_type_trait(*component_type)
+                    .write(e, net_id, next_net_state, &data.components);
             }
         }
     }

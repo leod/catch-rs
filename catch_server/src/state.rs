@@ -95,12 +95,7 @@ impl GameState {
                             input_client_tick: net::TickNumber, input: &PlayerInput) {
         let entity = self.world.systems.net_entity_system.get_entity(net_entity_id);
 
-        self.world.with_entity_data(&entity, |e, c| {
-            // TODO: This is just for testing
-            if input.forward_pressed {
-                c.position[e].p = math::add(c.position[e].p, [10.0, 0.0]);
-            }
-        });
+        self.world.systems.player_movement_system.run_player_input(entity, input, &mut self.world.data);
 
         // Tell the player in that their input has been processed.
         // TODO: Should this be done on a level thats finer than ticks?!

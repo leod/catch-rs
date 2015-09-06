@@ -8,12 +8,15 @@ use shared::net;
 use shared::tick::Tick;
 use shared::event::GameEvent;
 use shared::player::PlayerId;
-use components::*;
+use components;
+use components::{Components, NetEntity, InterpolationState, DrawPlayer};
 use services::Services;
 
 pub struct NetEntitySystem {
-    entities: HashMap<net::EntityId, ecs::Entity>,
     entity_types: net::EntityTypes,
+    component_type_traits: components::ComponentTypeTraits<Components>,
+
+    entities: HashMap<net::EntityId, ecs::Entity>,
 
     my_id: PlayerId,
     my_player_entity_id: Option<net::EntityId>,
@@ -22,11 +25,16 @@ pub struct NetEntitySystem {
 impl NetEntitySystem {
     pub fn new(my_id: PlayerId, entity_types: &net::EntityTypes) -> NetEntitySystem {
         NetEntitySystem {
-            entities: HashMap::new(),
             entity_types: entity_types.clone(),
+            component_type_traits: components::component_type_traits(),
+            entities: HashMap::new(),
             my_id: my_id,
             my_player_entity_id: None,
         }
+    }
+
+    fn component_type_trait(&self, component_type: net::ComponentType) -> &Box<net::StateComponent<Components>> {
+        &self.component_type_traits[component_type as usize]
     }
 
     pub fn my_player_entity_id(&self) -> Option<net::EntityId> {
@@ -58,19 +66,7 @@ impl NetEntitySystem {
             });
 
             for net_component in &self.entity_types[entity_type_id as usize].1.component_types {
-                match *net_component {
-                    net::ComponentType::Position => {
-                        data.position.add(&entity, Position::default());
-                        data.interp_state_position.add(&entity, InterpolationState::none());
-                    }
-                    net::ComponentType::Orientation => {
-                        data.orientation.add(&entity, Orientation::default());
-                        data.interp_state_orientation.add(&entity, InterpolationState::none());
-                    }
-                    net::ComponentType::PlayerState => {
-                        data.player_state.add(&entity, PlayerState::default());
-                    }
-                };
+                self.component_type_trait(*net_component).add(entity, data);
             }
 
             let type_name = self.entity_types[entity_type_id as usize].0.clone();
@@ -133,23 +129,8 @@ impl NetEntitySystem {
                 let entity_type = &self.entity_types[c.net_entity[e].type_id as usize].1;
 
                 for component_type in &entity_type.component_types {
-                    match *component_type { 
-                        net::ComponentType::Position => {
-                            if let Some(position) = tick.net_state.position.get(&net_entity_id) {
-                                c.position[e] = position.clone();
-                            }
-                        }
-                        net::ComponentType::Orientation => {
-                            if let Some(orientation) = tick.net_state.orientation.get(&net_entity_id) {
-                                c.orientation[e] = orientation.clone();
-                            }
-                        }
-                        net::ComponentType::PlayerState => {
-                            if let Some(player_state) = tick.net_state.player_state.get(&net_entity_id) {
-                                c.player_state[e] = player_state.clone();
-                            }
-                        }
-                    };
+                    self.component_type_trait(*component_type)
+                        .read(e, *net_entity_id, &tick.net_state, c);
                 }
             });
         }
