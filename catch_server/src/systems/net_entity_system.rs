@@ -97,9 +97,20 @@ impl NetEntitySystem {
         }
     }
 
-
     pub fn get_entity(&self, net_entity_id: net::EntityId) -> ecs::Entity {
         self.entities[&net_entity_id]
+    }
+
+    // Queue up CreateEntity events for a freshly connected player
+    pub fn replicate_entities(&self, player_id: PlayerId, data: &mut DataHelper<Components, Services>) {
+        for (net_entity_id, entity) in self.entities.iter() {
+            let (entity_type_id, owner) = data.with_entity_data(entity, |e, c| {
+                (c.net_entity[e].type_id, c.net_entity[e].owner)
+            }).unwrap();
+            
+            data.services.add_player_event(player_id,
+                GameEvent::CreateEntity(*net_entity_id, entity_type_id, owner));
+        }
     }
 }
 

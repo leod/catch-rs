@@ -124,6 +124,14 @@ impl Map {
     pub fn tile_height(&self) -> usize {
         self.map.tile_height as usize
     }
+    
+    pub fn is_pos_valid(&self, x: usize, y: usize) -> bool {
+        x < self.map.width as usize && y < self.map.height as usize
+    }
+
+    pub fn get_tile(&self, layer_id: LayerId, x: usize, y: usize) -> Option<Tile> {
+        self.layers[layer_id.to_index()].tiles[y][x]
+    }
 
     pub fn tileset_image_paths(&self) -> Vec<String> {
         self.map.tilesets.iter()

@@ -2,7 +2,7 @@ use player::PlayerId;
 use net::{EntityId, EntityTypeId};
 use net::{TickNumber};
 
-#[derive(CerealData)]
+#[derive(Clone, CerealData)]
 pub enum GameEvent {
     PlayerJoin(PlayerId, String),
     PlayerLeave(PlayerId),

@@ -11,9 +11,23 @@ use shared::player::{PlayerId, PlayerInfo, PlayerInput};
 use systems::Systems;
 
 pub struct Player {
+    // Has this player been sent its first tick yet?
+    pub is_new: bool,
+
     pub info: PlayerInfo,
     pub next_input: Option<(TickNumber, PlayerInput)>,
     pub controlled_entity: Option<net::EntityId>
+}
+
+impl Player {
+    fn new(info: PlayerInfo) -> Player {
+        Player {
+            is_new: true,
+            info: info,
+            next_input: None,
+            controlled_entity: None,
+        }
+    }
 }
 
 pub struct GameState {
@@ -40,13 +54,7 @@ impl GameState {
         let id = info.id;
         assert!(self.players.get(&id).is_none());
 
-        let player = Player {
-            info: info,
-            next_input: None,
-            controlled_entity: None,
-        };
-
-        self.players.insert(id, player);
+        self.players.insert(id, Player::new(info));
     }
 
     fn spawn_player(&mut self, id: PlayerId) {
@@ -90,7 +98,7 @@ impl GameState {
         self.world.with_entity_data(&entity, |e, c| {
             // TODO: This is just for testing
             if input.forward_pressed {
-                c.position[e].p = math::add(c.position[e].p, [1.0, 0.0]);
+                c.position[e].p = math::add(c.position[e].p, [10.0, 0.0]);
             }
         });
 
@@ -105,6 +113,20 @@ impl GameState {
     pub fn tick(&mut self) {
         self.tick_number += 1;
         self.world.services.prepare_for_tick(self.tick_number, self.players.keys().map(|i| *i));
+
+        // Replicate entities to new players
+        {
+            let mut new_players = Vec::new();
+            for (player_id, player) in self.players.iter_mut() {
+                if player.is_new {
+                    new_players.push(*player_id);
+                    player.is_new = false;
+                }
+            }
+            for player_id in new_players {
+                self.world.systems.net_entity_system.replicate_entities(player_id, &mut self.world.data);
+            }
+        }
 
         // Spawn player entities if needed
         {

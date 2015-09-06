@@ -73,6 +73,7 @@ fn main() {
                 gl.draw(render_args.viewport(), |c, gl| {
                     graphics::clear([0.0, 0.0, 0.0, 0.0], gl);
                     
+                    // my eyes
                     let trans = match game_state.world.systems.net_entity_system.inner.as_mut().unwrap().my_player_entity_id() {
                         Some(player_entity_id) => {
                             let player_entity = game_state.world.systems.net_entity_system.inner.as_mut().unwrap().get_entity(player_entity_id).unwrap();
@@ -101,8 +102,11 @@ fn main() {
                 }
 
                 if client.num_ticks() > 0 {
-
                     // Play some very rough catch up for a start...
+                    // For the future, the idea here is to increase the playback speed of the
+                    // received ticks if we notice that we are falling behind too much.
+                    // We only need to make sure we know what "too much" is, and if it is
+                    // sufficient to query client.num_ticks() for that.
                     while client.num_ticks() > 0 {
                         let (time_recv, tick) = client.pop_next_tick();
 

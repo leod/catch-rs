@@ -244,29 +244,45 @@ impl Server {
         let mut loop_time = time::get_time();
 
         loop {
-            self.service();
+            // Is this how DDOS happens?
+            while self.service() {};
 
             // Start ticks
             while self.tick_timer.next() {
                 self.game_state.tick();
                 
                 // Broadcast tick to clients
-                let mut data = Vec::new(); 
-
-                match self.game_state.world.services.next_tick.as_mut().unwrap().write(&mut data) {
-                    Err(_) => {
-                        println!("Error encoding tick");
-                        continue;
-                    }
-                    Ok(_) => ()
-                };
 
                 //println!("Sending tick {} with size {}: {:?}", self.game_state.world.services.next_tick.as_mut().unwrap().tick_number, data.len(), &data);
 
-                for (_, client) in self.clients.iter() {
+                for (player_id, client) in self.clients.iter() {
                     if client.state == ClientState::Normal {
+                        let mut data = Vec::new(); 
+
+                        // HACK
+                        let player_events = self.game_state.world.services.next_player_events[player_id].clone();
+
+                        let tick = self.game_state.world.services.next_tick.as_mut().unwrap();
+                        //tick.events.push_all(&player_events);
+                        for event in player_events.iter() {
+                            tick.events.push(event.clone());
+                        }
+                        
+                        // TODO: Serializing the whole tick for every player should be avoided
+                        match tick.write(&mut data) {
+                            Err(_) => {
+                                println!("Error encoding tick");
+                                continue;
+                            }
+                            Ok(_) => ()
+                        };
+
                         client.peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE,
                                          net::Channel::Ticks as u8);
+
+                        // HACK: Remove player specific events from tick again...
+                        let new_len = tick.events.len() - player_events.len();
+                        tick.events.truncate(new_len);
                     }
                 }
             }
@@ -288,7 +304,7 @@ fn main() {
     let game_info = GameInfo {
         map_name: "../data/maps/test.tmx".to_string(),
         entity_types: entity_types,
-        ticks_per_second: 64
+        ticks_per_second: 20
     };
 
     match Server::start(game_info, 2338, 32).as_mut() {
