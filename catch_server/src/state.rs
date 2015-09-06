@@ -6,6 +6,7 @@ use shared::net;
 use shared::math;
 use shared::net::TickNumber;
 use shared::tick::Tick;
+use shared::event::GameEvent;
 use shared::player::{PlayerId, PlayerInfo, PlayerInput};
 use systems::Systems;
 
@@ -29,6 +30,10 @@ impl GameState {
             tick_number: 0,
             players: HashMap::new(),
         }
+    }
+
+    pub fn tick_number(&self) -> TickNumber {
+        self.tick_number 
     }
 
     pub fn add_player(&mut self, info: PlayerInfo) {
@@ -78,10 +83,28 @@ impl GameState {
         self.players.get_mut(&id).as_mut().unwrap().next_input = Some((input_client_tick, input.clone()));
     }
 
+    pub fn run_player_input(&mut self, player_id: PlayerId, net_entity_id: net::EntityId,
+                            input_client_tick: net::TickNumber, input: &PlayerInput) {
+        let entity = self.world.systems.net_entity_system.get_entity(net_entity_id);
+
+        self.world.with_entity_data(&entity, |e, c| {
+            // TODO: This is just for testing
+            if input.forward_pressed {
+                c.position[e].p = math::add(c.position[e].p, [1.0, 0.0]);
+            }
+        });
+
+        // Tell the player in that their input has been processed.
+        // TODO: Should this be done on a level thats finer than ticks?!
+        // The following GameEvent will be sent with the next tick the server starts!
+        self.world.services.add_player_event(player_id,
+            GameEvent::CorrectState(input_client_tick));
+    }
+
     // For now, the resulting tick data will be written in Services::next_tick
     pub fn tick(&mut self) {
         self.tick_number += 1;
-        self.world.services.next_tick = Some(Tick::new(self.tick_number)); 
+        self.world.services.prepare_for_tick(self.tick_number, self.players.keys().map(|i| *i));
 
         // Spawn player entities if needed
         {
@@ -101,19 +124,18 @@ impl GameState {
         self.world.flush_queue();
 
         // Run input of players
-        for (player_id, player) in self.players.iter() {
-            match (player.controlled_entity, &player.next_input) {
-                (Some(net_entity_id), &Some((ref input_client_tick, ref player_input))) => {
-                    let entity = self.world.systems.net_entity_system.get_entity(net_entity_id);
-
-                    self.world.with_entity_data(&entity, |e, c| {
-                        // TODO: This is just for testing
-                        if player_input.forward_pressed {
-                            c.position[e].p = math::add(c.position[e].p, [1.0, 0.0]);
-                        }
-                    });
-               }
-               _ => {}
+        {
+            let mut input = Vec::new();
+            for (player_id, player) in self.players.iter() {
+                match (player.controlled_entity, &player.next_input) {
+                    (Some(net_entity_id),
+                     &Some((ref input_client_tick, ref player_input))) => 
+                         input.push((*player_id, net_entity_id, *input_client_tick, player_input.clone())),
+                    _ => {}
+                }
+            }
+            for (player_id, net_entity_id, input_client_tick, player_input) in input {
+                self.run_player_input(player_id, net_entity_id, input_client_tick, &player_input);
             }
         }
 

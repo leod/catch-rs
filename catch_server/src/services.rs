@@ -1,20 +1,47 @@
+use std::collections::HashMap;
+
 use ecs::ServiceManager;
 
+use shared::net;
 use shared::tick::Tick;
+use shared::player::PlayerId;
+use shared::event::GameEvent;
 
-//services! {
-    pub struct Services {
-        pub next_tick: Option<Tick> //= None
-    }
+pub struct Services {
+    // Stores the state of the current tick before sending it off to clients
+    pub next_tick: Option<Tick>,
+    
+    // Game events for the current tick that are to be sent only to specific clients
+    // can be stored in `next_player_events`
+    pub next_player_events: HashMap<PlayerId, Vec<GameEvent>>,
+}
 
-    impl Default for Services {
-        fn default() -> Services {
-            Services {
-                next_tick: None,
-            }
+impl Services {
+    pub fn prepare_for_tick<T: Iterator<Item=PlayerId>>(&mut self, number: net::TickNumber, player_ids: T) {
+        self.next_tick = Some(Tick::new(number));     
+
+        self.next_player_events.clear();
+        for player_id in player_ids {
+            self.next_player_events.insert(player_id, Vec::new()); 
         }
     }
 
-    impl ServiceManager for Services {}
-//}
+    pub fn add_event(&mut self, event: GameEvent) {
+        self.next_tick.as_mut().unwrap().events.push(event);
+    }
+    
+    pub fn add_player_event(&mut self, player_id: PlayerId, event: GameEvent) {
+        self.next_player_events.get_mut(&player_id).unwrap().push(event);
+    }
+}
 
+impl Default for Services {
+    fn default() -> Services {
+        Services {
+            next_tick: None,
+            next_player_events: HashMap::new(),
+        }
+    }
+}
+
+impl ServiceManager for Services {}

@@ -30,6 +30,14 @@ impl PeriodicTimer {
             false
         }
     }
+
+    // Percentual progress until next period
+    pub fn progress(&self) -> f64 {
+        // NOTE: Apparently this fails when either num_nanoseconds() exceeds 2^63 = ~292 years
+
+        self.accum.num_nanoseconds().unwrap() as f64 /
+        self.period.num_nanoseconds().unwrap() as f64
+    }
 }
 
 pub struct CachedAspect<T: ComponentManager> {

@@ -38,6 +38,9 @@ struct Client {
 
     ping_sent_time: Option<Timespec>,
     ping: Option<Duration>,
+
+    // Not adjusted for ping
+    at_tick: Option<TickNumber>,
 }
 
 struct Server {
@@ -75,6 +78,10 @@ impl Server {
         })
     }
 
+    fn tick_time(&self) -> f64 {
+        self.game_state.tick_number() as f64 + self.tick_timer.progress()
+    }
+
     fn service(&mut self) -> bool {
         let event = self.host.service(0); 
         match event {
@@ -91,6 +98,7 @@ impl Server {
                         state: ClientState::Connecting,
                         ping_sent_time: None,
                         ping: None,
+                        at_tick: None,
                     });
 
                 return true;
@@ -224,6 +232,11 @@ impl Server {
                     self.game_state.on_player_input(player_id, *tick, input);
                 }
             }
+            &ClientMessage::StartingTick { ref tick } => {
+                println!("client started tick {}, we are at {} (d={}={}ms)", tick, self.tick_time(), self.tick_time() - *tick as f64, (self.tick_time() - *tick as f64) * 1000.0 / self.game_info.ticks_per_second as f64);
+
+                self.clients.get_mut(&player_id).unwrap().at_tick = Some(*tick);
+            }
         }
     }
 
@@ -233,6 +246,7 @@ impl Server {
         loop {
             self.service();
 
+            // Start ticks
             while self.tick_timer.next() {
                 self.game_state.tick();
                 
@@ -274,7 +288,7 @@ fn main() {
     let game_info = GameInfo {
         map_name: "../data/maps/test.tmx".to_string(),
         entity_types: entity_types,
-        ticks_per_second: 32
+        ticks_per_second: 64
     };
 
     match Server::start(game_info, 2338, 32).as_mut() {

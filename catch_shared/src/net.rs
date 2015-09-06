@@ -31,6 +31,9 @@ pub enum ClientMessage {
     PlayerInput {
         tick: TickNumber,
         input: PlayerInput,
+    },
+    StartingTick {
+        tick: TickNumber,
     }
 }
 

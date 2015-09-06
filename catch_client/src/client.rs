@@ -1,5 +1,6 @@
 use std::io::Read;
 use std::collections::VecDeque;
+use time;
 
 use cereal::CerealData;
 use enet;
@@ -19,8 +20,8 @@ pub struct Client {
 
     game_info: Option<GameInfo>,
 
-    // Ticks received from the server
-    tick_deque: VecDeque<Tick>,
+    // Ticks received from the server together with the time at which they were received
+    tick_deque: VecDeque<(time::Timespec, Tick)>,
 }
 
 impl Client {
@@ -71,7 +72,7 @@ impl Client {
         self.tick_deque.len()         
     }
 
-    pub fn pop_next_tick(&mut self) -> Tick {
+    pub fn pop_next_tick(&mut self) -> (time::Timespec, Tick) {
         self.tick_deque.pop_front().unwrap() 
     }
 
@@ -146,7 +147,7 @@ impl Client {
 
                     match tick_result {
                         Ok(tick) =>
-                            self.tick_deque.push_back(tick),
+                            self.tick_deque.push_back((time::get_time(), tick)),
                         Err(e) => {
                             return Err("Received invalid tick".to_string());
                         }

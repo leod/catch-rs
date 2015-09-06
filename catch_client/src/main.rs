@@ -6,6 +6,7 @@ extern crate graphics;
 extern crate glutin_window;
 extern crate opengl_graphics;
 extern crate image;
+extern crate time;
 
 extern crate catch_shared as shared;
 
@@ -70,9 +71,8 @@ fn main() {
         match e {
             Event::Render(render_args) => {
                 gl.draw(render_args.viewport(), |c, gl| {
-                    // Clear the screen.
                     graphics::clear([0.0, 0.0, 0.0, 0.0], gl);
-
+                    
                     let trans = match game_state.world.systems.net_entity_system.inner.as_mut().unwrap().my_player_entity_id() {
                         Some(player_entity_id) => {
                             let player_entity = game_state.world.systems.net_entity_system.inner.as_mut().unwrap().get_entity(player_entity_id).unwrap();
@@ -84,7 +84,10 @@ fn main() {
                         None => [0.0, 0.0]
                     };
 
-                    let c = c.trans(-trans[0], -trans[1]);
+                    let c = c.trans((render_args.draw_width / 2) as f64,
+                                    (render_args.draw_height / 2) as f64)
+                             .trans(-trans[0], -trans[1]);
+
                     draw_map.draw(&map, c, gl);
                     game_state.world.systems.draw_player_system.draw(&mut game_state.world.data, c, gl);
                 });
@@ -98,10 +101,19 @@ fn main() {
                 }
 
                 if client.num_ticks() > 0 {
-                    let tick = client.pop_next_tick();
-                    //println!("Starting tick {}", tick.tick_number);
-                    game_state.run_tick(&tick);
-                    tick_number = Some(tick.tick_number);
+
+                    // Play some very rough catch up for a start...
+                    while client.num_ticks() > 0 {
+                        let (time_recv, tick) = client.pop_next_tick();
+
+                        println!("Starting tick {}, {:?} delay, {} ticks queued", tick.tick_number, (time::get_time() - time_recv).num_milliseconds(), client.num_ticks());
+                        game_state.run_tick(&tick);
+                        tick_number = Some(tick.tick_number);
+
+                        client.send(&ClientMessage::StartingTick {
+                            tick: tick.tick_number
+                        });
+                    }
                 }
 
                 if let Some(tick) = tick_number {
@@ -113,7 +125,21 @@ fn main() {
                 }
 
             }
+            Event::Idle(_) => {
+                loop {
+                    match client.service().unwrap() {
+                        Some(message) => continue,
+                        None => break
+                    };
+                };
+            }
             Event::Input(input) => {
+                match input {
+                    Input::Press(Button::Keyboard(Key::Escape)) =>
+                        return,
+                    _ => ()
+                };
+
                 player_input_map.update_player_input(&input, &mut player_input);
             }
             _ => ()
