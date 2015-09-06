@@ -37,11 +37,10 @@ components! {
 
         #[hot] position: Position,
         #[hot] orientation: Orientation,
+        #[cold] player_state: PlayerState,
 
         #[hot] interp_state_orientation: InterpolationState<Orientation>,
         #[hot] interp_state_position: InterpolationState<Position>,
-
-        #[cold] player_state: PlayerState,
 
         #[cold] draw_player: DrawPlayer,
     }

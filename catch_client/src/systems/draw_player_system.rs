@@ -5,6 +5,7 @@ use ecs::system::EntityProcess;
 use graphics;
 use graphics::context::Context;
 use graphics::Transformed;
+use graphics::line::Line;
 use opengl_graphics::{GlGraphics, Texture};
 
 use shared::util::CachedAspect;
@@ -27,7 +28,10 @@ impl DrawPlayerSystem {
             //let transform = c.transform.translate(
             let p = data.position[entity].p;
             //println!("{:?}", data.position[entity].p);
-            graphics::ellipse([1.0, 0.0, 1.0, 1.0], [0.0, 0.0, 10.0, 10.0], c.trans(p[0], p[1]).transform, gl);
+            // TODO: Store this somwehere
+            let w = 16.0;
+            let h = 16.0;
+            graphics::ellipse([1.0, 0.0, 1.0, 1.0], [0.0, 0.0, w, h], c.trans(p[0] - w/2.0, p[1] - h/2.0).transform, gl);
         }
     }
 }

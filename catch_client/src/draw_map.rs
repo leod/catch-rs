@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use graphics::Transformed;
 use graphics::{Context, Image, default_draw_state};
 use opengl_graphics::{GlGraphics, Texture};
 
@@ -43,8 +44,7 @@ impl DrawMap {
         for (tile_x, tile_y, tile) in map.iter_layer(id) {
             match tile {
                 Some(Tile { tileset, x: tileset_x, y: tileset_y }) => {
-                    let image = Image::new().rect([(tile_x * width) as f64,
-                                                   (tile_y * height) as f64,
+                    let image = Image::new().rect([0.0, 0.0,
                                                    (width as f64),
                                                    (height as f64)])
                                             .src_rect([(tileset_x * width) as i32,
@@ -52,8 +52,8 @@ impl DrawMap {
                                                        (width as i32),
                                                        (height as i32)]);
                     let texture = &self.tileset_textures[id.to_index()];
-                    let transform = c.transform;
-                    image.draw(texture, default_draw_state(), transform, gl);
+                    let transform = c.zoom(10.0).trans((tile_x * width) as f64, (tile_y * height) as f64).transform;
+                    image.draw(texture, &c.draw_state, transform, gl);
                 }
                 None => continue
             }

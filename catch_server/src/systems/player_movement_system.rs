@@ -19,14 +19,28 @@ impl PlayerMovementSystem {
                             entity: ecs::Entity,
                             input: &PlayerInput,
                             data: &mut DataHelper<Components, Services>) {
-        data.with_entity_data(&entity, |e, c| {
-            /*if input.left_pressed {
-                c.position[e].o
-            }*/
+        // TODO: This is just for testing
+        const TURN_SPEED: f64 = 0.15;
+        const MOVE_SPEED: f64 = 5.0;
 
-            // TODO: This is just for testing
+        data.with_entity_data(&entity, |e, c| {
+            if input.left_pressed {
+                c.orientation[e].angle -= TURN_SPEED;
+            }
+            if input.right_pressed {
+                c.orientation[e].angle += TURN_SPEED;
+            }
+            
+            let velocity = [
+                c.orientation[e].angle.cos() * MOVE_SPEED,
+                c.orientation[e].angle.sin() * MOVE_SPEED
+            ];
+            
             if input.forward_pressed {
-                c.position[e].p = math::add(c.position[e].p, [10.0, 0.0]);
+                c.position[e].p = math::add(c.position[e].p, velocity);
+            }
+            if input.back_pressed {
+                c.position[e].p = math::sub(c.position[e].p, velocity);
             }
         });
     }
