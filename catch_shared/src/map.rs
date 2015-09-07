@@ -1,3 +1,4 @@
+use std::io;
 use std::fs::File;
 use std::path::Path;
 
@@ -172,37 +173,40 @@ impl Map {
         TileIter::new(self, id.to_index())
     }
 
-    pub fn line_segment_intersection(&self, p: math::Vec2, q: math::Vec2) -> Option<(usize, usize, f64)> {
+    pub fn line_segment_intersection(&self, p: math::Vec2, q: math::Vec2) -> Option<(usize, usize, math::Vec2, f64)> {
         let mut i_min = None;
 
         for (x_i, y_i, tile) in self.iter_layer(LayerId::Block) {
             if let Some(_) = tile {
-                let x = x_i as f64;
-                let y = y_i as f64;
+                let x = x_i as f64 * self.tile_width() as f64;
+                let y = y_i as f64 * self.tile_width() as f64;
                 let w = self.tile_width() as f64;
                 let h = self.tile_height() as f64;
 
-                let i1 = math::line_segments_intersection(p, q, [x, y], [x+w, y]);
-                let i2 = math::line_segments_intersection(p, q, [x, y], [x, y+h]);
-                let i3 = math::line_segments_intersection(p, q, [x+w, y], [x+w, y+h]);
-                let i4 = math::line_segments_intersection(p, q, [x, y+h], [x+w, y+h]);
+                let i1 = math::line_segments_intersection(p, q, [x, y], [x+w, y])
+                             .map(|t| ([0.0, -1.0], t));
+
+                let i2 = math::line_segments_intersection(p, q, [x, y], [x, y+h])
+                             .map(|t| ([-1.0, 0.0], t));
+
+                let i3 = math::line_segments_intersection(p, q, [x+w, y], [x+w, y+h])
+                             .map(|t| ([1.0, 0.0], t));
+
+                let i4 = math::line_segments_intersection(p, q, [x, y+h], [x+w, y+h])
+                             .map(|t| ([0.0, 1.0], t));
 
                 let i = math::min_intersection(math::min_intersection(i1, i2),
-                                               math::min_intersection(i3, i4));
+                                               math::min_intersection(i3, i4))
+                             .map(|(n, t)| ((x_i, y_i, n), t));
 
-                i_min = match (i_min, i) {
-                    (Some((x2, y2, s)), Some(t)) =>
-                        if s <= t { Some((x2, y2, s)) } else { Some((x_i, y_i, t)) },
-                    (Some((x2, y2, s)), None) =>
-                        Some((x2, y2, s)),
-                    (None, Some(t)) => 
-                        Some((x_i, y_i, t)),
-                    (None, None) =>
-                        None
-                };
+                i_min = math::min_intersection(i_min, i);
             }
         }
 
-        i_min
+        if i_min.is_some() {
+            println!("{:?}", i_min.unwrap());
+        }
+
+        i_min.map(|((x, y, n), t)| (x, y, n, t))
     }
 }

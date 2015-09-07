@@ -16,6 +16,46 @@ impl PlayerMovementSystem {
         PlayerMovementSystem
     }
 
+    fn move_straight(&self,
+                     e: EntityData<Components>,
+                     delta: math::Vec2,
+                     map: &Map,
+                     data: &mut Components) {
+        let p = data.position[e].p;
+        let q = math::add(p, delta);
+
+        data.position[e].p = match map.line_segment_intersection(p, q) {
+            Some((_, _, n, s)) => // Walk as far as we can
+                math::add(p, math::scale(delta, s)),
+            None =>
+                q
+        };
+    }
+
+    fn move_sliding(&self,
+                    e: EntityData<Components>,
+                    delta: math::Vec2,
+                    map: &Map,
+                    data: &mut Components) {
+        let p = data.position[e].p;
+        let q = math::add(p, delta);
+
+        match map.line_segment_intersection(p, q) {
+            Some((tx, ty, n, s)) => {
+                // We walked into a surface with normal n.
+                // Find parts of delta parallel and orthogonal to n
+                let u = math::scale(n, math::dot(delta, n));
+                let v = math::sub(delta, u);
+
+                self.move_straight(e, u, map, data);
+                self.move_straight(e, v, map, data);
+            }
+            None => {
+                data.position[e].p = q;
+            }
+        };
+    }
+
     pub fn run_player_input(&self,
                             entity: ecs::Entity,
                             input: &PlayerInput,
@@ -39,16 +79,11 @@ impl PlayerMovementSystem {
             ];
             
             if input.forward_pressed {
-                let p = c.position[e].p;
-                let q = math::add(c.position[e].p, velocity);
+                self.move_sliding(e, velocity, map, c);
 
-                c.position[e].p = match map.line_segment_intersection(p, q) {
-                    Some((tx, ty, s)) => p,
-                    None => q
-                };
             }
             if input.back_pressed {
-                c.position[e].p = math::sub(c.position[e].p, velocity);
+                self.move_sliding(e, math::neg(velocity), map, c);
             }
         });
     }

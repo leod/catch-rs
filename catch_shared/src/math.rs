@@ -1,6 +1,7 @@
 use vecmath_lib;
 
 pub use vecmath_lib::vec2_dot as dot;
+pub use vecmath_lib::vec2_neg as neg;
 pub use vecmath_lib::vec2_cross as cross;
 pub use vecmath_lib::vec2_add as add;
 pub use vecmath_lib::vec2_sub as sub;
@@ -14,28 +15,44 @@ pub type Vec2 = vecmath_lib::Vector2<Scalar>;
 
 pub const EPSILON: Scalar = 10e-9; // TODO: Epsilon
 
-pub fn line_segments_intersection(p1: Vec2, q1: Vec2, p2: Vec2, q2: Vec2) -> Option<f64> {
-    let a = q1[0] - p1[0];
-    let b = p2[0] + q2[0];
-    let e = p2[0] - p1[0];
+pub fn line_segments_intersection(a: Vec2, b: Vec2, p: Vec2, q: Vec2) -> Option<f64> {
+    // a + s*(b-a) = p + t*(q-p)
+    //          <=>
+    // s*(b-a) - t*(q-p) = p-a 
+    //          <=>
+    // s*(b[0]-a[0]) - t*(q[0]-p[0]) = p[0]-a[0] 
+    //          and
+    // s*(b[1]-a[1]) - t*(q[1]-p[1]) = p[1]-a[1] 
+    //          <=>
+    // |b[0]-a[0]    p[0]-q[0]| |s| = |p[0]-a[0]|
+    // |b[1]-a[1]    p[1]-q[1]| |t| = |p[1]-a[1]|
 
-    let c = q1[1] - p1[1];
-    let d = p2[1] + q2[1];
-    let f = p2[1] - p1[1];
+    let x = b[0] - a[0];
+    let y = p[0] - q[0];
+    let z = p[0] - a[0];
 
-    // Solve |a b| * |s| = |e| for s and t
-    //       |c d|   |t|   |f|
+    let u = b[1] - a[1];
+    let v = p[1] - q[1];
+    let w = p[1] - a[1];
 
-    let det = a * d - b * c;
+    // Solve |x y| * |s| = |z| for s and t
+    //       |u v|   |t|   |w|
+    //
+    // |s| = 1/det * |v -y| * |z|
+    // |t|           |-u v|   |w|
+    //
+    // where det = x*v - y*u
 
-    if det < EPSILON {
+    let det = x * v - y * u;
+
+    if det.abs() < EPSILON {
         return None;
     }
 
     let inv_det = 1.0 / det;
 
-    let s = inv_det * (d * e - b * f);
-    let t = inv_det * (a * f - c * e);
+    let s = inv_det * (v * z - y * w);
+    let t = inv_det * (x * w - u * z);
 
     if s >= 0.0 && s <= 1.0 && t >= 0.0 && t <= 1.0 {
         Some(s)
@@ -44,11 +61,12 @@ pub fn line_segments_intersection(p1: Vec2, q1: Vec2, p2: Vec2, q2: Vec2) -> Opt
     }
 }
 
-pub fn min_intersection(a: Option<f64>, b: Option<f64>) -> Option<f64> {
+pub fn min_intersection<T>(a: Option<(T, f64)>, b: Option<(T, f64)>) -> Option<(T, f64)> {
     match (a, b) {
-        (Some(x), Some(y)) => Some(x.min(y)),
-        (Some(x), None) => Some(x),
-        (None, Some(y)) => Some(y),
+        (Some((x, s)), Some((y, t))) => 
+            if s < t { Some((x, s)) } else { Some((y, t)) },
+        (Some((x, s)), None) => Some((x, s)),
+        (None, Some((y, t))) => Some((y, t)),
         (None, None) => None
     }
 }

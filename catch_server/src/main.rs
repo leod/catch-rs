@@ -227,13 +227,13 @@ impl Server {
             }
             &ClientMessage::PlayerInput { ref tick, ref input } => {
                 if input.any() {
-                    println!("Received input from {}: {:?}", player_id, input);
+                    //println!("Received input from {}: {:?}", player_id, input);
 
                     self.game_state.on_player_input(player_id, *tick, input);
                 }
             }
             &ClientMessage::StartingTick { ref tick } => {
-                println!("client started tick {}, we are at {} (d={}={}ms)", tick, self.tick_time(), self.tick_time() - *tick as f64, (self.tick_time() - *tick as f64) * 1000.0 / self.game_info.ticks_per_second as f64);
+                //println!("client started tick {}, we are at {} (d={}={}ms)", tick, self.tick_time(), self.tick_time() - *tick as f64, (self.tick_time() - *tick as f64) * 1000.0 / self.game_info.ticks_per_second as f64);
 
                 self.clients.get_mut(&player_id).unwrap().at_tick = Some(*tick);
             }
