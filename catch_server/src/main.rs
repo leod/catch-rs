@@ -56,7 +56,7 @@ struct Server {
 }
 
 impl Server {
-    fn start(game_info: GameInfo,
+    fn start(game_info: &GameInfo,
              port: u16,
              peer_count: u32) -> Result<Server, String> {
         let host = try!(enet::Host::new_server(port, peer_count,
@@ -69,11 +69,11 @@ impl Server {
         let tick_duration = Duration::nanoseconds(tick_duration_ns as i64);
 
         Ok(Server {
-            game_info: game_info,
+            game_info: game_info.clone(),
             host: host,
             player_id_counter: 0,
             clients: HashMap::new(),
-            game_state: GameState::new(),
+            game_state: GameState::new(game_info),
             tick_timer: PeriodicTimer::new(tick_duration),
         })
     }
@@ -307,7 +307,7 @@ fn main() {
         ticks_per_second: 20
     };
 
-    match Server::start(game_info, 2338, 32).as_mut() {
+    match Server::start(&game_info, 2338, 32).as_mut() {
         Ok(server) =>
             server.run(),
         Err(error) =>

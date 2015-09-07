@@ -4,7 +4,8 @@ use ecs;
 
 use shared::net;
 use shared::math;
-use shared::net::TickNumber;
+use shared::map::Map;
+use shared::net::{TickNumber, GameInfo};
 use shared::tick::Tick;
 use shared::event::GameEvent;
 use shared::player::{PlayerId, PlayerInfo, PlayerInput};
@@ -31,6 +32,9 @@ impl Player {
 }
 
 pub struct GameState {
+    pub game_info: GameInfo,
+    pub map: Map,
+
     pub world: ecs::World<Systems>, 
     pub tick_number: TickNumber,
 
@@ -38,8 +42,10 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn new() -> GameState {
+    pub fn new(game_info: &GameInfo) -> GameState {
         GameState {
+            game_info: game_info.clone(),
+            map: Map::load(&game_info.map_name).unwrap(),
             world: ecs::World::new(),
             tick_number: 0,
             players: HashMap::new(),
@@ -95,7 +101,8 @@ impl GameState {
                             input_client_tick: net::TickNumber, input: &PlayerInput) {
         let entity = self.world.systems.net_entity_system.get_entity(net_entity_id);
 
-        self.world.systems.player_movement_system.run_player_input(entity, input, &mut self.world.data);
+        self.world.systems.player_movement_system
+            .run_player_input(entity, input, &self.map, &mut self.world.data);
 
         // Tell the player in that their input has been processed.
         // TODO: Should this be done on a level thats finer than ticks?!
@@ -119,7 +126,8 @@ impl GameState {
                 }
             }
             for player_id in new_players {
-                self.world.systems.net_entity_system.replicate_entities(player_id, &mut self.world.data);
+                self.world.systems.net_entity_system
+                    .replicate_entities(player_id, &mut self.world.data);
             }
         }
 

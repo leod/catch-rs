@@ -3,6 +3,7 @@ use ecs::{Process, System, EntityData, DataHelper};
 use ecs::system::EntityProcess;
 
 use shared::math;
+use shared::map::Map;
 use shared::player::{PlayerInput};
 use shared::event::GameEvent;
 use components::*;
@@ -18,10 +19,11 @@ impl PlayerMovementSystem {
     pub fn run_player_input(&self,
                             entity: ecs::Entity,
                             input: &PlayerInput,
+                            map: &Map,
                             data: &mut DataHelper<Components, Services>) {
         // TODO: This is just for testing
-        const TURN_SPEED: f64 = 0.15;
-        const MOVE_SPEED: f64 = 5.0;
+        const TURN_SPEED: f64 = 0.3;
+        const MOVE_SPEED: f64 = 10.0;
 
         data.with_entity_data(&entity, |e, c| {
             if input.left_pressed {
@@ -37,7 +39,13 @@ impl PlayerMovementSystem {
             ];
             
             if input.forward_pressed {
-                c.position[e].p = math::add(c.position[e].p, velocity);
+                let p = c.position[e].p;
+                let q = math::add(c.position[e].p, velocity);
+
+                c.position[e].p = match map.line_segment_intersection(p, q) {
+                    Some((tx, ty, s)) => p,
+                    None => q
+                };
             }
             if input.back_pressed {
                 c.position[e].p = math::sub(c.position[e].p, velocity);
