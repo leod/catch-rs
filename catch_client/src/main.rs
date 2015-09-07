@@ -73,10 +73,13 @@ fn main() {
                 gl.draw(render_args.viewport(), |c, gl| {
                     graphics::clear([0.0, 0.0, 0.0, 0.0], gl);
                     
-                    // my eyes
-                    let trans = match game_state.world.systems.net_entity_system.inner.as_mut().unwrap().my_player_entity_id() {
+                    let trans = match game_state.world.systems.net_entity_system.inner
+                                                .as_mut().unwrap().my_player_entity_id() {
                         Some(player_entity_id) => {
-                            let player_entity = game_state.world.systems.net_entity_system.inner.as_mut().unwrap().get_entity(player_entity_id).unwrap();
+                            let player_entity = game_state.world.systems.net_entity_system.inner
+                                                          .as_mut().unwrap()
+                                                          .get_entity(player_entity_id)
+                                                          .unwrap();
 
                             game_state.world.with_entity_data(&player_entity, |e, c| {
                                 c.position[e].p
@@ -110,7 +113,11 @@ fn main() {
                     while client.num_ticks() > 0 {
                         let (time_recv, tick) = client.pop_next_tick();
 
-                        println!("Starting tick {}, {:?} delay, {} ticks queued", tick.tick_number, (time::get_time() - time_recv).num_milliseconds(), client.num_ticks());
+                        println!("Starting tick {}, {:?} delay, {} ticks queued",
+                                 tick.tick_number,
+                                 (time::get_time() - time_recv).num_milliseconds(),
+                                 client.num_ticks());
+
                         game_state.run_tick(&tick);
                         tick_number = Some(tick.tick_number);
 
@@ -141,10 +148,9 @@ fn main() {
                 match input {
                     Input::Press(Button::Keyboard(Key::Escape)) =>
                         return,
-                    _ => ()
+                    _ => 
+                        player_input_map.update_player_input(&input, &mut player_input)
                 };
-
-                player_input_map.update_player_input(&input, &mut player_input);
             }
             _ => ()
         };

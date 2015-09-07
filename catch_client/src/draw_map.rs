@@ -47,12 +47,12 @@ impl DrawMap {
                     let image = Image::new().rect([0.0, 0.0,
                                                    (width as f64),
                                                    (height as f64)])
-                                            .src_rect([(tileset_x * width) as i32,
-                                                       (tileset_y * height) as i32,
-                                                       (width as i32),
-                                                       (height as i32)]);
+                                            .src_rect([(tileset_x * width) as i32 -1 ,
+                                                       (tileset_y * height) as i32 -1 ,
+                                                       (width as i32)-1,
+                                                       (height as i32)-1]);
                     let texture = &self.tileset_textures[id.to_index()];
-                    let transform = c.zoom(10.0).trans((tile_x * width) as f64, (tile_y * height) as f64).transform;
+                    let transform = c./*zoom(10.0).*/trans((tile_x * width) as f64, (tile_y * height) as f64).transform;
                     image.draw(texture, &c.draw_state, transform, gl);
                 }
                 None => continue
