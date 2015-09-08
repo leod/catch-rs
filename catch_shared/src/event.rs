@@ -1,6 +1,7 @@
 use player::PlayerId;
 use net::{EntityId, EntityTypeId};
 use net::{TickNumber};
+use item::ItemType;
 
 #[derive(Clone, CerealData)]
 pub enum GameEvent {
@@ -16,4 +17,7 @@ pub enum GameEvent {
     // that this tick contains the server-side state for the player state
     // after some input by the player was processed on the server
     CorrectState(TickNumber),
+
+    TakeItem(PlayerId, ItemType),
+    UseItem(PlayerId, ItemType),
 }

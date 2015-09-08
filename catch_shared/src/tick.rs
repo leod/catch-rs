@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use components::{Position, Orientation, LinearVelocity, PlayerState};
+use components::{Position, Orientation, LinearVelocity, PlayerState, ItemSpawn};
 use event::GameEvent;
 use net;
 
@@ -13,6 +13,7 @@ pub struct NetState {
     pub orientation: ComponentsNetState<Orientation>,
     pub linear_velocity: ComponentsNetState<LinearVelocity>,
     pub player_state: ComponentsNetState<PlayerState>,
+    pub item_spawn: ComponentsNetState<ItemSpawn>,
 }
 
 #[derive(CerealData)]
@@ -29,6 +30,7 @@ impl NetState {
             orientation: HashMap::new(),
             linear_velocity: HashMap::new(),
             player_state: HashMap::new(),
+            item_spawn: HashMap::new(),
         }
     }
 }

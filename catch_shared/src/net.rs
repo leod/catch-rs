@@ -71,7 +71,8 @@ pub enum ComponentType {
     Position,
     Orientation,
     LinearVelocity,
-    PlayerState
+    PlayerState,
+    ItemSpawn
 }
 
 pub trait StateComponent<T: ComponentManager> {

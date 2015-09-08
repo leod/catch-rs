@@ -7,6 +7,7 @@ use ecs::{ComponentManager, ComponentList, BuildData, EntityData};
 use net::{StateComponent, EntityId, EntityTypeId, COMPONENT_TYPES, ComponentType};
 use player::PlayerId;
 use tick::NetState;
+use item::ItemType;
 use math;
 
 /// Every entity that wants its component state synchronized needs to have this component
@@ -35,6 +36,11 @@ pub struct LinearVelocity {
 pub struct PlayerState {
     pub color: u32,
     pub dashing: Option<f64>,
+}
+
+#[derive(CerealData, Clone)]
+pub struct ItemSpawn {
+    pub item: Option<ItemType>,
 }
 
 impl Default for Position {
@@ -70,6 +76,14 @@ impl Default for PlayerState {
     }
 }
 
+impl Default for ItemSpawn {
+    fn default() -> ItemSpawn {
+        ItemSpawn {
+            item: None,
+        }
+    }
+}
+
 // Some boilerplate code for each net component type follows...
 
 pub trait HasPosition {
@@ -90,6 +104,11 @@ pub trait HasLinearVelocity {
 pub trait HasPlayerState {
     fn player_state(&self) -> &ComponentList<Self, PlayerState>;
     fn player_state_mut(&mut self) -> &mut ComponentList<Self, PlayerState>;
+}
+
+pub trait HasItemSpawn {
+    fn item_spawn(&self) -> &ComponentList<Self, ItemSpawn>;
+    fn item_spawn_mut(&mut self) -> &mut ComponentList<Self, ItemSpawn>;
 }
 
 struct StateComponentImpl<C>(PhantomData<C>);
@@ -116,14 +135,16 @@ state_component_impl!(HasPosition, Position, position, position_mut);
 state_component_impl!(HasOrientation, Orientation, orientation, orientation_mut);
 state_component_impl!(HasLinearVelocity, LinearVelocity, linear_velocity, linear_velocity_mut);
 state_component_impl!(HasPlayerState, PlayerState, player_state, player_state_mut);
+state_component_impl!(HasItemSpawn, ItemSpawn, item_spawn, item_spawn_mut);
 
 pub type ComponentTypeTraits<T> = Vec<Box<StateComponent<T>>>;
 
 pub fn component_type_traits<T: ComponentManager +
                                 HasPosition +
                                 HasOrientation +
+                                HasLinearVelocity +
                                 HasPlayerState +
-                                HasLinearVelocity>() -> ComponentTypeTraits<T> {
+                                HasItemSpawn>() -> ComponentTypeTraits<T> {
     let mut traits = ComponentTypeTraits::<T>::new();
 
     for component_type in COMPONENT_TYPES.iter() {
@@ -136,6 +157,8 @@ pub fn component_type_traits<T: ComponentManager +
                 traits.push(Box::new(StateComponentImpl::<LinearVelocity>(PhantomData))),
             ComponentType::PlayerState =>
                 traits.push(Box::new(StateComponentImpl::<PlayerState>(PhantomData))),
+            ComponentType::ItemSpawn =>
+                traits.push(Box::new(StateComponentImpl::<ItemSpawn>(PhantomData))),
         };
     }
 

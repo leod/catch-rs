@@ -1,10 +1,12 @@
 use ecs::ComponentList;
 
 use shared::math;
-use shared::components::{HasPosition, HasOrientation, HasLinearVelocity, HasPlayerState};
+use shared::components::{HasPosition, HasOrientation,
+                         HasLinearVelocity, HasPlayerState,
+                         HasItemSpawn};
 pub use shared::components::{NetEntity, Position,
                              Orientation, LinearVelocity, 
-                             PlayerState,
+                             PlayerState, ItemSpawn,
                              ComponentTypeTraits,
                              component_type_traits};
 
@@ -40,6 +42,7 @@ components! {
         #[hot] orientation: Orientation,
         #[hot] linear_velocity: LinearVelocity,
         #[cold] player_state: PlayerState,
+        #[cold] item_spawn: ItemSpawn,
 
         #[hot] interp_state_position: InterpolationState<Position>,
         #[hot] interp_state_orientation: InterpolationState<Orientation>,
@@ -98,5 +101,14 @@ impl HasPlayerState for Components {
     }
     fn player_state_mut(&mut self) -> &mut ComponentList<Components, PlayerState> {
         &mut self.player_state
+    }
+}
+
+impl HasItemSpawn for Components {
+    fn item_spawn(&self) -> &ComponentList<Components, ItemSpawn> {
+        &self.item_spawn
+    }
+    fn item_spawn_mut(&mut self) -> &mut ComponentList<Components, ItemSpawn> {
+        &mut self.item_spawn
     }
 }

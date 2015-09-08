@@ -71,8 +71,7 @@ impl PlayerMovementSystem {
                 let n_angle = n[1].atan2(n[0]);
                 let angle = data.orientation[e].angle;
 
-                //data.orientation[e].angle = n_angle - (n_angle + angle);
-                data.orientation[e].angle = f64::consts::PI + n_angle - (angle - n_angle); //+ f64::consts::PI / 4.0;
+                data.orientation[e].angle = f64::consts::PI + n_angle - (angle - n_angle);
 
                 let v = data.linear_velocity[e].v;
                 let speed = math::square_len(v).sqrt();
