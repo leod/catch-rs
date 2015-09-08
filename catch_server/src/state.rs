@@ -14,7 +14,7 @@ pub struct Player {
     pub is_new: bool,
 
     pub info: PlayerInfo,
-    pub next_input: Option<(TickNumber, PlayerInput)>,
+    pub next_input: Vec<(TickNumber, PlayerInput)>,
     pub controlled_entity: Option<net::EntityId>
 }
 
@@ -23,7 +23,7 @@ impl Player {
         Player {
             is_new: true,
             info: info,
-            next_input: None,
+            next_input: Vec::new(),
             controlled_entity: None,
         }
     }
@@ -88,11 +88,13 @@ impl GameState {
         // It's probably a better idea to process PlayerInput as soon as it arrives at the
         // server...
 
-        if self.players[&id].next_input.is_some() {
-            println!("Warning: already have player input for {}", id);
+        if self.players[&id].next_input.len() > 0 {
+            println!("Already have player input for {}, queuing", id);
         }
 
-        self.players.get_mut(&id).as_mut().unwrap().next_input = Some((input_client_tick, input.clone()));
+        self.players.get_mut(&id).as_mut().unwrap().next_input.push(
+            (input_client_tick, input.clone()));
+        //self.players.get_mut(&id).as_mut().unwrap().next_input = Some((input_client_tick, input.clone()));
     }
 
     pub fn run_player_input(&mut self, player_id: PlayerId, net_entity_id: net::EntityId,
@@ -150,10 +152,12 @@ impl GameState {
         {
             let mut input = Vec::new();
             for (player_id, player) in self.players.iter() {
-                match (player.controlled_entity, &player.next_input) {
-                    (Some(net_entity_id),
-                     &Some((ref input_client_tick, ref player_input))) => 
-                         input.push((*player_id, net_entity_id, *input_client_tick, player_input.clone())),
+                match player.controlled_entity {
+                    Some(net_entity_id) => {
+                        for &(ref input_client_tick, ref player_input) in &player.next_input {
+                            input.push((*player_id, net_entity_id, *input_client_tick, player_input.clone()));
+                        }
+                    }
                     _ => {}
                 }
             }
@@ -163,7 +167,7 @@ impl GameState {
         }
 
         for (_, player) in self.players.iter_mut() {
-            player.next_input = None;
+            player.next_input.clear();
         }
 
         process!(self.world, net_entity_system);

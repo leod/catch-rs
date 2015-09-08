@@ -77,8 +77,8 @@ impl PlayerMovementSystem {
                 let v = data.linear_velocity[e].v;
                 let speed = math::square_len(v).sqrt();
                 data.linear_velocity[e].v = [
-                    data.orientation[e].angle.cos() * (speed + 4.0),
-                    data.orientation[e].angle.sin() * (speed + 4.0),
+                    data.orientation[e].angle.cos() * (speed + 1.0),
+                    data.orientation[e].angle.sin() * (speed + 1.0),
                 ];
                     //math::sub(math::scale(n, 2.0 * math::dot(v, n)), v);
 
