@@ -41,10 +41,11 @@ fn main() {
     let window = GlutinWindow::new(
         WindowSettings::new(
             "catching game",
-            [1024, 768]
+            [800, 600]
         )
         .opengl(opengl)
         .exit_on_esc(true)
+        .vsync(true)
     ).unwrap();
 
     // Connect
@@ -134,7 +135,6 @@ fn main() {
                         input: player_input.clone()
                     });
                 }
-
             }
             Event::Idle(_) => {
                 loop {

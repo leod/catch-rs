@@ -63,7 +63,10 @@ impl PlayerMovementSystem {
                             data: &mut DataHelper<Components, Services>) {
         // TODO: This is just for testing
         const TURN_SPEED: f64 = 0.3;
+        const MOVE_ACCEL: f64 = 6.0;
+        const BACK_ACCEL: f64 = 3.0;
         const MOVE_SPEED: f64 = 10.0;
+        const MIN_SPEED: f64 = 0.001;
 
         data.with_entity_data(&entity, |e, c| {
             if input.left_pressed {
@@ -72,19 +75,33 @@ impl PlayerMovementSystem {
             if input.right_pressed {
                 c.orientation[e].angle += TURN_SPEED;
             }
-            
-            let velocity = [
-                c.orientation[e].angle.cos() * MOVE_SPEED,
-                c.orientation[e].angle.sin() * MOVE_SPEED
-            ];
-            
+
+            let velocity = c.linear_velocity[e].v;
+            let angle = c.orientation[e].angle;
+
+            let mut accel = math::scale(velocity, -0.4);
+
             if input.forward_pressed {
-                self.move_sliding(e, velocity, map, c);
-                //self.move_straight(e, velocity, map, c);
+                accel = math::add([angle.cos() * MOVE_ACCEL,
+                                   angle.sin() * MOVE_ACCEL],
+                                  accel);
             }
             if input.back_pressed {
-                self.move_sliding(e, math::neg(velocity), map, c);
+                accel = math::add([-angle.cos() * BACK_ACCEL,
+                                   -angle.sin() * BACK_ACCEL],
+                                  accel);
             }
+
+            c.linear_velocity[e].v = math::add(c.linear_velocity[e].v, accel);
+
+            if c.linear_velocity[e].v[0].abs() <= MIN_SPEED {
+                c.linear_velocity[e].v[0] = 0.0;
+            }
+            if c.linear_velocity[e].v[1].abs() <= MIN_SPEED {
+                c.linear_velocity[e].v[1] = 0.0;
+            }
+
+            self.move_sliding(e, c.linear_velocity[e].v, map, c);
         });
     }
 }
