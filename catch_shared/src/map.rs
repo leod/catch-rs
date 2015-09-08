@@ -178,8 +178,8 @@ impl Map {
 
         for (x_i, y_i, tile) in self.iter_layer(LayerId::Block) {
             if let Some(_) = tile {
-                let x = x_i as f64 * self.tile_width() as f64;
-                let y = y_i as f64 * self.tile_width() as f64;
+                let x = (x_i * self.tile_width()) as f64;
+                let y = (y_i * self.tile_width()) as f64;
                 let w = self.tile_width() as f64;
                 let h = self.tile_height() as f64;
 
@@ -203,9 +203,9 @@ impl Map {
             }
         }
 
-        if i_min.is_some() {
+        /*if i_min.is_some() {
             println!("{:?}", i_min.unwrap());
-        }
+        }*/
 
         i_min.map(|((x, y, n), t)| (x, y, n, t))
     }

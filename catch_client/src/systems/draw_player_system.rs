@@ -31,7 +31,20 @@ impl DrawPlayerSystem {
             // TODO: Store this somwehere
             let w = 16.0;
             let h = 16.0;
-            graphics::ellipse([1.0, 0.0, 1.0, 1.0], [0.0, 0.0, w, h], c.trans(p[0] - w/2.0, p[1] - h/2.0).transform, gl);
+
+            let transform = c.trans(p[0], p[1])
+                             .rot_rad(data.orientation[entity].angle)
+                             //.trans(-w/2.0, -h/2.0)
+                             .transform;
+
+            graphics::ellipse([1.0, 0.0, 1.0, 1.0],
+                              [-w/2.0, -h/2.0, w, h],
+                              transform,
+                              gl);
+            graphics::rectangle([0.0, 0.0, 0.0, 1.0],
+                                [0.0, -2.0, 12.0, 4.0],
+                                transform,
+                                gl);
         }
     }
 }

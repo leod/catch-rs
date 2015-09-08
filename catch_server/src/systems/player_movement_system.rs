@@ -25,8 +25,10 @@ impl PlayerMovementSystem {
         let q = math::add(p, delta);
 
         data.position[e].p = match map.line_segment_intersection(p, q) {
-            Some((_, _, n, s)) => // Walk as far as we can
-                math::add(p, math::scale(delta, s)),
+            Some((x, y, n, s)) => { // Walk as far as we can
+                let s = (s - 0.00001).max(0.0);
+                math::add(p, math::scale(delta, s))
+            }
             None =>
                 q
         };
@@ -80,7 +82,7 @@ impl PlayerMovementSystem {
             
             if input.forward_pressed {
                 self.move_sliding(e, velocity, map, c);
-
+                //self.move_straight(e, velocity, map, c);
             }
             if input.back_pressed {
                 self.move_sliding(e, math::neg(velocity), map, c);

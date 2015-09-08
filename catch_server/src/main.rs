@@ -15,6 +15,7 @@ pub mod state;
 
 use std::collections::HashMap;
 use std::io::Read;
+use std::thread;
 use time::{Duration, Timespec};
 
 use cereal::CerealData;
@@ -293,6 +294,8 @@ impl Server {
             //println!("Delta: {:?}", new_time - loop_time);
 
             loop_time = new_time;
+
+            thread::sleep_ms(1);
         }
     }
 }
