@@ -58,7 +58,8 @@ impl NetEntitySystem {
         assert!(self.entity_types.get(entity_type_id as usize).is_some(),
                 "Unknown net entity type id");
 
-        let entity = data.create_entity(|entity: BuildData<Components>, data: &mut Components| {
+        let entity = data.create_entity(|entity: BuildData<Components>,
+                                         data: &mut Components| {
             data.net_entity.add(&entity, NetEntity {
                 id: self.id_counter,
                 type_id: entity_type_id,

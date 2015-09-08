@@ -81,7 +81,10 @@ impl GameState {
         &self.players[&id].info
     }
 
-    pub fn on_player_input(&mut self, id: PlayerId, input_client_tick: TickNumber, input: &PlayerInput) {
+    pub fn on_player_input(&mut self,
+                           id: PlayerId,
+                           input_client_tick: TickNumber,
+                           input: &PlayerInput) {
         // TODO: Should we be able to queue multiple inputs for each player?
         // Currently, the idea is for the clients to send one PlayerInput per tick.
         // Is it enough for the server to be able to execute one PlayerInput per tick?
@@ -97,8 +100,11 @@ impl GameState {
         //self.players.get_mut(&id).as_mut().unwrap().next_input = Some((input_client_tick, input.clone()));
     }
 
-    pub fn run_player_input(&mut self, player_id: PlayerId, net_entity_id: net::EntityId,
-                            input_client_tick: net::TickNumber, input: &PlayerInput) {
+    pub fn run_player_input(&mut self,
+                            player_id: PlayerId,
+                            net_entity_id: net::EntityId,
+                            input_client_tick: net::TickNumber,
+                            input: &PlayerInput) {
         let entity = self.world.systems.net_entity_system.get_entity(net_entity_id);
 
         self.world.systems.player_movement_system
@@ -155,14 +161,20 @@ impl GameState {
                 match player.controlled_entity {
                     Some(net_entity_id) => {
                         for &(ref input_client_tick, ref player_input) in &player.next_input {
-                            input.push((*player_id, net_entity_id, *input_client_tick, player_input.clone()));
+                            input.push((*player_id,
+                                        net_entity_id,
+                                        *input_client_tick,
+                                        player_input.clone()));
                         }
                     }
                     _ => {}
                 }
             }
             for (player_id, net_entity_id, input_client_tick, player_input) in input {
-                self.run_player_input(player_id, net_entity_id, input_client_tick, &player_input);
+                self.run_player_input(player_id,
+                                      net_entity_id,
+                                      input_client_tick,
+                                      &player_input);
             }
         }
 

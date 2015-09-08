@@ -175,6 +175,8 @@ impl Map {
     pub fn line_segment_intersection(&self, p: math::Vec2, q: math::Vec2) -> Option<(usize, usize, math::Vec2, f64)> {
         let mut i_min = None;
 
+        // TODO: Determine what tiles to check using some kind of bresenham
+
         for (x_i, y_i, tile) in self.iter_layer(LayerId::Block) {
             if let Some(_) = tile {
                 let x = (x_i * self.tile_width()) as f64;
