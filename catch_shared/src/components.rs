@@ -31,7 +31,8 @@ pub struct LinearVelocity {
 
 #[derive(CerealData, Clone)]
 pub struct PlayerState {
-    pub color: u32
+    pub color: u32,
+    pub dashing: Option<f64>,
 }
 
 impl Default for Position {
@@ -62,6 +63,7 @@ impl Default for PlayerState {
     fn default() -> PlayerState {
         PlayerState {
             color: 0,
+            dashing: None,
         }
     }
 }

@@ -74,7 +74,6 @@ impl PlayerMovementSystem {
                 //data.orientation[e].angle = n_angle - (n_angle + angle);
                 data.orientation[e].angle = f64::consts::PI + n_angle - (angle - n_angle); //+ f64::consts::PI / 4.0;
 
-                // Reflect velocity at the normal
                 let v = data.linear_velocity[e].v;
                 let speed = math::square_len(v).sqrt();
                 data.linear_velocity[e].v = [
@@ -97,44 +96,61 @@ impl PlayerMovementSystem {
                             input: &PlayerInput,
                             map: &Map,
                             data: &mut DataHelper<Components, Services>) {
-        // TODO: This is just for testing
+        // TODO: Scale for time
         const TURN_SPEED: f64 = 0.3;
-        const MOVE_ACCEL: f64 = 6.0;
+        const MOVE_ACCEL: f64 = 5.0;
         const BACK_ACCEL: f64 = 3.0;
         const MOVE_SPEED: f64 = 10.0;
         const MIN_SPEED: f64 = 0.001;
+        const DASH_SPEED: f64 = 30.0;
 
         data.with_entity_data(&entity, |e, c| {
-            if input.left_pressed {
-                c.orientation[e].angle -= TURN_SPEED;
-            }
-            if input.right_pressed {
-                c.orientation[e].angle += TURN_SPEED;
-            }
-
-            let velocity = c.linear_velocity[e].v;
             let angle = c.orientation[e].angle;
+            let direction = [angle.cos(), angle.sin()];
 
-            let mut accel = math::scale(velocity, -0.4);
+            if let Some(dashing) = c.player_state[e].dashing {
+                //c.linear_velocity[e].v 
+                let target = math::scale(direction, DASH_SPEED);
+                c.linear_velocity[e].v = math::add(c.linear_velocity[e].v,
+                                                   math::scale(math::sub(target, c.linear_velocity[e].v), 0.2));
+                c.player_state[e].dashing = if dashing + 0.2 < 1.0 {
+                    Some(dashing + 0.1)
+                } else {
+                    None
+                }
+            } else {
+                if input.left_pressed {
+                    c.orientation[e].angle -= TURN_SPEED;
+                }
+                if input.right_pressed {
+                    c.orientation[e].angle += TURN_SPEED;
+                }
 
-            if input.forward_pressed {
-                accel = math::add([angle.cos() * MOVE_ACCEL,
-                                   angle.sin() * MOVE_ACCEL],
-                                  accel);
-            }
-            if input.back_pressed {
-                accel = math::add([-angle.cos() * BACK_ACCEL,
-                                   -angle.sin() * BACK_ACCEL],
-                                  accel);
-            }
+                let velocity = c.linear_velocity[e].v;
 
-            c.linear_velocity[e].v = math::add(c.linear_velocity[e].v, accel);
+                let mut accel = math::scale(velocity, -0.4);
 
-            if c.linear_velocity[e].v[0].abs() <= MIN_SPEED {
-                c.linear_velocity[e].v[0] = 0.0;
-            }
-            if c.linear_velocity[e].v[1].abs() <= MIN_SPEED {
-                c.linear_velocity[e].v[1] = 0.0;
+
+                if input.forward_pressed {
+                    accel = math::add(math::scale(direction, MOVE_ACCEL), accel);
+                }
+                if input.back_pressed {
+                    accel = math::add(math::scale(direction, -MOVE_ACCEL), accel);
+                }
+
+                c.linear_velocity[e].v = math::add(c.linear_velocity[e].v, accel);
+
+                if c.linear_velocity[e].v[0].abs() <= MIN_SPEED {
+                    c.linear_velocity[e].v[0] = 0.0;
+                }
+                if c.linear_velocity[e].v[1].abs() <= MIN_SPEED {
+                    c.linear_velocity[e].v[1] = 0.0;
+                }
+
+                if input.dash_pressed {
+                    c.player_state[e].dashing = Some(0.0);
+                    c.linear_velocity[e].v = direction;
+                }
             }
 
             if !input.flick_pressed {

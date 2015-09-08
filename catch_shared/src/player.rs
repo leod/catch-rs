@@ -11,6 +11,7 @@ pub struct PlayerInput {
     pub back_pressed: bool,
     pub use_pressed: bool,
     pub flick_pressed: bool,
+    pub dash_pressed: bool,
 }
 
 #[derive(Debug, Clone, CerealData)]
@@ -43,6 +44,7 @@ impl PlayerInput {
             back_pressed: false,
             use_pressed: false,
             flick_pressed: false,
+            dash_pressed: false,
         }
     }
 
@@ -52,19 +54,21 @@ impl PlayerInput {
         self.forward_pressed ||
         self.back_pressed ||
         self.use_pressed ||
-        self.flick_pressed
+        self.flick_pressed ||
+        self.dash_pressed
     }
 }
 
 impl fmt::Debug for PlayerInput {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "PlayerInput({}{}{}{}{}{})",
+        write!(f, "PlayerInput({}{}{}{}{}{}{})",
                if self.left_pressed { "A" } else { "" },
                if self.right_pressed { "D" } else { "" },
                if self.forward_pressed { "W" } else { "" },
                if self.back_pressed { "S" } else { "" },
                if self.use_pressed { "X" } else { "" },
-               if self.flick_pressed { "F" } else { ""})
+               if self.flick_pressed { "F" } else { "" },
+               if self.dash_pressed { "C" } else { "" })
     }
 }
 
