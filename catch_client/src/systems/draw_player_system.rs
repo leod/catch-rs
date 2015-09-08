@@ -5,6 +5,7 @@ use graphics::context::Context;
 use graphics::Transformed;
 use opengl_graphics::GlGraphics;
 
+use shared::math;
 use shared::util::CachedAspect;
 use components::*;
 use services::Services;
@@ -26,20 +27,30 @@ impl DrawPlayerSystem {
             let p = data.position[entity].p;
             //println!("{:?}", data.position[entity].p);
             // TODO: Store this somwehere
-            let w = 16.0;
-            let h = 16.0;
+            let w = 24.0;
+            let h = 24.0;
+
+            let scale_x_target = if data.player_state[entity].dashing.is_some() {
+                math::square_len(data.linear_velocity[entity].v).sqrt() / 40.0 + 1.0
+            } else {
+                1.0
+            };
+
+            data.draw_player[entity].scale_x += (scale_x_target - data.draw_player[entity].scale_x) * 0.1;
+            let scale_x = data.draw_player[entity].scale_x;
 
             let transform = c.trans(p[0], p[1])
                              .rot_rad(data.orientation[entity].angle)
+                             .scale(scale_x, 1.0/scale_x)
                              //.trans(-w/2.0, -h/2.0)
                              .transform;
 
-            graphics::ellipse([1.0, 0.0, 1.0, 1.0],
+            graphics::ellipse([0.0, 0.0, 1.0, 1.0],
                               [-w/2.0, -h/2.0, w, h],
                               transform,
                               gl);
             graphics::rectangle([0.0, 0.0, 0.0, 1.0],
-                                [0.0, -2.0, 12.0, 4.0],
+                                [0.0, -2.0, 16.0, 4.0],
                                 transform,
                                 gl);
         }

@@ -99,9 +99,8 @@ impl PlayerMovementSystem {
         const TURN_SPEED: f64 = 0.3;
         const MOVE_ACCEL: f64 = 5.0;
         const BACK_ACCEL: f64 = 3.0;
-        const MOVE_SPEED: f64 = 10.0;
         const MIN_SPEED: f64 = 0.001;
-        const DASH_SPEED: f64 = 60.0;
+        const DASH_SPEED: f64 = 50.0;
 
         data.with_entity_data(&entity, |e, c| {
             let angle = c.orientation[e].angle;
@@ -110,10 +109,16 @@ impl PlayerMovementSystem {
             if let Some(dashing) = c.player_state[e].dashing {
                 //c.linear_velocity[e].v 
                 let target = math::scale(direction, DASH_SPEED);
-                c.linear_velocity[e].v = math::add(c.linear_velocity[e].v,
-                                                   math::scale(math::sub(target, c.linear_velocity[e].v), 0.4));
-                c.player_state[e].dashing = if dashing + 0.2 < 0.6 {
-                    Some(dashing + 0.1)
+                /*c.linear_velocity[e].v = math::add(c.linear_velocity[e].v,
+                                                   math::scale(math::sub(target, c.linear_velocity[e].v), 0.4));*/
+
+                //let scale = ((4.0 - 8.0 * dashing).atan() + f64::consts::PI / 2.0) / f64::consts::PI;
+                //let scale = ((-4.0 + dashing * 8.0).atan() + f64::consts::PI / 2.0) / f64::consts::PI;
+                let scale = (dashing*f64::consts::PI/2.0).cos()*(1.0-(1.0-dashing).powi(10));
+
+                c.linear_velocity[e].v = math::scale(direction, DASH_SPEED);
+                c.player_state[e].dashing = if dashing + 0.2 <= 1.0 {
+                    Some(dashing + 0.2)
                 } else {
                     None
                 }
@@ -148,7 +153,6 @@ impl PlayerMovementSystem {
 
                 if input.dash_pressed {
                     c.player_state[e].dashing = Some(0.0);
-                    c.linear_velocity[e].v = direction;
                 }
             }
 

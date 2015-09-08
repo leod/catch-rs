@@ -10,7 +10,17 @@ pub use shared::components::{NetEntity, Position,
                              ComponentTypeTraits,
                              component_type_traits};
 
-pub struct DrawPlayer;
+pub struct DrawPlayer {
+    pub scale_x: f64
+}
+
+impl DrawPlayer {
+    pub fn new() -> DrawPlayer {
+        DrawPlayer {
+            scale_x: 1.0,
+        }
+    }
+}
 
 pub trait Interpolatable {
     fn interpolate(&Self, &Self, t: f64) -> Self; 

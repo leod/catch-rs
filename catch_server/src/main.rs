@@ -269,7 +269,9 @@ impl Server {
                             tick.events.push(event.clone());
                         }
                         
-                        // TODO: Serializing the whole tick for every player should be avoided
+                        // TODO: Serializing the whole tick for every player should be avoided.
+                        // However, at some point we will have to only send those components that changed
+                        // w.r.t the previous tick by comparing the two TickStates.
                         match tick.write(&mut data) {
                             Err(_) => {
                                 println!("Error encoding tick");

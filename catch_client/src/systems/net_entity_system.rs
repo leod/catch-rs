@@ -72,7 +72,7 @@ impl NetEntitySystem {
 
             // TODO: probably don't wanna keep this hardcoded here
             if &type_name == "player" {
-                data.draw_player.add(&entity, DrawPlayer);
+                data.draw_player.add(&entity, DrawPlayer::new());
             } else {
                 panic!("Unknown net entity type: {}", type_name);
             }
