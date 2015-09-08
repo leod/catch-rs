@@ -1,3 +1,5 @@
+use std::f64;
+
 use ecs;
 use ecs::{Process, System, EntityData, DataHelper};
 
@@ -24,7 +26,7 @@ impl PlayerMovementSystem {
 
         data.position[e].p = match map.line_segment_intersection(p, q) {
             Some((_, _, _, s)) => { // Walk as far as we can
-                let s = (s - 0.00001).max(0.0);
+                let s = (s - 0.0001).max(0.0);
                 math::add(p, math::scale(delta, s))
             }
             None =>
@@ -49,6 +51,40 @@ impl PlayerMovementSystem {
 
                 self.move_straight(e, u, map, data);
                 self.move_straight(e, v, map, data);
+            }
+            None => {
+                data.position[e].p = q;
+            }
+        };
+    }
+
+    pub fn move_flicking(&self,
+                         e: EntityData<Components>,
+                         delta: math::Vec2,
+                         map: &Map,
+                         data: &mut Components) {
+        let p = data.position[e].p;
+        let q = math::add(p, delta);
+
+        match map.line_segment_intersection(p, q) {
+            Some((_, _, n, s)) => {
+                let n_angle = n[1].atan2(n[0]);
+                let angle = data.orientation[e].angle;
+
+                //data.orientation[e].angle = n_angle - (n_angle + angle);
+                data.orientation[e].angle = f64::consts::PI + n_angle - (angle - n_angle); //+ f64::consts::PI / 4.0;
+
+                // Reflect velocity at the normal
+                let v = data.linear_velocity[e].v;
+                let speed = math::square_len(v).sqrt();
+                data.linear_velocity[e].v = [
+                    data.orientation[e].angle.cos() * (speed + 4.0),
+                    data.orientation[e].angle.sin() * (speed + 4.0),
+                ];
+                    //math::sub(math::scale(n, 2.0 * math::dot(v, n)), v);
+
+                let s = (s - 0.0001).max(0.0);
+                data.position[e].p = math::add(p, math::scale(delta, s));
             }
             None => {
                 data.position[e].p = q;
@@ -101,7 +137,11 @@ impl PlayerMovementSystem {
                 c.linear_velocity[e].v[1] = 0.0;
             }
 
-            self.move_sliding(e, c.linear_velocity[e].v, map, c);
+            if !input.flick_pressed {
+                self.move_sliding(e, c.linear_velocity[e].v, map, c);
+            } else {
+                self.move_flicking(e, c.linear_velocity[e].v, map, c);
+            }
         });
     }
 }

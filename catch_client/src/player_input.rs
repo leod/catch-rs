@@ -6,7 +6,8 @@ pub struct InputMap {
     pub right_button: Button,
     pub forward_button: Button,
     pub back_button: Button,
-    pub use_button: Button
+    pub use_button: Button,
+    pub flick_button: Button,
 }
 
 impl InputMap {
@@ -17,6 +18,7 @@ impl InputMap {
             forward_button: Button::Keyboard(Key::W),
             back_button: Button::Keyboard(Key::S),
             use_button: Button::Keyboard(Key::Space),
+            flick_button: Button::Keyboard(Key::LShift),
         }
     }
 
@@ -33,6 +35,8 @@ impl InputMap {
                     player_input.back_pressed = true;
                 } else if button == self.use_button {
                     player_input.use_pressed = true;
+                } else if button == self.flick_button {
+                    player_input.flick_pressed = true;
                 }
             }
             Input::Release(button) => {
@@ -46,6 +50,8 @@ impl InputMap {
                     player_input.back_pressed = false;
                 } else if button == self.use_button {
                     player_input.use_pressed = false;
+                } else if button == self.flick_button {
+                    player_input.flick_pressed = false;
                 }
             }
             _ => ()
