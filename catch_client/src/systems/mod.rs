@@ -1,7 +1,7 @@
 mod net_entity_system;
 mod draw_player_system;
 
-use ecs::system::{LazySystem, EntitySystem};
+use ecs::system::LazySystem;
 
 pub use self::net_entity_system::NetEntitySystem;
 pub use self::draw_player_system::DrawPlayerSystem;

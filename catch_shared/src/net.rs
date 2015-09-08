@@ -1,7 +1,6 @@
-use std::collections::HashMap;
 use std::fmt;
 
-use ecs::{ComponentManager, DataHelper, EntityData, BuildData};
+use ecs::{ComponentManager, EntityData, BuildData};
 
 use player::{PlayerId, PlayerInput, PlayerInputNumber};
 use tick::NetState;

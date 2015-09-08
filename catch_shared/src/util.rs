@@ -3,7 +3,7 @@ use time::Duration;
 
 use ecs;
 use ecs::entity::IndexedEntity;
-use ecs::{Aspect, DataHelper, EntityData, EntityIter, ComponentManager};
+use ecs::{Aspect, EntityData, EntityIter, ComponentManager};
 
 pub struct PeriodicTimer {
     period: Duration,
@@ -70,7 +70,7 @@ impl<T: ComponentManager> CachedAspect<T> {
         }
     }
 
-    pub fn deactivated(&mut self, entity: &EntityData<T>, components: &T) {
+    pub fn deactivated(&mut self, entity: &EntityData<T>, _: &T) {
         self.interested.remove(entity);
     }
 

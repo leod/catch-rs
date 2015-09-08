@@ -1,11 +1,9 @@
 use ecs;
 use ecs::{Process, System, EntityData, DataHelper};
-use ecs::system::EntityProcess;
 
 use shared::math;
 use shared::map::Map;
 use shared::player::{PlayerInput};
-use shared::event::GameEvent;
 use components::*;
 use services::Services;
 
@@ -25,7 +23,7 @@ impl PlayerMovementSystem {
         let q = math::add(p, delta);
 
         data.position[e].p = match map.line_segment_intersection(p, q) {
-            Some((x, y, n, s)) => { // Walk as far as we can
+            Some((_, _, _, s)) => { // Walk as far as we can
                 let s = (s - 0.00001).max(0.0);
                 math::add(p, math::scale(delta, s))
             }
@@ -43,7 +41,7 @@ impl PlayerMovementSystem {
         let q = math::add(p, delta);
 
         match map.line_segment_intersection(p, q) {
-            Some((tx, ty, n, s)) => {
+            Some((_, _, n, _)) => {
                 // We walked into a surface with normal n.
                 // Find parts of delta parallel and orthogonal to n
                 let u = math::scale(n, math::dot(delta, n));

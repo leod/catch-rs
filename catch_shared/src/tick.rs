@@ -1,7 +1,4 @@
 use std::collections::HashMap;
-use std::io::{Write, Read};
-
-use cereal::{CerealData, CerealError, CerealResult};
 
 use components::{Position, Orientation, LinearVelocity, PlayerState};
 use event::GameEvent;

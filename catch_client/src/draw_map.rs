@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use graphics::Transformed;
-use graphics::{Context, Image, default_draw_state};
+use graphics::{Context, Image};
 use opengl_graphics::{GlGraphics, Texture};
 
 use shared::map::{Map, LayerId, Tile};
@@ -43,7 +43,7 @@ impl DrawMap {
 
         for (tile_x, tile_y, tile) in map.iter_layer(id) {
             match tile {
-                Some(Tile { tileset, x: tileset_x, y: tileset_y }) => {
+                Some(Tile { tileset: _, x: tileset_x, y: tileset_y }) => {
                     let image = Image::new().rect([0.0, 0.0,
                                                    (width as f64),
                                                    (height as f64)])

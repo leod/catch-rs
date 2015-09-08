@@ -2,8 +2,6 @@ use std::collections::HashMap;
 
 use ecs;
 
-use shared::net;
-use shared::math;
 use shared::net::{GameInfo, TickNumber};
 use shared::tick::Tick;
 use shared::player::{PlayerId, PlayerInfo, PlayerInput};

@@ -99,7 +99,7 @@ fn main() {
             Event::Update(update_args) => {
                 loop {
                     match client.service().unwrap() {
-                        Some(message) => continue,
+                        Some(_) => continue,
                         None => break
                     };
                 }
@@ -139,7 +139,7 @@ fn main() {
             Event::Idle(_) => {
                 loop {
                     match client.service().unwrap() {
-                        Some(message) => continue,
+                        Some(_) => continue,
                         None => break
                     };
                 };

@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use ecs;
-use ecs::{System, EntityData, EntityIter, DataHelper, BuildData, Process};
-use ecs::system::EntityProcess;
+use ecs::{System, DataHelper, BuildData, Process};
 
 use shared::net;
 use shared::tick::Tick;

@@ -148,7 +148,7 @@ impl Client {
                     match tick_result {
                         Ok(tick) =>
                             self.tick_deque.push_back((time::get_time(), tick)),
-                        Err(e) => {
+                        Err(_) => {
                             return Err("Received invalid tick".to_string());
                         }
                     };

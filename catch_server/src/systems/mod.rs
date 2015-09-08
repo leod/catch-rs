@@ -1,7 +1,7 @@
 mod net_entity_system;
 mod player_movement_system;
 
-use ecs::system::{LazySystem, EntitySystem};
+use ecs::system::EntitySystem;
 
 pub use self::net_entity_system::NetEntitySystem;
 pub use self::player_movement_system::PlayerMovementSystem;

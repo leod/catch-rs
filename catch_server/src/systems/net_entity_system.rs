@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use ecs;
-use ecs::{System, EntityData, BuildData, EntityIter, DataHelper};
+use ecs::{System, BuildData, EntityIter, DataHelper};
 use ecs::system::EntityProcess;
 
 use shared::net;
@@ -31,7 +31,7 @@ impl NetEntitySystem {
     pub fn type_id(&self, type_name: String) -> net::EntityTypeId {
         self.entity_types.iter()
             .enumerate()
-            .find(|&(i, &(ref name, _))| name == &type_name)
+            .find(|&(_, &(ref name, _))| name == &type_name)
             .unwrap()
             .0 as net::EntityTypeId
     }

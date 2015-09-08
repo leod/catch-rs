@@ -3,10 +3,8 @@ use std::collections::HashMap;
 use ecs;
 
 use shared::net;
-use shared::math;
 use shared::map::Map;
 use shared::net::{TickNumber, GameInfo};
-use shared::tick::Tick;
 use shared::event::GameEvent;
 use shared::player::{PlayerId, PlayerInfo, PlayerInput};
 use systems::Systems;

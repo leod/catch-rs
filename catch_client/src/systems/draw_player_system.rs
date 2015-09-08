@@ -1,12 +1,9 @@
-use ecs;
-use ecs::{Aspect, System, EntityData, EntityIter, DataHelper, BuildData, Process};
-use ecs::system::EntityProcess;
+use ecs::{Aspect, System, EntityData, DataHelper, Process};
 
 use graphics;
 use graphics::context::Context;
 use graphics::Transformed;
-use graphics::line::Line;
-use opengl_graphics::{GlGraphics, Texture};
+use opengl_graphics::GlGraphics;
 
 use shared::util::CachedAspect;
 use components::*;
@@ -53,15 +50,15 @@ impl System for DrawPlayerSystem {
     type Components = Components;
     type Services = Services;
 
-    fn activated(&mut self, entity: &EntityData<Components>, components: &Components, services: &mut Services) {
+    fn activated(&mut self, entity: &EntityData<Components>, components: &Components, _: &mut Services) {
         self.aspect.activated(entity, components);
     }
 
-    fn reactivated(&mut self, entity: &EntityData<Components>, components: &Components, services: &mut Services) {
+    fn reactivated(&mut self, entity: &EntityData<Components>, components: &Components, _: &mut Services) {
         self.aspect.reactivated(entity, components);
     }
 
-    fn deactivated(&mut self, entity: &EntityData<Components>, components: &Components, services: &mut Services) {
+    fn deactivated(&mut self, entity: &EntityData<Components>, components: &Components, _: &mut Services) {
         self.aspect.deactivated(entity, components);
     }
 }
