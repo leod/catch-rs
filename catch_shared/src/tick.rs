@@ -3,7 +3,7 @@ use std::io::{Write, Read};
 
 use cereal::{CerealData, CerealError, CerealResult};
 
-use components::{Position, Orientation, PlayerState};
+use components::{Position, Orientation, LinearVelocity, PlayerState};
 use event::GameEvent;
 use net;
 
@@ -14,6 +14,7 @@ pub type ComponentsNetState<T> = HashMap<net::EntityId, T>;
 pub struct NetState {
     pub position: ComponentsNetState<Position>, 
     pub orientation: ComponentsNetState<Orientation>,
+    pub linear_velocity: ComponentsNetState<LinearVelocity>,
     pub player_state: ComponentsNetState<PlayerState>,
 }
 
@@ -29,6 +30,7 @@ impl NetState {
         NetState {
             position: HashMap::new(),
             orientation: HashMap::new(),
+            linear_velocity: HashMap::new(),
             player_state: HashMap::new(),
         }
     }

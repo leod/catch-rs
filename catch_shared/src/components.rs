@@ -25,6 +25,11 @@ pub struct Orientation {
 }
 
 #[derive(CerealData, Clone)]
+pub struct LinearVelocity {
+    pub v: math::Vec2,
+}
+
+#[derive(CerealData, Clone)]
 pub struct PlayerState {
     pub color: u32
 }
@@ -41,6 +46,14 @@ impl Default for Orientation {
     fn default() -> Orientation {
         Orientation {
             angle: 0.0
+        }
+    }
+}
+
+impl Default for LinearVelocity {
+    fn default() -> LinearVelocity {
+        LinearVelocity {
+            v: [0.0, 0.0]
         }
     }
 }
@@ -63,6 +76,11 @@ pub trait HasPosition {
 pub trait HasOrientation {
     fn orientation(&self) -> &ComponentList<Self, Orientation>;
     fn orientation_mut(&mut self) -> &mut ComponentList<Self, Orientation>;
+}
+
+pub trait HasLinearVelocity {
+    fn linear_velocity(&self) -> &ComponentList<Self, LinearVelocity>;
+    fn linear_velocity_mut(&mut self) -> &mut ComponentList<Self, LinearVelocity>;
 }
 
 pub trait HasPlayerState {
@@ -100,6 +118,20 @@ impl<T: ComponentManager> StateComponent<T> for StateComponentImpl<Orientation> 
     }
 }
 
+impl<T: ComponentManager> StateComponent<T> for StateComponentImpl<LinearVelocity> where T: HasLinearVelocity {
+    fn add(&self, entity: BuildData<T>, c: &mut T) {
+        c.linear_velocity_mut().add(&entity, LinearVelocity::default());
+    }
+    fn write(&self, entity: EntityData<T>, id: EntityId, net_state: &mut NetState, c: &T) {
+        net_state.linear_velocity.insert(id, c.linear_velocity()[entity].clone());
+    }
+    fn read(&self, entity: EntityData<T>, id: EntityId, net_state: &NetState, c: &mut T) {
+        if let Some(linear_velocity) = net_state.linear_velocity.get(&id) {
+            c.linear_velocity_mut()[entity] = linear_velocity.clone();
+        }
+    }
+}
+
 impl<T: ComponentManager> StateComponent<T> for StateComponentImpl<PlayerState> where T: HasPlayerState {
     fn add(&self, entity: BuildData<T>, c: &mut T) {
         c.player_state_mut().add(&entity, PlayerState::default());
@@ -119,7 +151,8 @@ pub type ComponentTypeTraits<T> = Vec<Box<StateComponent<T>>>;
 pub fn component_type_traits<T: ComponentManager +
                                 HasPosition +
                                 HasOrientation +
-                                HasPlayerState>() -> ComponentTypeTraits<T> {
+                                HasPlayerState +
+                                HasLinearVelocity>() -> ComponentTypeTraits<T> {
     let mut traits = ComponentTypeTraits::<T>::new();
 
     for component_type in COMPONENT_TYPES.iter() {
@@ -128,6 +161,8 @@ pub fn component_type_traits<T: ComponentManager +
                 traits.push(Box::new(StateComponentImpl::<Position>(PhantomData))),
             ComponentType::Orientation =>
                 traits.push(Box::new(StateComponentImpl::<Orientation>(PhantomData))),
+            ComponentType::LinearVelocity =>
+                traits.push(Box::new(StateComponentImpl::<LinearVelocity>(PhantomData))),
             ComponentType::PlayerState =>
                 traits.push(Box::new(StateComponentImpl::<PlayerState>(PhantomData))),
         };

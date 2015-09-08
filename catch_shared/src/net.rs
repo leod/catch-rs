@@ -71,6 +71,7 @@ pub enum ServerMessage {
 pub enum ComponentType {
     Position,
     Orientation,
+    LinearVelocity,
     PlayerState
 }
 
@@ -83,6 +84,7 @@ pub trait StateComponent<T: ComponentManager> {
 pub const COMPONENT_TYPES: &'static [ComponentType] = &[
     ComponentType::Position,
     ComponentType::Orientation,
+    ComponentType::LinearVelocity,
     ComponentType::PlayerState,
 ];
 
@@ -100,6 +102,7 @@ pub fn all_entity_types() -> EntityTypes {
         EntityType {
             component_types: [ComponentType::Position,
                               ComponentType::Orientation,
+                              ComponentType::LinearVelocity,
                               ComponentType::PlayerState].to_vec()
         }));
 
