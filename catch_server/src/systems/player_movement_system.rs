@@ -102,7 +102,7 @@ impl PlayerMovementSystem {
         const BACK_ACCEL: f64 = 3.0;
         const MOVE_SPEED: f64 = 10.0;
         const MIN_SPEED: f64 = 0.001;
-        const DASH_SPEED: f64 = 30.0;
+        const DASH_SPEED: f64 = 60.0;
 
         data.with_entity_data(&entity, |e, c| {
             let angle = c.orientation[e].angle;
@@ -112,8 +112,8 @@ impl PlayerMovementSystem {
                 //c.linear_velocity[e].v 
                 let target = math::scale(direction, DASH_SPEED);
                 c.linear_velocity[e].v = math::add(c.linear_velocity[e].v,
-                                                   math::scale(math::sub(target, c.linear_velocity[e].v), 0.2));
-                c.player_state[e].dashing = if dashing + 0.2 < 1.0 {
+                                                   math::scale(math::sub(target, c.linear_velocity[e].v), 0.4));
+                c.player_state[e].dashing = if dashing + 0.2 < 0.6 {
                     Some(dashing + 0.1)
                 } else {
                     None
@@ -135,7 +135,7 @@ impl PlayerMovementSystem {
                     accel = math::add(math::scale(direction, MOVE_ACCEL), accel);
                 }
                 if input.back_pressed {
-                    accel = math::add(math::scale(direction, -MOVE_ACCEL), accel);
+                    accel = math::add(math::scale(direction, -BACK_ACCEL), accel);
                 }
 
                 c.linear_velocity[e].v = math::add(c.linear_velocity[e].v, accel);
