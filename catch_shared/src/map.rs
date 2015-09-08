@@ -86,11 +86,12 @@ impl Map {
                 if number == 0 {
                     None
                 } else {
+                    // Find the tileset this tile belongs to
                     for i in 0..tilesets.len() {
                         let tileset = &tilesets[i];
                         let num_tiles_w = tileset.images[0].width as usize /
                                           tileset.tile_width as usize;
-                        let num_tiles_h = tileset.images[0].width as usize / 
+                        let num_tiles_h = tileset.images[0].height as usize / 
                                           tileset.tile_height as usize;
                         let num_tiles = num_tiles_w * num_tiles_h;
 
@@ -98,8 +99,8 @@ impl Map {
                            number < tileset.first_gid + num_tiles as u32 {
                             let number_rel = number as usize -
                                              tileset.first_gid as usize;
-                            let x = number_rel % num_tiles_w;
-                            let y = number_rel / num_tiles_h;
+                            let x = number_rel % num_tiles_h;
+                            let y = number_rel / num_tiles_w;
 
                             return Some(Tile {
                                 tileset: i,

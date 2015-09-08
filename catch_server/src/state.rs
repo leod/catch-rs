@@ -70,6 +70,13 @@ impl GameState {
             self.world.systems.net_entity_system
                 .create_entity(net_entity_type_id, id, &mut self.world.data);
         self.players.get_mut(&id).unwrap().controlled_entity = Some(net_entity_id);
+
+        let position = [128.0, 128.0];
+        let entity = self.world.systems.net_entity_system.get_entity(net_entity_id);  
+
+        self.world.with_entity_data(&entity, |e, c| {
+            c.position[e].p = position;
+        });
     }
 
     pub fn remove_player(&mut self, id: PlayerId) {

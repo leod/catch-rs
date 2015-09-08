@@ -27,8 +27,8 @@ impl DrawPlayerSystem {
             let p = data.position[entity].p;
             //println!("{:?}", data.position[entity].p);
             // TODO: Store this somwehere
-            let w = 24.0;
-            let h = 24.0;
+            let w = 16.0;
+            let h = 16.0;
 
             let scale_x_target = if data.player_state[entity].dashing.is_some() {
                 math::square_len(data.linear_velocity[entity].v).sqrt() / 40.0 + 1.0
@@ -50,7 +50,7 @@ impl DrawPlayerSystem {
                               transform,
                               gl);
             graphics::rectangle([0.0, 0.0, 0.0, 1.0],
-                                [0.0, -2.0, 16.0, 4.0],
+                                [0.0, -1.5, 12.0, 3.0],
                                 transform,
                                 gl);
         }

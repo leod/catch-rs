@@ -7,6 +7,7 @@ extern crate glutin_window;
 extern crate opengl_graphics;
 extern crate image;
 extern crate time;
+extern crate gl;
 
 extern crate catch_shared as shared;
 
@@ -41,11 +42,12 @@ fn main() {
     let window = GlutinWindow::new(
         WindowSettings::new(
             "catching game",
-            [800, 600]
+            [1280, 1024]
         )
         .opengl(opengl)
         .exit_on_esc(true)
-        .vsync(true)
+        //.vsync(true)
+        //.fullscreen(true)
     ).unwrap();
 
     // Connect
@@ -91,7 +93,9 @@ fn main() {
 
                     let c = c.trans((render_args.draw_width / 2) as f64,
                                     (render_args.draw_height / 2) as f64)
-                             .trans(-trans[0], -trans[1]);
+                             .zoom(2.0)
+                             .trans(-trans[0], -trans[1])
+                             ;
 
                     draw_map.draw(&map, c, gl);
                     game_state.world.systems.draw_player_system.draw(&mut game_state.world.data, c, gl);

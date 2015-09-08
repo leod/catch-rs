@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="32" height="32" tilewidth="32" tileheight="32" nextobjectid="14">
+ <tileset firstgid="1" name="ground" tilewidth="32" tileheight="32" tilecount="4">
+     <image source="../tilesets/ground.png" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="5" name="walls" tilewidth="32" tileheight="32" tilecount="32">
+     <image source="../tilesets/walls.png" width="128" height="256"/>
+ </tileset>
+ <layer name="Kachelebene 1" width="32" height="32">
+  <data encoding="base64" compression="zlib">
+   eJyllltuxDAMAx3b9z/zYoENQEyG7mM/hLapLMkURfkaY1xhC3/Pj62w9/f9MfreMe5zG+fMMvaG/cYnLf2Yf0ruCctYE2fvO6w4m3FX5MsYrdYr/Gf4mxGDrIG2fohzRe7sJbFLnxbvW2t9zW/JAcMjvxGDxHSPJ8YN88SXdVn9rQbjks0YMch4NwbJv1YT+8lYxv+FHI2/rHWN5z0zN3tmNTA3Nch6RwxsJjbiZm/YA+oYZ8t4sBGDc8O6Eyv2u2Fi+mpxaY0LnI12d+amJpL7iTG1f0Ys5iaX/moT8am/TVd5n+wfd9uJK01nbUaZ78LvWfdpT7a7tF1tMZmXHLFZMMxtvxk3LD/xsbeH4Wy4mnbTv71T2Oe8p93R9Oy005pf7gTqtc1r9rJhkd/4s+1A2/sZy95fp3nk/uBOMezavm+520ycasscTQtOZ037eSfOzAm35Cn532q5xrP/ba9Tr9qe5Pui6avx+z/6Tf1rMdtcp9bZW4a7i5w3/nBfNC01naeOtn60/IbFCYPkC3dVy80zdhdqTtPWjEXum+8cz/snBi1/4x57bPmtFp5ZxW/i/6cd13aWzRl5aflbD2znG8ZNg1o/3z4veK0Jzw==
+  </data>
+ </layer>
+ <layer name="Kachelebene 2" width="32" height="32">
+  <data encoding="base64" compression="zlib">
+   eJzVV2tPwzAM9JeJbTAGY28qAfv/P3KtwNJh+ZU2peUkK0mV+HLXpEkXRLSYONZt7CA+RLtGyJyPwP9Kv7Gk+pA53xz+M9SPQZntU8KvzdsqS/to/Lc2HiBO0I+96MOPPnL98MPxRTn9Fsc7zPfizM1C1n+G5YP2DHWX8LM3J2tQkl+DzF2qnyF9wHpGN8PTr61DCW9tI6ycffWX8lvI6Pd80PYWIso1VP9QRPqvFHuxaeMF2pbmqzI+0h+904571caTmIMGLddQ/i19n6Hd2f1ciR/9ayj2fyu4Lf8bZfzc11+0/7TzHzH2/vuL788cv7/stcavvQcL/+38lbo9/owPpfxj3r/4/sneaHurz/0T88h16N0/+96tvT4Snv847hyU2T5yTWT5a8H7/+jO0D3Ep2jXCJlzBfxTxh1gkxdZ
+  </data>
+ </layer>
+ <objectgroup name="Objektebene 1">
+  <object id="6" type="spawn" x="930" y="929.333" width="24" height="26"/>
+  <object id="11" type="spawn" x="70" y="927" width="24" height="26"/>
+  <object id="12" type="spawn" x="68" y="67" width="24" height="26"/>
+  <object id="13" type="spawn" x="924" y="69" width="24" height="26"/>
+ </objectgroup>
+</map>
