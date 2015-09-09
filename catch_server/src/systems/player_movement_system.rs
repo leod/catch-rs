@@ -26,6 +26,10 @@ impl PlayerMovementSystem {
 
         data.position[e].p = match map.line_segment_intersection(p, q) {
             Some((_, _, _, s)) => { // Walk as far as we can
+                if data.player_state[e].dashing.is_some() && data.player_state[e].dashing.unwrap() < 0.9 {
+                    data.player_state[e].dashing = Some(0.9);
+                }
+
                 let s = (s - 0.0001).max(0.0);
                 math::add(p, math::scale(delta, s))
             }
@@ -95,12 +99,14 @@ impl PlayerMovementSystem {
                             input: &PlayerInput,
                             map: &Map,
                             data: &mut DataHelper<Components, Services>) {
-        // TODO: Scale for time
-        const TURN_SPEED: f64 = 0.3;
-        const MOVE_ACCEL: f64 = 5.0;
-        const BACK_ACCEL: f64 = 3.0;
+        const TURN_SPEED: f64 = 2.0*f64::consts::PI;
+        const MOVE_ACCEL: f64 = 500.0;
+        const BACK_ACCEL: f64 = 100.0;
         const MIN_SPEED: f64 = 0.001;
-        const DASH_SPEED: f64 = 50.0;
+        const DASH_SPEED: f64 = 600.0;
+        const DASH_DURATION_S: f64 = 0.5;
+
+        let tick_dur_s = data.services.tick_dur_s;
 
         data.with_entity_data(&entity, |e, c| {
             let angle = c.orientation[e].angle;
@@ -108,7 +114,7 @@ impl PlayerMovementSystem {
 
             if let Some(dashing) = c.player_state[e].dashing {
                 //c.linear_velocity[e].v 
-                let target = math::scale(direction, DASH_SPEED);
+                //let target = math::scale(direction, DASH_SPEED);
                 /*c.linear_velocity[e].v = math::add(c.linear_velocity[e].v,
                                                    math::scale(math::sub(target, c.linear_velocity[e].v), 0.4));*/
 
@@ -117,23 +123,22 @@ impl PlayerMovementSystem {
                 let scale = (dashing*f64::consts::PI/2.0).cos()*(1.0-(1.0-dashing).powi(10));
 
                 c.linear_velocity[e].v = math::scale(direction, DASH_SPEED);
-                c.player_state[e].dashing = if dashing + 0.2 <= 1.0 {
-                    Some(dashing + 0.2)
+                c.player_state[e].dashing = if dashing + tick_dur_s <= DASH_DURATION_S {
+                    Some(dashing + tick_dur_s)
                 } else {
                     None
                 }
             } else {
                 if input.left_pressed {
-                    c.orientation[e].angle -= TURN_SPEED;
+                    c.orientation[e].angle -= TURN_SPEED * tick_dur_s;
                 }
                 if input.right_pressed {
-                    c.orientation[e].angle += TURN_SPEED;
+                    c.orientation[e].angle += TURN_SPEED * tick_dur_s;
                 }
 
                 let velocity = c.linear_velocity[e].v;
 
-                let mut accel = math::scale(velocity, -0.4);
-
+                let mut accel = math::scale(velocity, -4.0);
 
                 if input.forward_pressed {
                     accel = math::add(math::scale(direction, MOVE_ACCEL), accel);
@@ -142,7 +147,7 @@ impl PlayerMovementSystem {
                     accel = math::add(math::scale(direction, -BACK_ACCEL), accel);
                 }
 
-                c.linear_velocity[e].v = math::add(c.linear_velocity[e].v, accel);
+                c.linear_velocity[e].v = math::add(c.linear_velocity[e].v, math::scale(accel, tick_dur_s));
 
                 if c.linear_velocity[e].v[0].abs() <= MIN_SPEED {
                     c.linear_velocity[e].v[0] = 0.0;
@@ -157,9 +162,9 @@ impl PlayerMovementSystem {
             }
 
             if !input.flick_pressed {
-                self.move_sliding(e, c.linear_velocity[e].v, map, c);
+                self.move_sliding(e, math::scale(c.linear_velocity[e].v, tick_dur_s), map, c);
             } else {
-                self.move_flicking(e, c.linear_velocity[e].v, map, c);
+                self.move_flicking(e, math::scale(c.linear_velocity[e].v, tick_dur_s), map, c);
             }
         });
     }

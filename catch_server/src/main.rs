@@ -309,7 +309,7 @@ fn main() {
     let game_info = GameInfo {
         map_name: "../data/maps/lars.tmx".to_string(),
         entity_types: entity_types,
-        ticks_per_second: 20
+        ticks_per_second: 20,
     };
 
     match Server::start(&game_info, 2338, 32).as_mut() {

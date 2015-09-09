@@ -8,6 +8,9 @@ use shared::player::PlayerId;
 use shared::event::GameEvent;
 
 pub struct Services {
+    // Tick duration in seconds
+    pub tick_dur_s: f64,
+
     // Stores the state of the current tick before sending it off to clients
     pub next_tick: Option<Tick>,
     
@@ -38,6 +41,7 @@ impl Services {
 impl Default for Services {
     fn default() -> Services {
         Services {
+            tick_dur_s: 0.0,
             next_tick: None,
             next_player_events: HashMap::new(),
         }

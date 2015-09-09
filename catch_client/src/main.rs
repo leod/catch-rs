@@ -47,7 +47,7 @@ fn main() {
         )
         .opengl(opengl)
         .exit_on_esc(true)
-        //.vsync(true)
+        .vsync(true)
         //.fullscreen(true)
     ).unwrap();
 
@@ -94,7 +94,7 @@ fn main() {
                         None => [0.0, 0.0]
                     };
 
-                    cam_pos = math::add(cam_pos, math::scale(math::sub(trans, cam_pos), 0.1));
+                    cam_pos = math::add(cam_pos, math::scale(math::sub(trans, cam_pos), 0.15));
 
                     let c = c.trans((render_args.draw_width / 2) as f64,
                                     (render_args.draw_height / 2) as f64)

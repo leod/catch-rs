@@ -31,7 +31,7 @@ impl DrawPlayerSystem {
             let h = 16.0;
 
             let scale_x_target = if data.player_state[entity].dashing.is_some() {
-                math::square_len(data.linear_velocity[entity].v).sqrt() / 40.0 + 1.0
+                math::square_len(data.linear_velocity[entity].v).sqrt() / 400.0 + 1.0
             } else {
                 1.0
             };
