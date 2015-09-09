@@ -4,7 +4,7 @@ use ecs;
 
 use shared::net;
 use shared::map::Map;
-use shared::net::{TickNumber, GameInfo};
+use shared::net::{TickNumber, GameInfo, TimedPlayerInput};
 use shared::event::GameEvent;
 use shared::player::{PlayerId, PlayerInfo, PlayerInput};
 use systems::Systems;
@@ -14,7 +14,7 @@ pub struct Player {
     pub is_new: bool,
 
     pub info: PlayerInfo,
-    pub next_input: Vec<(TickNumber, PlayerInput)>,
+    pub next_input: Vec<TimedPlayerInput>,
     pub controlled_entity: Option<net::EntityId>
 }
 
@@ -90,8 +90,7 @@ impl GameState {
 
     pub fn on_player_input(&mut self,
                            id: PlayerId,
-                           input_client_tick: TickNumber,
-                           input: &PlayerInput) {
+                           input: &TimedPlayerInput) {
         // TODO: Should we be able to queue multiple inputs for each player?
         // Currently, the idea is for the clients to send one PlayerInput per tick.
         // Is it enough for the server to be able to execute one PlayerInput per tick?
@@ -102,16 +101,14 @@ impl GameState {
             println!("Already have player input for {}, queuing", id);
         }
 
-        self.players.get_mut(&id).as_mut().unwrap().next_input.push(
-            (input_client_tick, input.clone()));
-        //self.players.get_mut(&id).as_mut().unwrap().next_input = Some((input_client_tick, input.clone()));
+        self.players.get_mut(&id).as_mut().unwrap()
+            .next_input.push(input.clone());
     }
 
     pub fn run_player_input(&mut self,
                             player_id: PlayerId,
                             net_entity_id: net::EntityId,
-                            input_client_tick: net::TickNumber,
-                            input: &PlayerInput) {
+                            input: &TimedPlayerInput) {
         let entity = self.world.systems.net_entity_system.get_entity(net_entity_id);
 
         self.world.systems.player_movement_system
@@ -120,8 +117,8 @@ impl GameState {
         // Tell the player in that their input has been processed.
         // TODO: Should this be done on a level thats finer than ticks?!
         // The following GameEvent will be sent with the next tick the server starts!
-        self.world.services.add_player_event(player_id,
-            GameEvent::CorrectState(input_client_tick));
+        /*self.world.services.add_player_event(player_id,
+            GameEvent::CorrectState(input_client_tick));*/
     }
 
     // For now, the resulting tick data will be written in Services::next_tick
@@ -168,20 +165,18 @@ impl GameState {
             for (player_id, player) in self.players.iter() {
                 match player.controlled_entity {
                     Some(net_entity_id) => {
-                        for &(ref input_client_tick, ref player_input) in &player.next_input {
+                        for player_input in &player.next_input {
                             input.push((*player_id,
                                         net_entity_id,
-                                        *input_client_tick,
                                         player_input.clone()));
                         }
                     }
                     _ => {}
                 }
             }
-            for (player_id, net_entity_id, input_client_tick, player_input) in input {
+            for (player_id, net_entity_id, player_input) in input {
                 self.run_player_input(player_id,
                                       net_entity_id,
-                                      input_client_tick,
                                       &player_input);
             }
         }

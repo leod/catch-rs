@@ -25,15 +25,18 @@ pub enum Channel {
 pub const NUM_CHANNELS: usize = 2;
 
 #[derive(Debug, Clone, CerealData)]
+pub struct TimedPlayerInput {
+    pub duration_s: f64,
+    pub input: PlayerInput,
+}
+
+#[derive(Debug, Clone, CerealData)]
 pub enum ClientMessage {
     Pong,
     WishConnect {
         name: String,
     },
-    PlayerInput {
-        tick: TickNumber,
-        input: PlayerInput,
-    },
+    PlayerInput(TimedPlayerInput),
     StartingTick {
         tick: TickNumber,
     }

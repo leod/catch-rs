@@ -8,7 +8,7 @@ use piston::input::{Input, Button, Key};
 use opengl_graphics::GlGraphics;
 
 use shared::math;
-use shared::net::{ClientMessage, TickNumber};
+use shared::net::{ClientMessage, TickNumber, TimedPlayerInput};
 use shared::map::Map;
 use shared::util::PeriodicTimer;
 
@@ -58,9 +58,14 @@ impl Game {
     }
 
     pub fn run(&mut self, gl: &mut GlGraphics) {
+        let mut simulation_time_s = 0.0;
+
         while !self.quit {
+            let frame_start_s = time::precise_time_s();
+
             self.client_service();
             self.read_input();
+            self.send_input(simulation_time_s);
 
             if self.client.num_ticks() > 0 {
                 // Play some very rough catch up for a start...
@@ -85,15 +90,10 @@ impl Game {
                 }
             }
 
-            if let Some(tick) = self.tick_number {
-                //println!("Sending input {:?}", &player_input);
-                self.client.send(&ClientMessage::PlayerInput {
-                    tick: tick,
-                    input: self.player_input.clone()
-                });
-            }
-
             self.draw(gl);
+
+            let frame_end_s = time::precise_time_s();
+            simulation_time_s = frame_end_s - frame_start_s;
         }
     }
 
@@ -118,6 +118,15 @@ impl Game {
                         .update_player_input(&input, &mut self.player_input)
             };
         }
+    }
+
+    fn send_input(&mut self, simulation_time_s: f64) {
+        self.client.send(&ClientMessage::PlayerInput(
+            TimedPlayerInput {
+                duration_s: simulation_time_s,
+                input: self.player_input.clone(),
+            }
+        ));
     }
 
     fn draw(&mut self, gl: &mut GlGraphics) {
