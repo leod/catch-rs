@@ -4,10 +4,14 @@ use ecs;
 
 use shared::net::{GameInfo, TickNumber};
 use shared::tick::Tick;
+use shared::map::Map;
 use shared::player::{PlayerId, PlayerInfo, PlayerInput};
 use systems::{Systems, NetEntitySystem};
 
 pub struct GameState {
+    pub game_info: GameInfo,
+    pub map: Map,
+
     pub world: ecs::World<Systems>, 
     pub tick_number: Option<TickNumber>,
 
@@ -21,6 +25,8 @@ impl GameState {
             NetEntitySystem::new(my_id, &game_info.entity_types));
 
         GameState {
+            game_info: game_info.clone(),
+            map: Map::load(&game_info.map_name).unwrap(),
             world: world,
             tick_number: None,
             players: HashMap::new(),

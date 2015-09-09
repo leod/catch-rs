@@ -101,10 +101,10 @@ impl PlayerMovementSystem {
                             data: &mut DataHelper<Components, Services>) {
         const TURN_SPEED: f64 = 2.0*f64::consts::PI;
         const MOVE_ACCEL: f64 = 500.0;
-        const BACK_ACCEL: f64 = 100.0;
+        const BACK_ACCEL: f64 = 200.0;
         const MIN_SPEED: f64 = 0.001;
         const DASH_SPEED: f64 = 600.0;
-        const DASH_DURATION_S: f64 = 0.5;
+        const DASH_DURATION_S: f64 = 0.3;
 
         let tick_dur_s = data.services.tick_dur_s;
 
@@ -120,9 +120,10 @@ impl PlayerMovementSystem {
 
                 //let scale = ((4.0 - 8.0 * dashing).atan() + f64::consts::PI / 2.0) / f64::consts::PI;
                 //let scale = ((-4.0 + dashing * 8.0).atan() + f64::consts::PI / 2.0) / f64::consts::PI;
-                let scale = (dashing*f64::consts::PI/2.0).cos()*(1.0-(1.0-dashing).powi(10));
-
+                let t = dashing / DASH_DURATION_S;
+                let scale = (t*f64::consts::PI/2.0).cos()*(1.0-(1.0-t).powi(10));
                 c.linear_velocity[e].v = math::scale(direction, DASH_SPEED);
+
                 c.player_state[e].dashing = if dashing + tick_dur_s <= DASH_DURATION_S {
                     Some(dashing + tick_dur_s)
                 } else {

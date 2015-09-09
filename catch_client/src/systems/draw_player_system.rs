@@ -27,8 +27,8 @@ impl DrawPlayerSystem {
             let p = data.position[entity].p;
             //println!("{:?}", data.position[entity].p);
             // TODO: Store this somwehere
-            let w = 16.0;
-            let h = 16.0;
+            let w = 18.0;
+            let h = 18.0;
 
             let scale_x_target = if data.player_state[entity].dashing.is_some() {
                 math::square_len(data.linear_velocity[entity].v).sqrt() / 400.0 + 1.0
@@ -36,9 +36,9 @@ impl DrawPlayerSystem {
                 1.0
             };
 
-            data.draw_player[entity].scale_x += (scale_x_target - data.draw_player[entity].scale_x) * 0.1;
-            let scale_x = data.draw_player[entity].scale_x;
+            data.draw_player[entity].scale_x += (scale_x_target - data.draw_player[entity].scale_x) * 0.15;
 
+            let scale_x = data.draw_player[entity].scale_x;
             let transform = c.trans(p[0], p[1])
                              .rot_rad(data.orientation[entity].angle)
                              .scale(scale_x, 1.0/scale_x)
@@ -50,7 +50,7 @@ impl DrawPlayerSystem {
                               transform,
                               gl);
             graphics::rectangle([0.0, 0.0, 0.0, 1.0],
-                                [0.0, -1.5, 12.0, 3.0],
+                                [0.0, -1.5, w/2.0, 3.0],
                                 transform,
                                 gl);
         }

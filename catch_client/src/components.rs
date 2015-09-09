@@ -27,7 +27,7 @@ pub trait Interpolatable {
 }
 
 pub struct InterpolationState<T: Interpolatable> {
-    state: Option<(T, T)>
+    pub state: Option<(T, T)>
 }
 
 impl<T: Interpolatable> InterpolationState<T> {
@@ -54,8 +54,8 @@ components! {
         #[cold] player_state: PlayerState,
         #[cold] item_spawn: ItemSpawn,
 
-        #[hot] interp_state_position: InterpolationState<Position>,
-        #[hot] interp_state_orientation: InterpolationState<Orientation>,
+        #[hot] interp_position: InterpolationState<Position>,
+        #[hot] interp_orientation: InterpolationState<Orientation>,
 
         #[cold] draw_player: DrawPlayer,
     }

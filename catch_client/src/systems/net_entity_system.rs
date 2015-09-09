@@ -148,7 +148,7 @@ impl NetEntitySystem {
                 for component_type in &entity_type.component_types {
                     match *component_type { 
                         net::ComponentType::Position => {
-                            c.interp_state_position[e] = 
+                            c.interp_position[e] = 
                                 match (tick_a.net_state.position.get(&net_entity_id),
                                        tick_b.net_state.position.get(&net_entity_id)) {
                                     (Some(a), Some(b)) =>
@@ -158,7 +158,7 @@ impl NetEntitySystem {
                                 };
                         }
                         net::ComponentType::Orientation => {
-                            c.interp_state_orientation[e] = 
+                            c.interp_orientation[e] = 
                                 match (tick_a.net_state.orientation.get(&net_entity_id),
                                        tick_b.net_state.orientation.get(&net_entity_id)) {
                                     (Some(a), Some(b)) =>
@@ -173,6 +173,7 @@ impl NetEntitySystem {
             });
         }
     }
+
 }
 
 impl System for NetEntitySystem {

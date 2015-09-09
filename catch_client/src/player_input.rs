@@ -1,4 +1,4 @@
-use shared::player::PlayerInput;
+pub use shared::player::PlayerInput;
 use piston::input::{Button, Key, Input};
 
 pub struct InputMap {
