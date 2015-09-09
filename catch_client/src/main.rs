@@ -26,6 +26,7 @@ use glutin_window::GlutinWindow;
 use opengl_graphics::{GlGraphics, OpenGL};
 use graphics::Transformed;
 
+use shared::math;
 use shared::player::PlayerInput;
 use shared::net::ClientMessage;
 use shared::map::Map;
@@ -70,6 +71,8 @@ fn main() {
 
     let mut gl = GlGraphics::new(opengl);
 
+    let mut cam_pos = [0.0, 0.0];
+
     for e in window.events().ups(client.get_game_info().ticks_per_second as u64).max_fps(60) {
         match e {
             Event::Render(render_args) => {
@@ -91,10 +94,13 @@ fn main() {
                         None => [0.0, 0.0]
                     };
 
+                    cam_pos = math::add(cam_pos, math::scale(math::sub(trans, cam_pos), 0.1));
+
                     let c = c.trans((render_args.draw_width / 2) as f64,
                                     (render_args.draw_height / 2) as f64)
                              .zoom(2.0)
-                             .trans(-trans[0], -trans[1])
+                             .trans(-cam_pos[0], -cam_pos[1])
+                             //.trans(-trans[0], -trans[1])
                              ;
 
                     draw_map.draw(&map, c, gl);
