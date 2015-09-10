@@ -66,10 +66,10 @@ pub enum ServerMessage {
 // * Add a new trait HasX in shared::components,
 // * Implement that trait for both client::Components and server::Components,
 // * Add an entry for X in tick::NetState,
-// * Implement StateComponent<T> for StateComponentImpl<X> in shared::components,
+// * Implement StateComponent<T> for StateComponentImpl<X> in shared::components (via macro),
 // * Add an entry for StateComponentImpl<X> in shared::component_type_traits,
 // * Optionally, make sure X is interpolated on the client side
-#[derive(Clone, Copy, CerealData)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, CerealData)]
 pub enum ComponentType {
     Position,
     Orientation,

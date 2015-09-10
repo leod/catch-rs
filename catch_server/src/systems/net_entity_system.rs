@@ -8,7 +8,7 @@ use shared::net;
 use shared::player::PlayerId;
 use shared::event::GameEvent;
 use components;
-use components::{Components, NetEntity};
+use components::{Components, NetEntity, ServerNetEntity};
 use services::Services;
 
 pub struct NetEntitySystem {
@@ -65,6 +65,7 @@ impl NetEntitySystem {
                 type_id: entity_type_id,
                 owner: player_id,
             });
+            data.server_net_entity.add(&entity, ServerNetEntity::new());
 
             for net_component in &self.entity_types[entity_type_id as usize].1.component_types {
                 self.component_type_trait(*net_component).add(entity, data);
@@ -120,6 +121,8 @@ impl System for NetEntitySystem {
 // Once the tick has been processed, NetEntitySystem writes the current tick component state into the global Tick
 impl EntityProcess for NetEntitySystem {
     fn process(&mut self, entities: EntityIter<Components>, data: &mut DataHelper<Components, Services>) {
+        let mut forced_components = Vec::new();
+
         for e in entities {
             let &(_, ref entity_type) = &self.entity_types[data.net_entity[e].type_id as usize];
             let net_id = data.net_entity[e].id;
@@ -130,6 +133,15 @@ impl EntityProcess for NetEntitySystem {
                 self.component_type_trait(*component_type)
                     .write(e, net_id, next_net_state, &data.components);
             }
+
+            // Mark forced components
+            for forced_component in &data.server_net_entity[e].forced_components {
+                forced_components.push((net_id, *forced_component));
+            }
+            data.server_net_entity[e].forced_components = Vec::new();
         }
+
+        data.services.next_tick.as_mut().unwrap()
+            .net_state.forced_components = forced_components;
     }
 }

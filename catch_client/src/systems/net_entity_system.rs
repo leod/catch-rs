@@ -151,18 +151,27 @@ impl NetEntitySystem {
         // TODO: This would be more efficient if we stepped through tick_a's and tick_b's entity
         // lists simultaneously (=> O(n))
 
-        // Only load state for those entities that we already have
+        // We only load state for those entities that we already have
         for (net_entity_id, entity) in self.entities.iter() {
             data.with_entity_data(entity, |e, c| {
                 let entity_type = &self.entity_types[c.net_entity[e].type_id as usize].1;
 
                 for component_type in &entity_type.component_types {
+                    // Don't interpolate into forced components
+                    let mut forced = false;
+                    for &(id, forced_component) in &tick_b.net_state.forced_components {
+                        if *net_entity_id == id && *component_type == forced_component {
+                            forced = true;
+                        }
+                    }
+
                     match *component_type { 
                         net::ComponentType::Position => {
                             c.interp_position[e] = 
-                                match (tick_a.net_state.position.get(&net_entity_id),
+                                match (forced,
+                                       tick_a.net_state.position.get(&net_entity_id),
                                        tick_b.net_state.position.get(&net_entity_id)) {
-                                    (Some(a), Some(b)) =>
+                                    (false, Some(a), Some(b)) =>
                                         InterpolationState::some(a.clone(), b.clone()),
                                     _ =>
                                         InterpolationState::none() 
@@ -170,9 +179,10 @@ impl NetEntitySystem {
                         }
                         net::ComponentType::Orientation => {
                             c.interp_orientation[e] = 
-                                match (tick_a.net_state.orientation.get(&net_entity_id),
+                                match (forced,
+                                       tick_a.net_state.orientation.get(&net_entity_id),
                                        tick_b.net_state.orientation.get(&net_entity_id)) {
-                                    (Some(a), Some(b)) =>
+                                    (false, Some(a), Some(b)) =>
                                         InterpolationState::some(a.clone(), b.clone()),
                                     _ =>
                                         InterpolationState::none() 

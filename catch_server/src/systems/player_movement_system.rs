@@ -5,7 +5,7 @@ use ecs::{Process, System, EntityData, DataHelper};
 
 use shared::math;
 use shared::map::Map;
-use shared::net::TimedPlayerInput;
+use shared::net::{ComponentType, TimedPlayerInput};
 use shared::player::PlayerInput;
 use components::*;
 use services::Services;
@@ -78,6 +78,7 @@ impl PlayerMovementSystem {
                 let angle = data.orientation[e].angle;
 
                 data.orientation[e].angle = f64::consts::PI + n_angle - (angle - n_angle);
+                data.server_net_entity[e].force(ComponentType::Orientation);
 
                 let v = data.linear_velocity[e].v;
                 let speed = math::square_len(v).sqrt();

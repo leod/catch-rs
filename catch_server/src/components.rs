@@ -1,5 +1,6 @@
 use ecs::ComponentList;
 
+use shared::net;
 use shared::components::{HasPosition, HasOrientation,
                          HasLinearVelocity, HasPlayerState,
                          HasItemSpawn};
@@ -9,9 +10,27 @@ pub use shared::components::{NetEntity, Position,
                              ComponentTypeTraits,
                              component_type_traits};
 
+pub struct ServerNetEntity {
+    // Components that should not be interpolated into the current tick
+    pub forced_components: Vec<net::ComponentType>,
+}
+
+impl ServerNetEntity {
+    pub fn new() -> ServerNetEntity {
+        ServerNetEntity {
+            forced_components: Vec::new(),
+        }
+    }
+
+    pub fn force(&mut self, component_type: net::ComponentType) {
+        self.forced_components.push(component_type);
+    }
+}
+
 components! {
     struct Components {
         #[hot] net_entity: NetEntity,
+        #[hot] server_net_entity: ServerNetEntity,
 
         #[hot] position: Position,
         #[hot] orientation: Orientation,

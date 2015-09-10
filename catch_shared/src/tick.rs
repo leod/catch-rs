@@ -14,6 +14,10 @@ pub struct NetState {
     pub linear_velocity: ComponentsNetState<LinearVelocity>,
     pub player_state: ComponentsNetState<PlayerState>,
     pub item_spawn: ComponentsNetState<ItemSpawn>,
+
+    // List of components that should not be interpolated into this tick
+    // (e.g. you wouldn't want to interpolate the position of a player that was just teleported)
+    pub forced_components: Vec<(net::EntityId, net::ComponentType)>,
 }
 
 #[derive(CerealData)]
@@ -31,6 +35,8 @@ impl NetState {
             linear_velocity: HashMap::new(),
             player_state: HashMap::new(),
             item_spawn: HashMap::new(),
+
+            forced_components: Vec::new(),
         }
     }
 }
