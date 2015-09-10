@@ -74,4 +74,11 @@ impl GameState {
 
         // TODO: Process other events, interpolation
     }
+
+    pub fn load_interp_tick_state(&mut self, tick_a: &Tick, tick_b: &Tick) {
+        let net_entity_system = self.world.systems.net_entity_system
+                                    .inner.as_mut().unwrap();
+
+        net_entity_system.load_interp_tick_state(tick_a, tick_b, &mut self.world.data);
+    }
 }

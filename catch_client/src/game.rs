@@ -17,6 +17,7 @@ use opengl_graphics::glyph_cache::GlyphCache;
 use shared::math;
 use shared::net::{ClientMessage, TickNumber, TimedPlayerInput};
 use shared::map::Map;
+use shared::tick::Tick;
 use shared::util::PeriodicTimer;
 
 use client::Client;
@@ -36,7 +37,10 @@ pub struct Game {
     player_input_map: InputMap,
     player_input: PlayerInput,
 
-    tick_number: Option<TickNumber>,
+    interpolation_ticks: usize,
+    current_tick: Option<Tick>,
+    tick_progress: f64,
+    time_factor: f64,
 
     window: GameWindow,
     draw_map: DrawMap,
@@ -64,7 +68,10 @@ impl Game {
             client: connected_client,
             player_input_map: player_input_map,
             player_input: PlayerInput::new(),
-            tick_number: None,
+            interpolation_ticks: 2,
+            current_tick: None,
+            tick_progress: 0.0,
+            time_factor: 0.0,
             game_state: game_state,
             window: window,
             draw_map: draw_map,
@@ -77,13 +84,16 @@ impl Game {
     pub fn run(&mut self, gl: &mut GlGraphics) {
         let mut simulation_time_s = 0.0;
 
+        self.wait_first_ticks();
+
         while !self.quit {
             let frame_start_s = time::precise_time_s();
 
             self.client_service();
             self.read_input();
             self.send_input(simulation_time_s);
-            self.manage_ticks();
+            self.manage_ticks(simulation_time_s);
+            self.interpolate();
             self.draw(gl);
 
             //thread::sleep_ms(10);
@@ -93,6 +103,27 @@ impl Game {
 
             self.fps = 1.0 / simulation_time_s;
         }
+    }
+
+    fn wait_first_ticks(&mut self) {
+        print!("Waiting to receive first ticks from server... ");
+
+        while self.client.num_ticks() < self.interpolation_ticks {
+            self.client_service();
+        }
+
+        println!("done! Have {} ticks", self.client.num_ticks());
+
+        let tick = self.client.pop_next_tick().1;
+        println!("Starting tick {}", tick.tick_number);
+        self.game_state.run_tick(&tick);
+
+        let next_tick = &self.client.get_next_tick().1;
+        println!("Interpolating to tick {}", next_tick.tick_number);
+        self.game_state.load_interp_tick_state(&tick, next_tick);
+
+        assert!(self.current_tick.is_none());
+        self.current_tick = Some(tick);
     }
 
     fn client_service(&mut self) {
@@ -111,6 +142,9 @@ impl Game {
                     self.quit = true;
                     return;
                 }
+                Input::Press(Button::Keyboard(Key::P)) => {
+                    thread::sleep_ms(200);
+                }
                 _ => 
                     self.player_input_map
                         .update_player_input(&input, &mut self.player_input)
@@ -127,29 +161,47 @@ impl Game {
         ));
     }
 
-    fn manage_ticks(&mut self) {
-        if self.client.num_ticks() > 0 {
-            // Play some very rough catch up for a start...
-            // For the future, the idea here is to increase the playback speed of the
-            // received ticks if we notice that we are falling behind too much.
-            // We only need to make sure we know what "too much" is, and if it is
-            // sufficient to query client.num_ticks() for that.
-            while self.client.num_ticks() > 0 {
-                let (time_recv, tick) = self.client.pop_next_tick();
+    fn manage_ticks(&mut self, simulation_time_s: f64) {
+        assert!(self.current_tick.is_some());
 
-                println!("Starting tick {}, {:?} delay, {} ticks queued",
-                         tick.tick_number,
-                         (time::get_time() - time_recv).num_milliseconds(),
-                         self.client.num_ticks());
+        if self.tick_progress < 1.0 {
+            self.time_factor = {
+                if self.client.num_ticks() > 2 {
+                    1.25 
+                } else if self.client.num_ticks() < 2 && self.tick_progress > 0.5 {
+                    0.75 // Is this a stupid idea?
+                } else {
+                    1.0
+                }
+            };
 
+            self.tick_progress += self.time_factor * 
+                                  simulation_time_s *
+                                  self.client.get_game_info().ticks_per_second as f64;
+        }
+
+        if self.tick_progress >= 1.0 {
+            // Load the next ticks if we have them
+            if self.client.num_ticks() >= 2 {
+                let (_, tick) = self.client.pop_next_tick();
                 self.game_state.run_tick(&tick);
-                self.tick_number = Some(tick.tick_number);
 
-                self.client.send(&ClientMessage::StartingTick {
-                    tick: tick.tick_number
-                });
+                let next_tick = &self.client.get_next_tick().1;
+
+                self.game_state.load_interp_tick_state(&tick, next_tick);
+
+                self.current_tick = Some(tick);
+
+                self.tick_progress -= 1.0;
+            } else {
+                println!("Waiting for new tick");
             }
         }
+    }
+
+    fn interpolate(&mut self) {
+        self.game_state.world.systems.interpolation_system
+            .interpolate(self.tick_progress, &mut self.game_state.world.data);
     }
 
     fn draw(&mut self, gl: &mut GlGraphics) {
@@ -190,8 +242,7 @@ impl Game {
             }
 
             {
-                let c = c.trans(half_width,
-                                half_height)
+                let c = c.trans(half_width, half_height)
                          .zoom(zoom)
                          .trans(-self.cam_pos[0], -self.cam_pos[1]);
 
@@ -208,7 +259,10 @@ impl Game {
     }
 
     fn debug_text(&mut self, c: graphics::Context, gl: &mut GlGraphics) {
-        let s = &format!("FPS: {:.1}", self.fps); self.draw_text(10.0, 30.0, s, c, gl);
+        let s = &format!("fps: {:.1}", self.fps); self.draw_text(10.0, 30.0, s, c, gl);
+        let s = &format!("# queued ticks: {}", self.client.num_ticks()); self.draw_text(10.0, 65.0, s, c, gl);
+        let s = &format!("tick progress: {:.1}", self.tick_progress); self.draw_text(10.0, 100.0, s, c, gl);
+        let s = &format!("time factor: {:.1}", self.time_factor); self.draw_text(10.0, 135.0, s, c, gl);
     }
 
     fn draw_text(&mut self, x: f64, y: f64, s: &str, c: graphics::Context, gl: &mut GlGraphics) {

@@ -66,6 +66,17 @@ impl NetEntitySystem {
 
             for net_component in &self.entity_types[entity_type_id as usize].1.component_types {
                 self.component_type_trait(*net_component).add(entity, data);
+
+                // Add components for interpolation state for certain net component types
+                match *net_component {
+                    net::ComponentType::Position => {
+                        data.interp_position.add(&entity, InterpolationState::none());
+                    }
+                    net::ComponentType::Orientation => {
+                        data.interp_orientation.add(&entity, InterpolationState::none());
+                    }
+                    _ => ()
+                };
             }
 
             let type_name = self.entity_types[entity_type_id as usize].0.clone();
@@ -173,7 +184,6 @@ impl NetEntitySystem {
             });
         }
     }
-
 }
 
 impl System for NetEntitySystem {

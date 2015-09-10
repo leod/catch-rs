@@ -73,7 +73,7 @@ impl Interpolatable for Position {
 impl Interpolatable for Orientation {
     fn interpolate(a: &Orientation, b: &Orientation, t: f64) -> Orientation {
         Orientation {
-            angle: (1.0 - t) * a.angle + b.angle
+            angle: (1.0 - t) * a.angle + t * b.angle
         }
     }
 }

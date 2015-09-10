@@ -72,6 +72,14 @@ impl Client {
         self.tick_deque.len()         
     }
 
+    pub fn get_tick(&self, i: usize) -> &(time::Timespec, Tick) {
+        &self.tick_deque[i]
+    }
+
+    pub fn get_next_tick(&mut self) -> &(time::Timespec, Tick) {
+        &self.tick_deque.front().unwrap()
+    }
+
     pub fn pop_next_tick(&mut self) -> (time::Timespec, Tick) {
         self.tick_deque.pop_front().unwrap() 
     }
