@@ -1,5 +1,3 @@
-#![feature(concat_idents)]
-
 use std::marker::PhantomData;
 
 use ecs::{ComponentManager, ComponentList, BuildData, EntityData};

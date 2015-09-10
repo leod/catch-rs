@@ -6,7 +6,7 @@ use ecs::{Process, System, EntityData, DataHelper};
 use shared::math;
 use shared::map::Map;
 use shared::net::{ComponentType, TimedPlayerInput};
-use shared::player::PlayerInput;
+use shared::player::{PlayerInput, InputKey};
 use components::*;
 use services::Services;
 
@@ -64,7 +64,7 @@ impl PlayerMovementSystem {
         };
     }
 
-    pub fn move_flicking(&self,
+    pub fn move_flipping(&self,
                          e: EntityData<Components>,
                          delta: math::Vec2,
                          map: &Map,
@@ -128,10 +128,10 @@ impl PlayerMovementSystem {
                         None
                     };
             } else {
-                if input.left_pressed {
+                if input.has(InputKey::Left) {
                     c.orientation[e].angle -= TURN_SPEED * dur_s;
                 }
-                if input.right_pressed {
+                if input.has(InputKey::Right) {
                     c.orientation[e].angle += TURN_SPEED * dur_s;
                 }
 
@@ -139,10 +139,10 @@ impl PlayerMovementSystem {
 
                 let mut accel = math::scale(velocity, -4.0);
 
-                if input.forward_pressed {
+                if input.has(InputKey::Forward) {
                     accel = math::add(math::scale(direction, MOVE_ACCEL), accel);
                 }
-                if input.back_pressed {
+                if input.has(InputKey::Back) {
                     accel = math::add(math::scale(direction, -BACK_ACCEL), accel);
                 }
 
@@ -155,15 +155,15 @@ impl PlayerMovementSystem {
                     c.linear_velocity[e].v[1] = 0.0;
                 }
 
-                if input.dash_pressed {
+                if input.has(InputKey::Dash) {
                     c.player_state[e].dashing = Some(0.0);
                 }
             }
 
-            if !input.flick_pressed {
+            if !input.has(InputKey::Flip) {
                 self.move_sliding(e, math::scale(c.linear_velocity[e].v, dur_s), map, c);
             } else {
-                self.move_flicking(e, math::scale(c.linear_velocity[e].v, dur_s), map, c);
+                self.move_flipping(e, math::scale(c.linear_velocity[e].v, dur_s), map, c);
             }
         });
     }

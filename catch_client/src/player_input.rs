@@ -1,65 +1,46 @@
-pub use shared::player::PlayerInput;
+use std::collections::HashMap;
+
+pub use shared::player::{PlayerInput, InputKey};
 use piston::input::{Button, Key, Input};
 
 pub struct InputMap {
-    pub left_button: Button,
-    pub right_button: Button,
-    pub forward_button: Button,
-    pub back_button: Button,
-    pub use_button: Button,
-    pub flick_button: Button,
-    pub dash_button: Button,
+    map: HashMap<Button, InputKey>
 }
 
 impl InputMap {
     pub fn new() -> InputMap {
+        let mut map = HashMap::new();
+
+        map.insert(Button::Keyboard(Key::Left), InputKey::Left);
+        map.insert(Button::Keyboard(Key::Right), InputKey::Right);
+        map.insert(Button::Keyboard(Key::Up), InputKey::Forward);
+        map.insert(Button::Keyboard(Key::Down), InputKey::Back);
+        map.insert(Button::Keyboard(Key::LAlt), InputKey::Strafe);
+        map.insert(Button::Keyboard(Key::E), InputKey::Use);
+        map.insert(Button::Keyboard(Key::LShift), InputKey::Flip);
+        map.insert(Button::Keyboard(Key::Space), InputKey::Dash);
+
         InputMap {
-            left_button: Button::Keyboard(Key::A),
-            right_button: Button::Keyboard(Key::D),
-            forward_button: Button::Keyboard(Key::W),
-            back_button: Button::Keyboard(Key::S),
-            use_button: Button::Keyboard(Key::Space),
-            flick_button: Button::Keyboard(Key::LShift),
-            dash_button: Button::Keyboard(Key::LCtrl),
+            map: map
         }
     }
 
     pub fn update_player_input(&self, input: &Input, player_input: &mut PlayerInput) {
         match *input {
-            Input::Press(button) => {
-                if button == self.left_button {
-                    player_input.left_pressed = true;
-                } else if button == self.right_button {
-                    player_input.right_pressed = true;
-                } else if button == self.forward_button {
-                    player_input.forward_pressed = true;
-                } else if button == self.back_button {
-                    player_input.back_pressed = true;
-                } else if button == self.use_button {
-                    player_input.use_pressed = true;
-                } else if button == self.flick_button {
-                    player_input.flick_pressed = true;
-                } else if button == self.dash_button {
-                    player_input.dash_pressed = true;
-                }
-            }
-            Input::Release(button) => {
-                if button == self.left_button {
-                    player_input.left_pressed = false;
-                } else if button == self.right_button {
-                    player_input.right_pressed = false;
-                } else if button == self.forward_button {
-                    player_input.forward_pressed = false;
-                } else if button == self.back_button {
-                    player_input.back_pressed = false;
-                } else if button == self.use_button {
-                    player_input.use_pressed = false;
-                } else if button == self.flick_button {
-                    player_input.flick_pressed = false;
-                } else if button == self.dash_button {
-                    player_input.dash_pressed = false;
-                }
-            }
+            Input::Press(button) =>
+                match self.map.get(&button) {
+                    Some(input_key) =>
+                        player_input.set(*input_key),
+                    _ =>
+                        ()
+                },
+            Input::Release(button) =>
+                match self.map.get(&button) {
+                    Some(input_key) =>
+                        player_input.unset(*input_key),
+                    _ =>
+                        ()
+                },
             _ => ()
         }
     }
