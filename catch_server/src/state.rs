@@ -98,7 +98,7 @@ impl GameState {
         // server...
 
         if self.players[&id].next_input.len() > 0 {
-            println!("Already have player input for {}, queuing", id);
+            //println!("Already have player input for {}, queuing", id);
         }
 
         self.players.get_mut(&id).as_mut().unwrap()

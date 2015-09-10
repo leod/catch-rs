@@ -169,6 +169,7 @@ impl Game {
                 if self.client.num_ticks() > 2 {
                     1.25 
                 } else if self.client.num_ticks() < 2 && self.tick_progress > 0.5 {
+                    println!("Slowing down");
                     0.75 // Is this a stupid idea?
                 } else {
                     1.0
