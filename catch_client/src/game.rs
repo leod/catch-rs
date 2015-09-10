@@ -174,7 +174,7 @@ impl Game {
             if self.cam_pos[1] < half_height / zoom {
                 self.cam_pos[1] = half_height / zoom; 
             }
-            if self.cam_pos[0] + half_height / zoom > self.game_state.map.height_pixels() as f64{
+            if self.cam_pos[1] + half_height / zoom > self.game_state.map.height_pixels() as f64{
                 self.cam_pos[1] = self.game_state.map.height_pixels() as f64 - half_height / zoom;
             }
 
