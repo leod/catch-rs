@@ -8,7 +8,9 @@ use shared::tick::Tick;
 use shared::event::GameEvent;
 use shared::player::PlayerId;
 use components;
-use components::{Components, NetEntity, InterpolationState, DrawPlayer};
+use components::{Components, NetEntity,
+                 InterpolationState, DrawPlayer,
+                 DrawBouncyEnemy};
 use services::Services;
 
 pub struct NetEntitySystem {
@@ -67,7 +69,7 @@ impl NetEntitySystem {
             for net_component in &self.entity_types[entity_type_id as usize].1.component_types {
                 self.component_type_trait(*net_component).add(entity, data);
 
-                // Add components for interpolation state for certain net component types
+                // Add interpolation state components for certain net component types
                 match *net_component {
                     net::ComponentType::Position => {
                         data.interp_position.add(&entity, InterpolationState::none());
@@ -83,7 +85,9 @@ impl NetEntitySystem {
 
             // TODO: probably don't wanna keep this hardcoded here
             if &type_name == "player" {
-                data.draw_player.add(&entity, DrawPlayer::new());
+                data.draw_player.add(&entity, DrawPlayer::default());
+            } else if &type_name == "bouncy_enemy" {
+                data.draw_bouncy_enemy.add(&entity, DrawBouncyEnemy::default());
             } else {
                 panic!("Unknown net entity type: {}", type_name);
             }

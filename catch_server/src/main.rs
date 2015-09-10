@@ -7,6 +7,7 @@ extern crate renet as enet;
 extern crate libc;
 extern crate cereal;
 extern crate time;
+extern crate rand;
 
 pub mod components;
 pub mod services;

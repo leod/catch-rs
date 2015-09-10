@@ -8,6 +8,7 @@ authors = [
 [dependencies]
 #ecs = "*"
 time = "0.1.32"
+rand = "0.3.11"
 
 [dependencies.ecs]
 git = "https://github.com/HeroesGrave/ecs-rs.git"

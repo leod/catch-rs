@@ -6,6 +6,23 @@ use cereal::{CerealData, CerealResult};
 pub type PlayerId = u32;
 pub type PlayerInputNumber = u32;
 
+// Component attached to any player for both client and server
+#[derive(CerealData, Clone)]
+pub struct PlayerState { 
+    pub color: u32,
+    pub dashing: Option<f64>,
+
+    // States like stunned etc.
+}
+
+// Attached to players on the server and the clients controlling them
+#[derive(CerealData, Clone)]
+pub struct FullPlayerState {
+    unchi: bool
+
+    // Item states, cooldowns etc.
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum InputKey {
     Left,

@@ -1,9 +1,11 @@
+use std::f64;
 use std::collections::HashMap;
 
 use ecs;
+use rand;
 
 use shared::net;
-use shared::map::Map;
+use shared::map::{LayerId, Map};
 use shared::net::{TickNumber, GameInfo, TimedPlayerInput};
 use shared::event::GameEvent;
 use shared::player::{PlayerId, PlayerInfo, PlayerInput};
@@ -50,6 +52,38 @@ impl GameState {
         }
     }
 
+    // For adding test entities and stuff
+    pub fn init_first_tick(&mut self) {
+        let num_bouncies = 42;
+
+        for i in 0..num_bouncies {
+            let net_entity_type_id = self.world.systems.net_entity_system.type_id("bouncy_enemy".to_string());
+            let (_, entity) = 
+                self.world.systems.net_entity_system
+                    .create_entity(net_entity_type_id, 0, &mut self.world.data);
+
+            // Pick a random non-blocked tile
+            let mut rx = 0;
+            let mut ry = 0;
+            loop {
+                rx = rand::random::<usize>() % self.map.width();
+                ry = rand::random::<usize>() % self.map.height();
+
+                if self.map.get_tile(LayerId::Block, rx, ry).is_none() {
+                    break;
+                }
+            }
+
+            let position = [(rx * self.map.tile_width()) as f64 + self.map.tile_width() as f64 / 2.0,
+                            (ry * self.map.tile_height()) as f64 + self.map.tile_height() as f64 / 2.0];
+
+            self.world.with_entity_data(&entity, |e, c| {
+                c.position[e].p = position;
+                c.orientation[e].angle = rand::random::<f64>() * f64::consts::PI * 2.0;
+            });
+        }
+    }
+
     pub fn tick_number(&self) -> TickNumber {
         self.tick_number 
     }
@@ -66,13 +100,12 @@ impl GameState {
                 "Can't spawn a player that is already controlling an entity");
 
         let net_entity_type_id = self.world.systems.net_entity_system.type_id("player".to_string());
-        let (net_entity_id, _) = 
+        let (net_entity_id, entity) = 
             self.world.systems.net_entity_system
                 .create_entity(net_entity_type_id, id, &mut self.world.data);
         self.players.get_mut(&id).unwrap().controlled_entity = Some(net_entity_id);
 
         let position = [128.0, 128.0];
-        let entity = self.world.systems.net_entity_system.get_entity(net_entity_id);  
 
         self.world.with_entity_data(&entity, |e, c| {
             c.position[e].p = position;
@@ -126,6 +159,10 @@ impl GameState {
         self.tick_number += 1;
         self.world.services.tick_dur_s = (1.0 / (self.game_info.ticks_per_second as f64)); 
         self.world.services.prepare_for_tick(self.tick_number, self.players.keys().map(|i| *i));
+
+        if self.tick_number == 1 {
+            self.init_first_tick();
+        }
 
         // Replicate entities to new players
         {
@@ -184,6 +221,9 @@ impl GameState {
         for (_, player) in self.players.iter_mut() {
             player.next_input.clear();
         }
+
+        // Let server entities have their time
+        self.world.systems.bouncy_enemy_system.tick(&self.map, &mut self.world.data);
 
         process!(self.world, net_entity_system);
     }

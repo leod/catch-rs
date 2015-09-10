@@ -251,6 +251,9 @@ impl Game {
                 self.game_state.world.systems
                     .draw_player_system
                     .draw(&mut self.game_state.world.data, c, gl);
+                self.game_state.world.systems
+                    .draw_bouncy_enemy_system
+                    .draw(&mut self.game_state.world.data, c, gl);
             }
 
             self.debug_text(c, gl);

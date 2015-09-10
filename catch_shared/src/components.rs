@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 
 use ecs::{ComponentManager, ComponentList, BuildData, EntityData};
 
+pub use player::{PlayerState, FullPlayerState};
 use net::{StateComponent, EntityId, EntityTypeId, COMPONENT_TYPES, ComponentType};
 use player::PlayerId;
 use tick::NetState;
@@ -28,12 +29,6 @@ pub struct Orientation {
 #[derive(CerealData, Clone)]
 pub struct LinearVelocity {
     pub v: math::Vec2,
-}
-
-#[derive(CerealData, Clone)]
-pub struct PlayerState {
-    pub color: u32,
-    pub dashing: Option<f64>,
 }
 
 #[derive(CerealData, Clone)]

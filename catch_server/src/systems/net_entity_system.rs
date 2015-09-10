@@ -8,7 +8,7 @@ use shared::net;
 use shared::player::PlayerId;
 use shared::event::GameEvent;
 use components;
-use components::{Components, NetEntity, ServerNetEntity};
+use components::{Components, NetEntity, ServerNetEntity, LinearVelocity, BouncyEnemy};
 use services::Services;
 
 pub struct NetEntitySystem {
@@ -65,7 +65,7 @@ impl NetEntitySystem {
                 type_id: entity_type_id,
                 owner: player_id,
             });
-            data.server_net_entity.add(&entity, ServerNetEntity::new());
+            data.server_net_entity.add(&entity, ServerNetEntity::default());
 
             for net_component in &self.entity_types[entity_type_id as usize].1.component_types {
                 self.component_type_trait(*net_component).add(entity, data);
@@ -75,6 +75,9 @@ impl NetEntitySystem {
 
             // TODO: probably don't wanna keep this hardcoded here
             if &type_name == "player" {
+            } else if &type_name == "bouncy_enemy" {
+                data.linear_velocity.add(&entity, LinearVelocity::default());
+                data.bouncy_enemy.add(&entity, BouncyEnemy::default());
             } else {
                 panic!("Unknown net entity type: {}", type_name);
             }

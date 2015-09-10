@@ -15,15 +15,25 @@ pub struct ServerNetEntity {
     pub forced_components: Vec<net::ComponentType>,
 }
 
-impl ServerNetEntity {
-    pub fn new() -> ServerNetEntity {
+impl Default for ServerNetEntity {
+    fn default() -> ServerNetEntity {
         ServerNetEntity {
             forced_components: Vec::new(),
         }
     }
+}
 
+impl ServerNetEntity {
     pub fn force(&mut self, component_type: net::ComponentType) {
         self.forced_components.push(component_type);
+    }
+}
+
+pub struct BouncyEnemy; 
+
+impl Default for BouncyEnemy {
+    fn default() -> BouncyEnemy {
+        BouncyEnemy
     }
 }
 
@@ -37,6 +47,7 @@ components! {
         #[hot] linear_velocity: LinearVelocity,
         #[cold] player_state: PlayerState,
         #[cold] item_spawn: ItemSpawn,
+        #[cold] bouncy_enemy: BouncyEnemy,
     }
 }
 

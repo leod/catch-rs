@@ -86,7 +86,6 @@ impl PlayerMovementSystem {
                     data.orientation[e].angle.cos() * (speed + 1.0),
                     data.orientation[e].angle.sin() * (speed + 1.0),
                 ];
-                    //math::sub(math::scale(n, 2.0 * math::dot(v, n)), v);
 
                 let s = (s - 0.0001).max(0.0);
                 data.position[e].p = math::add(p, math::scale(delta, s));

@@ -14,11 +14,19 @@ pub struct DrawPlayer {
     pub scale_x: f64
 }
 
-impl DrawPlayer {
-    pub fn new() -> DrawPlayer {
+pub struct DrawBouncyEnemy;
+
+impl Default for DrawPlayer {
+    fn default() -> DrawPlayer {
         DrawPlayer {
             scale_x: 1.0,
         }
+    }
+}
+
+impl Default for DrawBouncyEnemy {
+    fn default() -> DrawBouncyEnemy {
+        DrawBouncyEnemy
     }
 }
 
@@ -58,6 +66,7 @@ components! {
         #[hot] interp_orientation: InterpolationState<Orientation>,
 
         #[cold] draw_player: DrawPlayer,
+        #[cold] draw_bouncy_enemy: DrawBouncyEnemy,
     }
 }
 

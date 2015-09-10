@@ -109,6 +109,12 @@ pub fn all_entity_types() -> EntityTypes {
                               ComponentType::PlayerState].to_vec()
         }));
 
+    entity_types.push(("bouncy_enemy".to_string(),
+        EntityType {
+            component_types: [ComponentType::Position,
+                              ComponentType::Orientation].to_vec()
+        }));
+
     entity_types
 }
 
