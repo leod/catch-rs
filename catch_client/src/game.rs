@@ -1,16 +1,18 @@
+use std::thread;
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::thread;
+use std::path::Path;
 
 use time;
 use graphics;
 use graphics::Transformed;
 use graphics::Viewport;
 use glutin_window::GlutinWindow;
-use piston_window::PistonWindow;
+use piston_window::{PistonWindow, Text};
 use piston::window::Window;
 use piston::input::{Input, Button, Key};
 use opengl_graphics::GlGraphics;
+use opengl_graphics::glyph_cache::GlyphCache;
 
 use shared::math;
 use shared::net::{ClientMessage, TickNumber, TimedPlayerInput};
@@ -40,6 +42,8 @@ pub struct Game {
     draw_map: DrawMap,
 
     cam_pos: math::Vec2,
+    glyphs: GlyphCache<'static>,
+    fps: f64,
 }
 
 impl Game {
@@ -50,6 +54,10 @@ impl Game {
         let game_state = GameState::new(connected_client.get_my_id(),
                                         connected_client.get_game_info());
         let draw_map = DrawMap::load(&game_state.map).unwrap();
+        let window = GameWindow::new(Rc::new(RefCell::new(window)),
+                                     Rc::new(RefCell::new(())));
+        let font = "../data/ProggyClean.ttf";
+        let glyphs = GlyphCache::new(Path::new(font)).unwrap();
 
         Game {
             quit: false,
@@ -58,10 +66,11 @@ impl Game {
             player_input: PlayerInput::new(),
             tick_number: None,
             game_state: game_state,
-            window: GameWindow::new(Rc::new(RefCell::new(window)),
-                                    Rc::new(RefCell::new(()))),
+            window: window,
             draw_map: draw_map,
-            cam_pos: [0.0, 0.0]
+            cam_pos: [0.0, 0.0],
+            glyphs: glyphs,
+            fps: 0.0,
         }
     }
 
@@ -81,6 +90,8 @@ impl Game {
 
             let frame_end_s = time::precise_time_s();
             simulation_time_s = frame_end_s - frame_start_s;
+
+            self.fps = 1.0 / simulation_time_s;
         }
     }
 
@@ -153,7 +164,7 @@ impl Game {
         };
 
         gl.draw(viewport, |c, gl| {
-            graphics::clear([1.0, 0.0, 0.0, 0.0], gl);
+            graphics::clear([0.0, 0.0, 0.0, 0.0], gl);
 
             let pos = self.my_player_position().unwrap_or([0.0, 0.0]);
             self.cam_pos = math::add(self.cam_pos,
@@ -178,37 +189,54 @@ impl Game {
                 self.cam_pos[1] = self.game_state.map.height_pixels() as f64 - half_height / zoom;
             }
 
-            let c = c.trans(half_width,
-                            half_height)
-                     .zoom(zoom)
-                     .trans(-self.cam_pos[0], -self.cam_pos[1]);
+            {
+                let c = c.trans(half_width,
+                                half_height)
+                         .zoom(zoom)
+                         .trans(-self.cam_pos[0], -self.cam_pos[1]);
 
-            self.draw_map.draw(&self.game_state.map, c, gl);
-            self.game_state.world.systems
-                .draw_player_system
-                .draw(&mut self.game_state.world.data, c, gl);
+                self.draw_map.draw(&self.game_state.map, c, gl);
+                self.game_state.world.systems
+                    .draw_player_system
+                    .draw(&mut self.game_state.world.data, c, gl);
+            }
+
+            self.debug_text(c, gl);
         });
 
         self.window.swap_buffers();
+    }
+
+    fn debug_text(&mut self, c: graphics::Context, gl: &mut GlGraphics) {
+        let s = &format!("FPS: {:.1}", self.fps); self.draw_text(10.0, 30.0, s, c, gl);
+    }
+
+    fn draw_text(&mut self, x: f64, y: f64, s: &str, c: graphics::Context, gl: &mut GlGraphics) {
+        let color = [1.0, 0.0, 1.0, 1.0];
+        Text::new_color(color, 30).draw(
+            s,
+            &mut self.glyphs,
+            &c.draw_state,
+            c.transform.trans(x, y),
+            gl);
     }
 
     fn my_player_position(&mut self) -> Option<math::Vec2> {
         match self.game_state.world.systems.net_entity_system.inner
                                    .as_ref().unwrap()
                                    .my_player_entity_id() {
-                Some(player_entity_id) => {
-                    let player_entity = self.game_state.world.systems
-                        .net_entity_system.inner.as_ref().unwrap()
-                        .get_entity(player_entity_id)
-                        .unwrap();
+            Some(player_entity_id) => {
+                let player_entity = self.game_state.world.systems
+                    .net_entity_system.inner.as_ref().unwrap()
+                    .get_entity(player_entity_id)
+                    .unwrap();
 
-                    self.game_state.world.with_entity_data(&player_entity, |e, c| {
-                        c.position[e].p
-                    })
-                }
-                None => None
+                self.game_state.world.with_entity_data(&player_entity, |e, c| {
+                    c.position[e].p
+                })
+            }
+            None => None
         }
     }
-
 }
 
