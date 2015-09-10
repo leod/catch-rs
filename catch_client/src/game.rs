@@ -1,8 +1,13 @@
+use std::rc::Rc;
+use std::cell::RefCell;
+use std::thread;
+
 use time;
 use graphics;
 use graphics::Transformed;
 use graphics::Viewport;
 use glutin_window::GlutinWindow;
+use piston_window::PistonWindow;
 use piston::window::Window;
 use piston::input::{Input, Button, Key};
 use opengl_graphics::GlGraphics;
@@ -17,6 +22,8 @@ use state::GameState;
 use player_input::{PlayerInput, InputMap};
 use draw_map::DrawMap;
 
+type GameWindow = PistonWindow;
+
 pub struct Game {
     quit: bool,
 
@@ -29,7 +36,7 @@ pub struct Game {
 
     tick_number: Option<TickNumber>,
 
-    window: GlutinWindow,
+    window: GameWindow,
     draw_map: DrawMap,
 
     cam_pos: math::Vec2,
@@ -51,7 +58,8 @@ impl Game {
             player_input: PlayerInput::new(),
             tick_number: None,
             game_state: game_state,
-            window: window,
+            window: GameWindow::new(Rc::new(RefCell::new(window)),
+                                    Rc::new(RefCell::new(()))),
             draw_map: draw_map,
             cam_pos: [0.0, 0.0]
         }
@@ -66,31 +74,10 @@ impl Game {
             self.client_service();
             self.read_input();
             self.send_input(simulation_time_s);
-
-            if self.client.num_ticks() > 0 {
-                // Play some very rough catch up for a start...
-                // For the future, the idea here is to increase the playback speed of the
-                // received ticks if we notice that we are falling behind too much.
-                // We only need to make sure we know what "too much" is, and if it is
-                // sufficient to query client.num_ticks() for that.
-                while self.client.num_ticks() > 0 {
-                    let (time_recv, tick) = self.client.pop_next_tick();
-
-                    println!("Starting tick {}, {:?} delay, {} ticks queued",
-                             tick.tick_number,
-                             (time::get_time() - time_recv).num_milliseconds(),
-                             self.client.num_ticks());
-
-                    self.game_state.run_tick(&tick);
-                    self.tick_number = Some(tick.tick_number);
-
-                    self.client.send(&ClientMessage::StartingTick {
-                        tick: tick.tick_number
-                    });
-                }
-            }
-
+            self.manage_ticks();
             self.draw(gl);
+
+            //thread::sleep_ms(10);
 
             let frame_end_s = time::precise_time_s();
             simulation_time_s = frame_end_s - frame_start_s;
@@ -129,6 +116,31 @@ impl Game {
         ));
     }
 
+    fn manage_ticks(&mut self) {
+        if self.client.num_ticks() > 0 {
+            // Play some very rough catch up for a start...
+            // For the future, the idea here is to increase the playback speed of the
+            // received ticks if we notice that we are falling behind too much.
+            // We only need to make sure we know what "too much" is, and if it is
+            // sufficient to query client.num_ticks() for that.
+            while self.client.num_ticks() > 0 {
+                let (time_recv, tick) = self.client.pop_next_tick();
+
+                println!("Starting tick {}, {:?} delay, {} ticks queued",
+                         tick.tick_number,
+                         (time::get_time() - time_recv).num_milliseconds(),
+                         self.client.num_ticks());
+
+                self.game_state.run_tick(&tick);
+                self.tick_number = Some(tick.tick_number);
+
+                self.client.send(&ClientMessage::StartingTick {
+                    tick: tick.tick_number
+                });
+            }
+        }
+    }
+
     fn draw(&mut self, gl: &mut GlGraphics) {
         let draw_width = self.window.draw_size().width;
         let draw_height = self.window.draw_size().height;
@@ -141,16 +153,34 @@ impl Game {
         };
 
         gl.draw(viewport, |c, gl| {
-            graphics::clear([0.0, 0.0, 0.0, 0.0], gl);
+            graphics::clear([1.0, 0.0, 0.0, 0.0], gl);
 
             let pos = self.my_player_position().unwrap_or([0.0, 0.0]);
             self.cam_pos = math::add(self.cam_pos,
                                      math::scale(math::sub(pos, self.cam_pos),
                                      0.15));
 
-            let c = c.trans(draw_width as f64 / 2.0,
-                            draw_height as f64 / 2.0)
-                     .zoom(2.0)
+            let half_width = draw_width as f64 / 2.0;
+            let half_height = draw_height as f64 / 2.0;
+            let zoom = 2.0;
+
+            // Clip camera position to map size in pixels
+            if self.cam_pos[0] < half_width / zoom {
+                self.cam_pos[0] = half_width / zoom; 
+            }
+            if self.cam_pos[0] + half_width / zoom > self.game_state.map.width_pixels() as f64 {
+                self.cam_pos[0] = self.game_state.map.width_pixels() as f64 - half_width / zoom;
+            }
+            if self.cam_pos[1] < half_height / zoom {
+                self.cam_pos[1] = half_height / zoom; 
+            }
+            if self.cam_pos[0] + half_height / zoom > self.game_state.map.height_pixels() as f64{
+                self.cam_pos[1] = self.game_state.map.height_pixels() as f64 - half_height / zoom;
+            }
+
+            let c = c.trans(half_width,
+                            half_height)
+                     .zoom(zoom)
                      .trans(-self.cam_pos[0], -self.cam_pos[1]);
 
             self.draw_map.draw(&self.game_state.map, c, gl);

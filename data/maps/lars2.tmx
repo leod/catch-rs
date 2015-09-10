@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" width="32" height="32" tilewidth="32" tileheight="32">
+ <tileset firstgid="1" name="ground" tilewidth="32" tileheight="32">
+  <image source="../tilesets/ground.png" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="5" name="walls" tilewidth="32" tileheight="32">
+  <image source="../tilesets/walls_square.png" width="256" height="256"/>
+ </tileset>
+ <layer name="Kachelebene 1" width="32" height="32">
+  <data encoding="base64" compression="zlib">
+   eJyllltuxDAMAx3b9z/zYoENQEyG7mM/hLapLMkURfkaY1xhC3/Pj62w9/f9MfreMe5zG+fMMvaG/cYnLf2Yf0ruCctYE2fvO6w4m3FX5MsYrdYr/Gf4mxGDrIG2fohzRe7sJbFLnxbvW2t9zW/JAcMjvxGDxHSPJ8YN88SXdVn9rQbjks0YMch4NwbJv1YT+8lYxv+FHI2/rHWN5z0zN3tmNTA3Nch6RwxsJjbiZm/YA+oYZ8t4sBGDc8O6Eyv2u2Fi+mpxaY0LnI12d+amJpL7iTG1f0Ys5iaX/moT8am/TVd5n+wfd9uJK01nbUaZ78LvWfdpT7a7tF1tMZmXHLFZMMxtvxk3LD/xsbeH4Wy4mnbTv71T2Oe8p93R9Oy005pf7gTqtc1r9rJhkd/4s+1A2/sZy95fp3nk/uBOMezavm+520ycasscTQtOZ037eSfOzAm35Cn532q5xrP/ba9Tr9qe5Pui6avx+z/6Tf1rMdtcp9bZW4a7i5w3/nBfNC01naeOtn60/IbFCYPkC3dVy80zdhdqTtPWjEXum+8cz/snBi1/4x57bPmtFp5ZxW/i/6cd13aWzRl5aflbD2znG8ZNg1o/3z4veK0Jzw==
+  </data>
+ </layer>
+ <layer name="Kachelebene 2" width="32" height="32">
+  <data encoding="base64" compression="zlib">
+   eJzVV8tOwzAQ3EtFLy1cSrlQeunj0pIbXOj/f1YTwUrDal9OHBJGWtmO7B3PxI6dBREtJo51GzuID9GuETLnI/C/0m8sqT5kzjeH/wz1Y1Bm+5Twa/O2ytI+Gv+tjQeIE/RjL/rwo49cP/xwfFFOv8XxDvO9OHOzkPWfYfmgPUPdJfzszckalOTXIHOX6mdIH7Ce0c3w9GvrUMJb2wgrZ1/9pfwWMvo9H7S9hYhyDdU/FJH+K8VebNp4gbal+aqMj/RH77TjXrXxJOagQcs1lH9L32dod3Y/V+JH/xqK/d8Kbsv/Rhk/9/UX7T/t/EeMvf/+4vszx+8ve63xa+/Bwn87f6Vujz/jQyn/mPcvvn+yN9re6nP/xDxyHXr3z753a6+PhOc/jjsHZbaPXBNZ/lrw/j+6M3QP8SnaNULmXAH/lHEH/CoiiQ==
+  </data>
+ </layer>
+ <objectgroup name="Objektebene 1" width="0" height="0">
+  <object type="spawn" x="70" y="927" width="24" height="26"/>
+  <object type="spawn" x="68" y="67" width="24" height="26"/>
+  <object type="spawn" x="924" y="69" width="24" height="26"/>
+  <object type="spawn" x="930" y="928" width="24" height="26"/>
+ </objectgroup>
+</map>

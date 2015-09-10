@@ -307,7 +307,7 @@ fn main() {
 
     let entity_types = net::all_entity_types();
     let game_info = GameInfo {
-        map_name: "../data/maps/lars.tmx".to_string(),
+        map_name: "../data/maps/lars2.tmx".to_string(),
         entity_types: entity_types,
         ticks_per_second: 20,
     };

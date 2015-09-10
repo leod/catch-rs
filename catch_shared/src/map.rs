@@ -60,7 +60,7 @@ impl<'a> Iterator for TileIter<'a> {
     type Item = (usize, usize, Option<Tile>);
 
     fn next(&mut self) -> Option<(usize, usize, Option<Tile>)> {
-        if self.y == self.map.map.height {
+        if self.y == self.map.height() as u32 {
             return None;
         }
 
@@ -69,7 +69,7 @@ impl<'a> Iterator for TileIter<'a> {
 
         self.x += 1;
 
-        if self.x == self.map.map.width {
+        if self.x == self.map.width() as u32 {
             self.x = 0;
             self.y += 1;
         }
@@ -120,12 +120,28 @@ impl Map {
         }
     }
 
+    pub fn width(&self) -> usize {
+        self.map.width as usize
+    }
+
+    pub fn height(&self) -> usize {
+        self.map.height as usize
+    }
+
     pub fn tile_width(&self) -> usize {
         self.map.tile_width as usize
     }
 
     pub fn tile_height(&self) -> usize {
         self.map.tile_height as usize
+    }
+
+    pub fn width_pixels(&self) -> usize {
+        self.width() * self.tile_width()
+    }
+
+    pub fn height_pixels(&self) -> usize {
+        self.height() * self.tile_height()
     }
     
     pub fn is_pos_valid(&self, x: usize, y: usize) -> bool {

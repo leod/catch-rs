@@ -2,6 +2,7 @@ extern crate renet as enet;
 extern crate cereal;
 #[macro_use] extern crate ecs;
 extern crate piston;
+extern crate piston_window;
 extern crate graphics;
 extern crate glutin_window;
 extern crate opengl_graphics;
@@ -34,12 +35,12 @@ fn main() {
     let window = GlutinWindow::new(
         WindowSettings::new(
             "catching game",
-            [1280, 1024]
+            [1024, 768]
         )
         .opengl(opengl)
         .exit_on_esc(true)
         .vsync(true)
-        //.fullscreen(true)
+        .fullscreen(false)
     ).unwrap();
 
     // Connect
