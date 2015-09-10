@@ -104,6 +104,7 @@ impl PlayerMovementSystem {
         const TURN_SPEED: f64 = 2.0*f64::consts::PI;
         const MOVE_ACCEL: f64 = 500.0;
         const BACK_ACCEL: f64 = 200.0;
+        const STRAFE_ACCEL: f64 = 300.0;
         const MIN_SPEED: f64 = 0.001;
         const DASH_SPEED: f64 = 600.0;
         const DASH_DURATION_S: f64 = 0.3;
@@ -127,17 +128,24 @@ impl PlayerMovementSystem {
                         None
                     };
             } else {
-                if input.has(InputKey::Left) {
-                    c.orientation[e].angle -= TURN_SPEED * dur_s;
+                let mut accel = math::scale(c.linear_velocity[e].v, -4.0);
+
+                if input.has(InputKey::Strafe) {
+                    let strafe_direction = [direction[1], -direction[0]];
+                    if input.has(InputKey::Left) {
+                        accel = math::add(math::scale(strafe_direction, STRAFE_ACCEL), accel);
+                    }
+                    if input.has(InputKey::Right) {
+                        accel = math::add(math::scale(strafe_direction, -STRAFE_ACCEL), accel);
+                    }
+                } else {
+                    if input.has(InputKey::Left) {
+                        c.orientation[e].angle -= TURN_SPEED * dur_s;
+                    }
+                    if input.has(InputKey::Right) {
+                        c.orientation[e].angle += TURN_SPEED * dur_s;
+                    }
                 }
-                if input.has(InputKey::Right) {
-                    c.orientation[e].angle += TURN_SPEED * dur_s;
-                }
-
-                let velocity = c.linear_velocity[e].v;
-
-                let mut accel = math::scale(velocity, -4.0);
-
                 if input.has(InputKey::Forward) {
                     accel = math::add(math::scale(direction, MOVE_ACCEL), accel);
                 }
