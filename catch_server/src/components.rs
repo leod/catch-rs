@@ -37,10 +37,22 @@ impl Default for BouncyEnemy {
     }
 }
 
+#[derive(Debug)]
+pub enum Shape { // might wanna make this a shared component
+    Circle {
+        radius: f64
+    }
+}
+
+pub struct Interact;
+
 components! {
     struct Components {
         #[hot] net_entity: NetEntity,
         #[hot] server_net_entity: ServerNetEntity,
+
+        #[hot] shape: Shape,
+        #[hot] interact: Interact,
 
         #[hot] position: Position,
         #[hot] orientation: Orientation,

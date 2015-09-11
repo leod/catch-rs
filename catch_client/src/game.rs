@@ -3,6 +3,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::path::Path;
 
+use ecs;
 use time;
 use graphics;
 use graphics::Transformed;
@@ -278,23 +279,26 @@ impl Game {
             c.transform.trans(x, y),
             gl);
     }
-
-    fn my_player_position(&mut self) -> Option<math::Vec2> {
+    
+    fn my_player_entity(&mut self) -> Option<ecs::Entity> {
         match self.game_state.world.systems.net_entity_system.inner
                                    .as_ref().unwrap()
                                    .my_player_entity_id() {
-            Some(player_entity_id) => {
-                let player_entity = self.game_state.world.systems
-                    .net_entity_system.inner.as_ref().unwrap()
-                    .get_entity(player_entity_id)
-                    .unwrap();
-
-                self.game_state.world.with_entity_data(&player_entity, |e, c| {
-                    c.position[e].p
-                })
-            }
+            Some(player_entity_id) =>
+                Some(self.game_state.world.systems
+                         .net_entity_system.inner.as_ref().unwrap()
+                         .get_entity(player_entity_id)
+                         .unwrap()),
             None => None
         }
+    }
+
+    fn my_player_position(&mut self) -> Option<math::Vec2> {
+        self.my_player_entity().map(|entity| {
+            self.game_state.world.with_entity_data(&entity, |e, c| {
+                c.position[e].p
+            }).unwrap()
+        })
     }
 }
 

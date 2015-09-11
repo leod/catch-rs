@@ -225,6 +225,8 @@ impl GameState {
         // Let server entities have their time
         self.world.systems.bouncy_enemy_system.tick(&self.map, &mut self.world.data);
 
+        self.world.systems.interaction_system.tick(&mut self.world.data);
+
         process!(self.world, net_entity_system);
     }
 }

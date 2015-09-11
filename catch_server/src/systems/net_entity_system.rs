@@ -8,7 +8,10 @@ use shared::net;
 use shared::player::PlayerId;
 use shared::event::GameEvent;
 use components;
-use components::{Components, NetEntity, ServerNetEntity, LinearVelocity, BouncyEnemy};
+use components::{Components, NetEntity,
+                 Shape, Interact,
+                 ServerNetEntity, LinearVelocity,
+                 BouncyEnemy};
 use services::Services;
 
 pub struct NetEntitySystem {
@@ -75,7 +78,11 @@ impl NetEntitySystem {
 
             // TODO: probably don't wanna keep this hardcoded here
             if &type_name == "player" {
+                data.shape.add(&entity, Shape::Circle { radius: 9.0 });
+                data.interact.add(&entity, Interact);
             } else if &type_name == "bouncy_enemy" {
+                data.shape.add(&entity, Shape::Circle { radius: 6.0 });
+                data.interact.add(&entity, Interact);
                 data.linear_velocity.add(&entity, LinearVelocity::default());
                 data.bouncy_enemy.add(&entity, BouncyEnemy::default());
             } else {
