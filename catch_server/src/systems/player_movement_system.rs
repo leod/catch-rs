@@ -116,6 +116,13 @@ impl PlayerMovementSystem {
             let angle = c.orientation[e].angle;
             let direction = [angle.cos(), angle.sin()];
 
+            if let Some(inv_s) = c.player_state[e].invulnerable_s {
+                let inv_s = inv_s - dur_s;
+                c.player_state[e].invulnerable_s =
+                    if inv_s <= 0.0 { None }
+                    else { Some(inv_s) };
+            }
+
             if let Some(dashing) = c.player_state[e].dashing {
                 let t = dashing / DASH_DURATION_S;
                 let scale = (t*f64::consts::PI/2.0).cos()*(1.0-(1.0-t).powi(10));

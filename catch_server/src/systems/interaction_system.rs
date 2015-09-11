@@ -19,9 +19,11 @@ impl Interaction for PlayerBouncyEnemyInteraction {
     fn apply(&self,
              player_e: EntityData<Components>, enemy_e: EntityData<Components>,
              data: &mut DataHelper<Components, Services>) {
-        // Kill player
-        let owner = data.net_entity[player_e].owner;
-        data.services.add_event_to_run(&GameEvent::PlayerDied(owner, NEUTRAL_PLAYER_ID));
+        if data.player_state[player_e].vulnerable() {
+            // Kill player
+            let owner = data.net_entity[player_e].owner;
+            data.services.add_event_to_run(&GameEvent::PlayerDied(owner, NEUTRAL_PLAYER_ID));
+        }
     }
 }
 

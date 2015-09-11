@@ -113,6 +113,7 @@ impl GameState {
 
         self.world.with_entity_data(&entity, |e, c| {
             c.position[e].p = position;
+            c.player_state[e].invulnerable_s = Some(2.5);
         });
     }
 

@@ -60,15 +60,6 @@ impl Default for LinearVelocity {
     }
 }
 
-impl Default for PlayerState {
-    fn default() -> PlayerState {
-        PlayerState {
-            color: 0,
-            dashing: None,
-        }
-    }
-}
-
 impl Default for ItemSpawn {
     fn default() -> ItemSpawn {
         ItemSpawn {

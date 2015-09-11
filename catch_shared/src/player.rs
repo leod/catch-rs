@@ -13,8 +13,15 @@ pub const NEUTRAL_PLAYER_ID: PlayerId = 0;
 pub struct PlayerState { 
     pub color: u32,
     pub dashing: Option<f64>,
+    pub invulnerable_s: Option<f64>,
 
     // States like stunned etc.
+}
+
+impl PlayerState {
+    pub fn vulnerable(&self) -> bool {
+        self.dashing.is_none() && self.invulnerable_s.is_none()
+    }
 }
 
 // Attached to players on the server and the clients controlling them
@@ -127,4 +134,15 @@ impl CerealData for PlayerInput {
         Ok(())
     }
 }
+
+impl Default for PlayerState {
+    fn default() -> PlayerState {
+        PlayerState {
+            color: 0,
+            dashing: None,
+            invulnerable_s: None,
+        }
+    }
+}
+
 

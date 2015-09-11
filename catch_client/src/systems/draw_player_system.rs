@@ -45,7 +45,11 @@ impl DrawPlayerSystem {
                              //.trans(-w/2.0, -h/2.0)
                              .transform;
 
-            graphics::ellipse([0.0, 0.0, 1.0, 1.0],
+            let color =
+                if data.player_state[entity].invulnerable_s.is_some() { [0.25, 0.25, 0.25, 1.0] }
+                else { [0.0, 0.0, 1.0, 1.0] };
+
+            graphics::ellipse(color,
                               [-w/2.0, -h/2.0, w, h],
                               transform,
                               gl);
