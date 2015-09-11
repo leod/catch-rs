@@ -17,7 +17,7 @@ impl Interaction for PlayerBouncyEnemyInteraction {
     fn apply(&self,
              player_e: EntityData<Components>, enemy_e: EntityData<Components>,
              data: &mut DataHelper<Components, Services>) {
-        data.orientation[enemy_e].angle = data.orientation[enemy_e].angle + f64::consts::PI;
+        // Kill player
     }
 }
 
@@ -28,12 +28,12 @@ impl Interaction for BouncyEnemyBouncyEnemyInteraction {
         data.orientation[a_e].angle = data.orientation[a_e].angle + f64::consts::PI;
         let direction_a = [data.orientation[a_e].angle.cos(),
                            data.orientation[a_e].angle.sin()];
-        data.linear_velocity[a_e].v = math::add(data.linear_velocity[a_e].v, math::scale(direction_a, 10.0));
+        data.linear_velocity[a_e].v = math::add(data.linear_velocity[a_e].v, math::scale(direction_a, 500.0));
 
         data.orientation[b_e].angle = data.orientation[b_e].angle + f64::consts::PI;
         let direction_b = [data.orientation[b_e].angle.cos(),
                            data.orientation[b_e].angle.sin()];
-        data.linear_velocity[b_e].v = math::add(data.linear_velocity[b_e].v, math::scale(direction_b, 10.0));
+        data.linear_velocity[b_e].v = math::add(data.linear_velocity[b_e].v, math::scale(direction_b, 500.0));
     }
 }
 
