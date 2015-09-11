@@ -13,6 +13,10 @@ pub struct Services {
 
     // Stores the state of the current tick before sending it off to clients
     pub next_tick: Option<Tick>,
+
+    // Events generated in a tick that are to be performed on the server as well
+    // as sent to the clients
+    pub next_events: Vec<GameEvent>,
     
     // Game events for the current tick that are to be sent only to specific clients
     // can be stored in `next_player_events`
@@ -29,8 +33,13 @@ impl Services {
         }
     }
 
-    pub fn add_event(&mut self, event: GameEvent) {
-        self.next_tick.as_mut().unwrap().events.push(event);
+    pub fn add_event(&mut self, event: &GameEvent) {
+        self.next_tick.as_mut().unwrap().events.push(event.clone());
+    }
+
+    pub fn add_event_to_run(&mut self, event: &GameEvent) {
+        self.add_event(&event);
+        self.next_events.push(event.clone());
     }
     
     pub fn add_player_event(&mut self, player_id: PlayerId, event: GameEvent) {
@@ -43,6 +52,7 @@ impl Default for Services {
         Services {
             tick_dur_s: 0.0,
             next_tick: None,
+            next_events: Vec::new(),
             next_player_events: HashMap::new(),
         }
     }

@@ -6,6 +6,8 @@ use cereal::{CerealData, CerealResult};
 pub type PlayerId = u32;
 pub type PlayerInputNumber = u32;
 
+pub const NEUTRAL_PLAYER_ID: PlayerId = 0;
+
 // Component attached to any player for both client and server
 #[derive(CerealData, Clone)]
 pub struct PlayerState { 

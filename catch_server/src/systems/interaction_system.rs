@@ -4,6 +4,8 @@ use ecs::{System, Process, Aspect, EntityData, DataHelper};
 
 use shared::math;
 use shared::util::CachedAspect;
+use shared::event::GameEvent;
+use shared::player::NEUTRAL_PLAYER_ID;
 use components::{Components, Shape, Position, Orientation};
 use services::Services;
 
@@ -18,6 +20,8 @@ impl Interaction for PlayerBouncyEnemyInteraction {
              player_e: EntityData<Components>, enemy_e: EntityData<Components>,
              data: &mut DataHelper<Components, Services>) {
         // Kill player
+        let owner = data.net_entity[player_e].owner;
+        data.services.add_event_to_run(&GameEvent::PlayerDied(owner, NEUTRAL_PLAYER_ID));
     }
 }
 

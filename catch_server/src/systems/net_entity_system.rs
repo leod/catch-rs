@@ -53,8 +53,8 @@ impl NetEntitySystem {
                  self.id_counter, entity_type_id, player_id);
 
         // Tell the clients about it
-        data.services.next_tick.as_mut().unwrap().events.push(
-            GameEvent::CreateEntity(self.id_counter, entity_type_id, player_id));
+        data.services.add_event(
+            &GameEvent::CreateEntity(self.id_counter, entity_type_id, player_id));
 
         assert!(self.entities.get(&self.id_counter).is_none(),
                 "Already have a net entity with that id");
@@ -94,13 +94,15 @@ impl NetEntitySystem {
         (self.id_counter, entity)
     }
 
-    fn remove_entity(&mut self,
-                     entity_id: net::EntityId,
-                     data: &mut DataHelper<Components, Services>) {
+    pub fn remove_entity(&mut self,
+                         entity_id: net::EntityId,
+                         data: &mut DataHelper<Components, Services>) {
         if self.entities.get(&entity_id).is_some() {
             data.remove_entity(self.entities[&entity_id]);
             self.entities.remove(&entity_id);
-            // TODO: consequences
+
+            // Tell the clients about it
+            data.services.add_event(&GameEvent::RemoveEntity(entity_id));
         } else {
             panic!("Unkown net entity id: {}", entity_id)
         }

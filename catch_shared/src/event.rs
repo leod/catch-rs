@@ -7,6 +7,7 @@ use item::ItemType;
 pub enum GameEvent {
     PlayerJoin(PlayerId, String),
     PlayerLeave(PlayerId),
+    PlayerDied(PlayerId, PlayerId),
     
     CreateEntity(EntityId, EntityTypeId, PlayerId),
     RemoveEntity(EntityId),

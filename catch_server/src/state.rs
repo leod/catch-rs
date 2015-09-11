@@ -17,16 +17,20 @@ pub struct Player {
 
     pub info: PlayerInfo,
     pub next_input: Vec<TimedPlayerInput>,
-    pub controlled_entity: Option<net::EntityId>
+
+    pub controlled_entity: Option<net::EntityId>,
+    pub respawn_time: Option<f64>, 
 }
 
 impl Player {
     fn new(info: PlayerInfo) -> Player {
+        assert!(!info.alive);
         Player {
             is_new: true,
             info: info,
             next_input: Vec::new(),
             controlled_entity: None,
+            respawn_time: Some(0.0),
         }
     }
 }
@@ -124,12 +128,6 @@ impl GameState {
     pub fn on_player_input(&mut self,
                            id: PlayerId,
                            input: &TimedPlayerInput) {
-        // TODO: Should we be able to queue multiple inputs for each player?
-        // Currently, the idea is for the clients to send one PlayerInput per tick.
-        // Is it enough for the server to be able to execute one PlayerInput per tick?
-        // It's probably a better idea to process PlayerInput as soon as it arrives at the
-        // server...
-
         if self.players[&id].next_input.len() > 0 {
             //println!("Already have player input for {}, queuing", id);
         }
@@ -184,8 +182,21 @@ impl GameState {
             let mut respawn = Vec::new();
             for (player_id, player) in self.players.iter_mut() {
                 if !player.info.alive {
-                    respawn.push(*player_id);
-                    player.info.alive = true;
+                    assert!(player.controlled_entity.is_none());
+
+                    if let Some(time) = player.respawn_time {
+                        let time = time - self.world.services.tick_dur_s;
+
+                        player.respawn_time = if time <= 0.0 {
+                            respawn.push(*player_id);
+                            player.info.alive = true;
+
+                            None   
+                        } else {
+                            Some(time)
+                        };
+                    }
+
                 }
             }
             for player_id in respawn {
@@ -224,8 +235,34 @@ impl GameState {
 
         // Let server entities have their time
         self.world.systems.bouncy_enemy_system.tick(&self.map, &mut self.world.data);
-
         self.world.systems.interaction_system.tick(&mut self.world.data);
+
+        // Process generated events
+        // TODO: There might be a subtle problem with orderings here
+        for i in 0..self.world.services.next_events.len() {
+            match self.world.services.next_events[i].clone() {
+                GameEvent::PlayerDied(player_id, cause_player_id) => {
+                    if !self.get_player_info(player_id).alive {
+                        println!("Killing a dead player! HAH!");
+                    } else {
+                        let entity_id = {
+                            let player = self.players.get_mut(&player_id).unwrap();
+                            let entity_id = player.controlled_entity.unwrap();
+                            player.info.alive = false;
+                            player.controlled_entity = None;
+                            player.respawn_time = Some(5.0);
+                            entity_id 
+                        };
+
+                        // This also tells the clients about the removal:
+                        self.world.systems.net_entity_system
+                            .remove_entity(entity_id, &mut self.world.data);
+                    }
+                },
+                _ => ()
+            };
+        }
+        self.world.services.next_events.clear();
 
         process!(self.world, net_entity_system);
     }
