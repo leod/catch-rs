@@ -29,16 +29,25 @@ impl Services {
         //self.next_tick = Some(Tick::new(number));     
         assert!(self.next_events.is_empty());
 
-        self.next_player_events.clear();
+        //self.next_player_events.clear();
+
+        let mut next_player_events = HashMap::new();
         for player_id in player_ids {
-            self.next_player_events.insert(player_id, Vec::new()); 
+            next_player_events.insert(player_id, Vec::new()); 
         }
+
+        for (id, events) in self.next_player_events.iter() {
+            if next_player_events.get(id).is_some() {
+                next_player_events.insert(*id, self.next_player_events[id].clone());
+            }
+        }
+        self.next_player_events = next_player_events;
     }
 
     pub fn add_event(&mut self, event: &GameEvent) {
         //self.next_tick.as_mut().unwrap().events.push(event.clone());
 
-        // Send event to every player
+        // Queue event for every player
         let player_ids = self.next_player_events.keys().map(|k| *k)
                              .collect::<Vec<_>>();
 

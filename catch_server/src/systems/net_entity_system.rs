@@ -104,6 +104,8 @@ impl NetEntitySystem {
             data.remove_entity(self.entities[&entity_id]);
             self.entities.remove(&entity_id);
 
+            println!("Removing entity with id {}", entity_id);
+
             // Tell the clients about it
             data.services.add_event(&GameEvent::RemoveEntity(entity_id));
         } else {
@@ -117,7 +119,7 @@ impl NetEntitySystem {
         let mut remove = Vec::new();
         for (net_id, entity) in self.entities.iter() {
             let owner = data.with_entity_data(entity, |e, c| {
-                c.net_entity[e].id
+                c.net_entity[e].owner
             }).unwrap();
 
             if owner == player_id {

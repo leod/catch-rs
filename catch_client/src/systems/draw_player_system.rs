@@ -23,9 +23,7 @@ impl DrawPlayerSystem {
 
     pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, c: graphics::Context, gl: &mut GlGraphics) {
         for entity in self.aspect.iter() {
-            //let transform = c.transform.translate(
             let p = data.position[entity].p;
-            //println!("{:?}", data.position[entity].p);
             // TODO: Store this somwehere
             let w = 18.0;
             let h = 18.0;
@@ -42,7 +40,6 @@ impl DrawPlayerSystem {
             let transform = c.trans(p[0], p[1])
                              .rot_rad(data.orientation[entity].angle)
                              .scale(scale_x, 1.0/scale_x)
-                             //.trans(-w/2.0, -h/2.0)
                              .transform;
 
             let color =

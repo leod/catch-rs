@@ -115,10 +115,11 @@ impl NetEntitySystem {
         }
 
         if self.entities.get(&entity_id).is_some() {
+            println!("Removing entity with id {}", entity_id);
             data.remove_entity(self.entities[&entity_id]);
             self.entities.remove(&entity_id);
         } else {
-            panic!("Unkown net entity id: {}", entity_id)
+            panic!("Unkown net entity id: {}", entity_id);
         }
     }
 
