@@ -5,6 +5,7 @@ use ecs;
 use rand;
 
 use shared::net;
+use shared::math;
 use shared::map::{LayerId, Map};
 use shared::net::{TickNumber, GameInfo, TimedPlayerInput};
 use shared::event::GameEvent;
@@ -20,6 +21,12 @@ pub struct Player {
 
     pub controlled_entity: Option<net::EntityId>,
     pub respawn_time: Option<f64>, 
+}
+
+pub struct SpawnPoint {
+    position: math::Vec2,
+    size: math::Vec2,
+    last_used_time_s: Option<f64>,
 }
 
 impl Player {
@@ -38,26 +45,49 @@ impl Player {
 pub struct GameState {
     pub game_info: GameInfo,
     pub map: Map,
+    pub spawn_points: Vec<SpawnPoint>,
 
     pub world: ecs::World<Systems>, 
     pub tick_number: TickNumber,
+
+    pub time_s: f64,
 
     players: HashMap<PlayerId, Player>,
 }
 
 impl GameState {
     pub fn new(game_info: &GameInfo) -> GameState {
+        let map = Map::load(&game_info.map_name).unwrap();
+
+        let spawn_points = map.objects.iter()
+               .filter(|object| &object.type_str == "player_spawn")
+               .map(|object| SpawnPoint {
+                        position: [object.x, object.y],
+                        size: [object.width, object.height],
+                        last_used_time_s: None,
+                    })
+               .collect();
+
         GameState {
             game_info: game_info.clone(),
-            map: Map::load(&game_info.map_name).unwrap(),
+            map: map,
+            spawn_points: spawn_points,
             world: ecs::World::new(),
             tick_number: 0,
+            time_s: 0.0,
             players: HashMap::new(),
         }
     }
 
+    fn create_map_objects(&mut self) {
+        for object in self.map.objects.iter() {
+        }
+    }
+
     // For adding test entities and stuff
-    pub fn init_first_tick(&mut self) {
+    fn init_first_tick(&mut self) {
+        self.create_map_objects();
+
         let num_bouncies = 20;
 
         for i in 0..num_bouncies {
@@ -109,7 +139,11 @@ impl GameState {
                 .create_entity(net_entity_type_id, id, &mut self.world.data);
         self.players.get_mut(&id).unwrap().controlled_entity = Some(net_entity_id);
 
-        let position = [128.0, 128.0];
+        let position = {
+            let spawn_point = &self.spawn_points[rand::random::<usize>() % self.spawn_points.len()];
+            [spawn_point.position[0] + rand::random::<f64>() * spawn_point.size[0],
+             spawn_point.position[1] + rand::random::<f64>() * spawn_point.size[1]]
+        };
 
         self.world.with_entity_data(&entity, |e, c| {
             c.position[e].p = position;
@@ -266,5 +300,7 @@ impl GameState {
             };
         }
         self.world.services.next_events.clear();
+
+        self.time_s += self.world.services.tick_dur_s;
     }
 }

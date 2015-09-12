@@ -20,6 +20,15 @@ struct Layer {
 pub struct Map {
     map: tiled::Map,
     layers: Vec<Layer>,
+    pub objects: Vec<MapObject>,
+}
+
+pub struct MapObject {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+    pub type_str: String,
 }
 
 #[derive(Copy, Clone)]
@@ -179,9 +188,29 @@ impl Map {
             Map::convert_layer(&map.tilesets, &layer)
         }).collect();
 
+        let mut objects = Vec::new();
+        for object_group in map.object_groups.iter() {
+            for object in object_group.objects.iter() {
+                match object {
+                    &tiled::Object::Rect { ref x, ref y, ref width, ref height, ref type_str, visible: _ } => {
+                        objects.push(MapObject {
+                            x: *x as f64,
+                            y: *y as f64,
+                            width: *width as f64,
+                            height: *height as f64,
+                            type_str: type_str.clone(),
+                        });
+                    }
+                    _ =>
+                        return Err("Only rectangle objects can be used".to_string())
+                }
+            }
+        }
+
         Ok(Map {
             map: map,
             layers: layers,
+            objects: objects,
         })
     }
 

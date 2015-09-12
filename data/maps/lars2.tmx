@@ -17,9 +17,9 @@
   </data>
  </layer>
  <objectgroup name="Objektebene 1" width="0" height="0">
-  <object type="spawn" x="70" y="927" width="24" height="26"/>
-  <object type="spawn" x="68" y="67" width="24" height="26"/>
-  <object type="spawn" x="924" y="69" width="24" height="26"/>
-  <object type="spawn" x="930" y="928" width="24" height="26"/>
+  <object type="player_spawn" x="70" y="927" width="24" height="26"/>
+  <object type="player_spawn" x="68" y="67" width="24" height="26"/>
+  <object type="player_spawn" x="924" y="69" width="24" height="26"/>
+  <object type="player_spawn" x="930" y="928" width="24" height="26"/>
  </objectgroup>
 </map>
