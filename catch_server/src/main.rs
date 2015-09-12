@@ -22,6 +22,7 @@ use time::{Duration, Timespec};
 use cereal::CerealData;
 
 use shared::net;
+use shared::tick::Tick;
 use shared::player::{PlayerId, PlayerInfo};
 use shared::net::{TickNumber, GameInfo, ClientMessage, ServerMessage};
 use shared::util::PeriodicTimer;
@@ -261,18 +262,18 @@ impl Server {
                     if client.state == ClientState::Normal {
                         let mut data = Vec::new(); 
 
-                        // HACK
-                        let player_events = self.game_state.world.services.next_player_events[player_id].clone();
+                        // Build tick for each client separately. This makes it possible to do
+                        // delta encoding and stuff.
+                        let tick_number = self.game_state.tick_number;
 
-                        let tick = self.game_state.world.services.next_tick.as_mut().unwrap();
-                        //tick.events.push_all(&player_events);
-                        for event in player_events.iter() {
-                            tick.events.push(event.clone());
-                        }
-                        
-                        // TODO: Serializing the whole tick for every player should be avoided.
-                        // However, at some point we will have to only send those components that changed
-                        // w.r.t the previous tick by comparing the two TickStates.
+                        let mut tick = Tick::new(tick_number);
+                        tick.events = self.game_state.world.services.next_player_events[player_id].clone();
+
+                        self.game_state.world.systems.net_entity_system
+                            .store_in_net_state(*player_id,
+                                                &mut tick.net_state,
+                                                &mut self.game_state.world.data);
+
                         match tick.write(&mut data) {
                             Err(_) => {
                                 println!("Error encoding tick");
@@ -284,9 +285,8 @@ impl Server {
                         client.peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE,
                                          net::Channel::Ticks as u8);
 
-                        // HACK: Remove player specific events from tick again...
-                        let new_len = tick.events.len() - player_events.len();
-                        tick.events.truncate(new_len);
+                        self.game_state.world.services.next_player_events
+                            .get_mut(&player_id).unwrap().clear();
                     }
                 }
             }

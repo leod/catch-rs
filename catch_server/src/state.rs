@@ -205,7 +205,7 @@ impl GameState {
             }
         }
 
-        // Let all the systems know about any new entities
+        // Flush ecs queue: let all the systems know about any new entities
         self.world.flush_queue();
 
         // Run input of players
@@ -264,7 +264,5 @@ impl GameState {
             };
         }
         self.world.services.next_events.clear();
-
-        process!(self.world, net_entity_system);
     }
 }

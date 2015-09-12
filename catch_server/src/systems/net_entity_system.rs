@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
 use ecs;
-use ecs::{System, BuildData, EntityIter, DataHelper};
-use ecs::system::EntityProcess;
+use ecs::{Aspect, Process, System, BuildData, EntityData, EntityIter, DataHelper};
 
 use shared::net;
+use shared::util::CachedAspect;
 use shared::player::PlayerId;
 use shared::event::GameEvent;
+use shared::tick::NetState;
 use components;
 use components::{Components, NetEntity,
                  Shape, Interact,
@@ -15,6 +16,8 @@ use components::{Components, NetEntity,
 use services::Services;
 
 pub struct NetEntitySystem {
+    aspect: CachedAspect<Components>,
+
     id_counter: net::EntityId,
     entities: HashMap<net::EntityId, ecs::Entity>,
     entity_types: net::EntityTypes,
@@ -22,8 +25,9 @@ pub struct NetEntitySystem {
 }
 
 impl NetEntitySystem {
-    pub fn new() -> NetEntitySystem {
+    pub fn new(aspect: Aspect<Components>) -> NetEntitySystem {
         NetEntitySystem {
+            aspect: CachedAspect::new(aspect),
             id_counter: 0,
             entities: HashMap::new(),
             entity_types: net::all_entity_types(),
@@ -123,27 +127,18 @@ impl NetEntitySystem {
                 GameEvent::CreateEntity(*net_entity_id, entity_type_id, owner));
         }
     }
-}
 
-impl System for NetEntitySystem {
-    type Components = Components;
-    type Services = Services;
-}
-
-// Once the tick has been processed, NetEntitySystem writes the current tick component state into the global Tick
-impl EntityProcess for NetEntitySystem {
-    fn process(&mut self, entities: EntityIter<Components>, data: &mut DataHelper<Components, Services>) {
+    // Writes the current state into a NetState
+    pub fn store_in_net_state(&self, player_id: PlayerId, net_state: &mut NetState, data: &mut DataHelper<Components, Services>) {
         let mut forced_components = Vec::new();
 
-        for e in entities {
+        for e in self.aspect.iter() {
             let &(_, ref entity_type) = &self.entity_types[data.net_entity[e].type_id as usize];
             let net_id = data.net_entity[e].id;
 
             for component_type in &entity_type.component_types {
-                let next_net_state = &mut data.services.next_tick.as_mut().unwrap().net_state;
-
                 self.component_type_trait(*component_type)
-                    .write(e, net_id, next_net_state, &data.components);
+                    .store(e, net_id, net_state, &data.components);
             }
 
             // Mark forced components
@@ -153,7 +148,28 @@ impl EntityProcess for NetEntitySystem {
             data.server_net_entity[e].forced_components = Vec::new();
         }
 
-        data.services.next_tick.as_mut().unwrap()
-            .net_state.forced_components = forced_components;
+        net_state.forced_components = forced_components;
+    }
+}
+
+impl System for NetEntitySystem {
+    type Components = Components;
+    type Services = Services;
+
+    fn activated(&mut self, entity: &EntityData<Components>, components: &Components, _: &mut Services) {
+        self.aspect.activated(entity, components);
+    }
+
+    fn reactivated(&mut self, entity: &EntityData<Components>, components: &Components, _: &mut Services) {
+        self.aspect.reactivated(entity, components);
+    }
+
+    fn deactivated(&mut self, entity: &EntityData<Components>, components: &Components, _: &mut Services) {
+        self.aspect.deactivated(entity, components);
+    }
+}
+
+impl Process for NetEntitySystem {
+    fn process(&mut self, _: &mut DataHelper<Components, Services>) {
     }
 }

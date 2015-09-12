@@ -80,9 +80,14 @@ pub enum ComponentType {
 }
 
 pub trait StateComponent<T: ComponentManager> {
+    // Add net component to the component manager for the given entity
     fn add(&self, entity: BuildData<T>, c: &mut T);
-    fn write(&self, entity: EntityData<T>, id: EntityId, net_state: &mut NetState, c: &T);
-    fn read(&self, entity: EntityData<T>, id: EntityId, net_state: &NetState, c: &mut T);
+
+    // Stores current component state in a NetState
+    fn store(&self, entity: EntityData<T>, id: EntityId, write: &mut NetState, c: &T);
+
+    // Load component state from NetState
+    fn load(&self, entity: EntityData<T>, id: EntityId, net_state: &NetState, c: &mut T);
 }
 
 pub const COMPONENT_TYPES: &'static [ComponentType] = &[

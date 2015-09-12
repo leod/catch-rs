@@ -143,7 +143,7 @@ impl NetEntitySystem {
 
                 for component_type in &entity_type.component_types {
                     self.component_type_trait(*component_type)
-                        .read(e, *net_entity_id, &tick.net_state, c);
+                        .load(e, *net_entity_id, &tick.net_state, c);
                 }
             });
         }

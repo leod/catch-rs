@@ -11,6 +11,8 @@ pub type ComponentsNetState<T> = HashMap<net::EntityId, T>;
 
 #[derive(Default, CerealData)]
 pub struct NetState {
+    // Same order as net::COMPONENT_TYPES
+
     pub position: ComponentsNetState<Position>, 
     pub orientation: ComponentsNetState<Orientation>,
     pub linear_velocity: ComponentsNetState<LinearVelocity>,

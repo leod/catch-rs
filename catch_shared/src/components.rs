@@ -76,10 +76,10 @@ macro_rules! state_component_impl {
             fn add(&self, entity: BuildData<T>, c: &mut T) {
                 c.$field_mut().add(&entity, $ty::default());
             }
-            fn write(&self, entity: EntityData<T>, id: EntityId, net_state: &mut NetState, c: &T) {
+            fn store(&self, entity: EntityData<T>, id: EntityId, net_state: &mut NetState, c: &T) {
                 net_state.$field.insert(id, c.$field()[entity].clone());
             }
-            fn read(&self, entity: EntityData<T>, id: EntityId, net_state: &NetState, c: &mut T) {
+            fn load(&self, entity: EntityData<T>, id: EntityId, net_state: &NetState, c: &mut T) {
                 if let Some($field) = net_state.$field.get(&id) {
                     c.$field_mut()[entity] = $field.clone();
                 }
