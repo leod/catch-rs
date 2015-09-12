@@ -61,7 +61,7 @@ impl GameState {
             net_entity_system.process_entity_events(tick, &mut self.world.data);
         }
 
-        // Let all the systems know about any new entities
+        // Let all the systems know about any new ecs entities
         self.world.flush_queue();
 
         {

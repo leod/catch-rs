@@ -227,7 +227,7 @@ impl Game {
 
             let half_width = draw_width as f64 / 2.0;
             let half_height = draw_height as f64 / 2.0;
-            let zoom = 2.0;
+            let zoom = 1.5;
 
             // Clip camera position to map size in pixels
             if self.cam_pos[0] < half_width / zoom {
