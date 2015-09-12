@@ -113,8 +113,12 @@ impl PlayerMovementSystem {
         let input = &timed_input.input;
 
         data.with_entity_data(&entity, |e, c| {
-            let angle = c.orientation[e].angle;
-            let direction = [angle.cos(), angle.sin()];
+            if let Some(dash_cooldown_s) = c.full_player_state[e].dash_cooldown_s {
+                let dash_cooldown_s = dash_cooldown_s - dur_s;
+                c.full_player_state[e].dash_cooldown_s =
+                    if dash_cooldown_s <= 0.0 { None }
+                    else { Some(dash_cooldown_s) };
+            }
 
             if let Some(inv_s) = c.player_state[e].invulnerable_s {
                 let inv_s = inv_s - dur_s;
@@ -122,6 +126,9 @@ impl PlayerMovementSystem {
                     if inv_s <= 0.0 { None }
                     else { Some(inv_s) };
             }
+
+            let angle = c.orientation[e].angle;
+            let direction = [angle.cos(), angle.sin()];
 
             if let Some(dashing) = c.player_state[e].dashing {
                 let t = dashing / DASH_DURATION_S;
@@ -169,8 +176,9 @@ impl PlayerMovementSystem {
                     c.linear_velocity[e].v[1] = 0.0;
                 }
 
-                if input.has(InputKey::Dash) {
+                if input.has(InputKey::Dash) && c.full_player_state[e].dash_cooldown_s.is_none() {
                     c.player_state[e].dashing = Some(0.0);
+                    c.full_player_state[e].dash_cooldown_s = Some(5.0);
                 }
             }
 

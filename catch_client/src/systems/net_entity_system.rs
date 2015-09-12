@@ -80,6 +80,11 @@ impl NetEntitySystem {
                     _ => ()
                 };
             }
+            if self.my_id == owner {
+                for net_component in &self.entity_types[entity_type_id as usize].1.owner_component_types {
+                    self.component_type_trait(*net_component).add(entity, data);
+                }
+            }
 
             let type_name = self.entity_types[entity_type_id as usize].0.clone();
 
@@ -144,6 +149,12 @@ impl NetEntitySystem {
                 for component_type in &entity_type.component_types {
                     self.component_type_trait(*component_type)
                         .load(e, *net_entity_id, &tick.net_state, c);
+                }
+                if self.my_id == c.net_entity[e].owner {
+                    for component_type in &entity_type.owner_component_types {
+                        self.component_type_trait(*component_type)
+                            .load(e, *net_entity_id, &tick.net_state, c);
+                    }
                 }
             });
         }

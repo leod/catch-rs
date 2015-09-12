@@ -28,7 +28,7 @@ impl PlayerState {
 // Item states, cooldowns etc.
 #[derive(Clone, Default, CerealData)]
 pub struct FullPlayerState {
-    dash_cooldown_s: Option<f64>,
+    pub dash_cooldown_s: Option<f64>,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]

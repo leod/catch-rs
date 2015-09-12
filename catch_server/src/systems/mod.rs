@@ -12,8 +12,7 @@ use super::services::Services;
 
 systems! {
     struct Systems<Components, Services> {
-        net_entity_system: NetEntitySystem = NetEntitySystem::new(
-            aspect!(<Components> all: [net_entity])),
+        net_entity_system: NetEntitySystem = NetEntitySystem::new(),
         player_movement_system: PlayerMovementSystem = PlayerMovementSystem::new(),
         bouncy_enemy_system: BouncyEnemySystem = BouncyEnemySystem::new(
             aspect!(<Components> all: [server_net_entity,

@@ -121,6 +121,7 @@ impl Server {
                 }
 
                 self.clients.remove(&player_id);
+                self.game_state.remove_player(player_id);
 
                 return true;
             }
@@ -255,9 +256,6 @@ impl Server {
                 self.game_state.tick();
                 
                 // Broadcast tick to clients
-
-                //println!("Sending tick {} with size {}: {:?}", self.game_state.world.services.next_tick.as_mut().unwrap().tick_number, data.len(), &data);
-
                 for (player_id, client) in self.clients.iter() {
                     if client.state == ClientState::Normal {
                         let mut data = Vec::new(); 

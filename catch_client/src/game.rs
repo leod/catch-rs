@@ -257,6 +257,7 @@ impl Game {
                     .draw(&mut self.game_state.world.data, c, gl);
             }
 
+            self.cooldown_text(c, gl);
             self.debug_text(c, gl);
         });
 
@@ -264,14 +265,32 @@ impl Game {
     }
 
     fn debug_text(&mut self, c: graphics::Context, gl: &mut GlGraphics) {
-        let s = &format!("fps: {:.1}", self.fps); self.draw_text(10.0, 30.0, s, c, gl);
-        let s = &format!("# queued ticks: {}", self.client.num_ticks()); self.draw_text(10.0, 65.0, s, c, gl);
-        let s = &format!("tick progress: {:.1}", self.tick_progress); self.draw_text(10.0, 100.0, s, c, gl);
-        let s = &format!("time factor: {:.1}", self.time_factor); self.draw_text(10.0, 135.0, s, c, gl);
+        let color = [1.0, 0.0, 1.0, 1.0];
+        let s = &format!("fps: {:.1}", self.fps); self.draw_text(color, 10.0, 30.0, s, c, gl);
+        let s = &format!("# queued ticks: {}", self.client.num_ticks()); self.draw_text(color, 10.0, 65.0, s, c, gl);
+        let s = &format!("tick progress: {:.1}", self.tick_progress); self.draw_text(color, 10.0, 100.0, s, c, gl);
+        let s = &format!("time factor: {:.1}", self.time_factor); self.draw_text(color, 10.0, 135.0, s, c, gl);
     }
 
-    fn draw_text(&mut self, x: f64, y: f64, s: &str, c: graphics::Context, gl: &mut GlGraphics) {
-        let color = [1.0, 0.0, 1.0, 1.0];
+    fn cooldown_text(&mut self, context: graphics::Context, gl: &mut GlGraphics) {
+        if let Some(entity) = self.my_player_entity() {
+            let dash_cooldown_s = self.game_state.world.with_entity_data(&entity, |e, c| {
+                c.full_player_state[e].dash_cooldown_s
+            }).unwrap();
+
+            let y1 = self.window.draw_size().height as f64 - 80.0;
+            let y2 = y1 + 35.0; 
+            let color1 = [0.0, 0.0, 1.0, 1.0];
+            let color2 = [0.4, 0.4, 0.4, 1.0];
+
+            self.draw_text(if dash_cooldown_s.is_none() { color1 } else { color2 }, 20.0, y1, "dash", context, gl);
+            if let Some(t) = dash_cooldown_s {
+                self.draw_text(color2, 25.0, y2, &format!("{:.1}", t), context, gl);
+            }
+        }
+    }
+
+    fn draw_text(&mut self, color: [f32; 4], x: f64, y: f64, s: &str, c: graphics::Context, gl: &mut GlGraphics) {
         Text::new_color(color, 30).draw(
             s,
             &mut self.glyphs,

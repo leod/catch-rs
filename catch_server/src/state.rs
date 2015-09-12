@@ -119,6 +119,8 @@ impl GameState {
 
     pub fn remove_player(&mut self, id: PlayerId) {
         assert!(self.players.get(&id).is_some());
+        self.world.systems.net_entity_system
+            .remove_player_entities(id, &mut self.world.data);
         self.players.remove(&id);
     }
 

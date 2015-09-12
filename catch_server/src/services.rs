@@ -28,9 +28,6 @@ impl Services {
     pub fn prepare_for_tick<T: Iterator<Item=PlayerId>>(&mut self, number: net::TickNumber, player_ids: T) {
         //self.next_tick = Some(Tick::new(number));     
         assert!(self.next_events.is_empty());
-        for (_, ref events) in self.next_player_events.iter() {
-            assert!(events.is_empty());
-        }
 
         self.next_player_events.clear();
         for player_id in player_ids {

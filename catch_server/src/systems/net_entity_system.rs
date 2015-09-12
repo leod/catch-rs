@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 
 use ecs;
-use ecs::{Aspect, Process, System, BuildData, EntityData, EntityIter, DataHelper};
+use ecs::{Process, System, BuildData, EntityData, EntityIter, DataHelper};
 
 use shared::net;
-use shared::util::CachedAspect;
 use shared::player::PlayerId;
 use shared::event::GameEvent;
 use shared::tick::NetState;
@@ -16,8 +15,6 @@ use components::{Components, NetEntity,
 use services::Services;
 
 pub struct NetEntitySystem {
-    aspect: CachedAspect<Components>,
-
     id_counter: net::EntityId,
     entities: HashMap<net::EntityId, ecs::Entity>,
     entity_types: net::EntityTypes,
@@ -25,9 +22,8 @@ pub struct NetEntitySystem {
 }
 
 impl NetEntitySystem {
-    pub fn new(aspect: Aspect<Components>) -> NetEntitySystem {
+    pub fn new() -> NetEntitySystem {
         NetEntitySystem {
-            aspect: CachedAspect::new(aspect),
             id_counter: 0,
             entities: HashMap::new(),
             entity_types: net::all_entity_types(),
@@ -77,6 +73,9 @@ impl NetEntitySystem {
             for net_component in &self.entity_types[entity_type_id as usize].1.component_types {
                 self.component_type_trait(*net_component).add(entity, data);
             }
+            for net_component in &self.entity_types[entity_type_id as usize].1.owner_component_types {
+                self.component_type_trait(*net_component).add(entity, data);
+            }
 
             let type_name = self.entity_types[entity_type_id as usize].0.clone();
 
@@ -112,6 +111,25 @@ impl NetEntitySystem {
         }
     }
 
+    pub fn remove_player_entities(&mut self,
+                                  player_id: PlayerId,
+                                  data: &mut DataHelper<Components, Services>) {
+        let mut remove = Vec::new();
+        for (net_id, entity) in self.entities.iter() {
+            let owner = data.with_entity_data(entity, |e, c| {
+                c.net_entity[e].id
+            }).unwrap();
+
+            if owner == player_id {
+                remove.push(*net_id);
+            }
+        }
+
+        for net_id in remove.iter() {
+            self.remove_entity(*net_id, data);
+        }
+    }
+
     pub fn get_entity(&self, net_entity_id: net::EntityId) -> ecs::Entity {
         self.entities[&net_entity_id]
     }
@@ -132,20 +150,29 @@ impl NetEntitySystem {
     pub fn store_in_net_state(&self, player_id: PlayerId, net_state: &mut NetState, data: &mut DataHelper<Components, Services>) {
         let mut forced_components = Vec::new();
 
-        for e in self.aspect.iter() {
-            let &(_, ref entity_type) = &self.entity_types[data.net_entity[e].type_id as usize];
-            let net_id = data.net_entity[e].id;
+        for (net_id, entity) in self.entities.iter() {
 
-            for component_type in &entity_type.component_types {
-                self.component_type_trait(*component_type)
-                    .store(e, net_id, net_state, &data.components);
-            }
+            data.with_entity_data(entity, |e, c| {
+                let &(_, ref entity_type) = &self.entity_types[c.net_entity[e].type_id as usize];
 
-            // Mark forced components
-            for forced_component in &data.server_net_entity[e].forced_components {
-                forced_components.push((net_id, *forced_component));
-            }
-            data.server_net_entity[e].forced_components = Vec::new();
+                for component_type in &entity_type.component_types {
+                    self.component_type_trait(*component_type)
+                        .store(e, *net_id, net_state, c);
+                }
+
+                if player_id == c.net_entity[e].owner {
+                    for component_type in &entity_type.owner_component_types {
+                        self.component_type_trait(*component_type)
+                            .store(e, *net_id, net_state, c);
+                    }
+                }
+
+                // Mark forced components
+                for forced_component in &c.server_net_entity[e].forced_components {
+                    forced_components.push((*net_id, *forced_component));
+                }
+                c.server_net_entity[e].forced_components = Vec::new();
+            });
         }
 
         net_state.forced_components = forced_components;
@@ -155,18 +182,6 @@ impl NetEntitySystem {
 impl System for NetEntitySystem {
     type Components = Components;
     type Services = Services;
-
-    fn activated(&mut self, entity: &EntityData<Components>, components: &Components, _: &mut Services) {
-        self.aspect.activated(entity, components);
-    }
-
-    fn reactivated(&mut self, entity: &EntityData<Components>, components: &Components, _: &mut Services) {
-        self.aspect.reactivated(entity, components);
-    }
-
-    fn deactivated(&mut self, entity: &EntityData<Components>, components: &Components, _: &mut Services) {
-        self.aspect.deactivated(entity, components);
-    }
 }
 
 impl Process for NetEntitySystem {
