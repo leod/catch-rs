@@ -74,7 +74,7 @@ impl BouncyEnemySystem {
     }
 
     pub fn tick(&self, map: &Map, data: &mut DataHelper<Components, Services>) {
-        const MOVE_ACCEL: f64 = 200.0;
+        const MOVE_ACCEL: f64 = 400.0;
 
         let dur_s = data.services.tick_dur_s;
 

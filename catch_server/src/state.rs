@@ -58,7 +58,7 @@ impl GameState {
 
     // For adding test entities and stuff
     pub fn init_first_tick(&mut self) {
-        let num_bouncies = 42;
+        let num_bouncies = 20;
 
         for i in 0..num_bouncies {
             let net_entity_type_id = self.world.systems.net_entity_system.type_id("bouncy_enemy".to_string());

@@ -3,24 +3,18 @@ use ecs::ComponentList;
 use shared::net;
 use shared::components::{HasPosition, HasOrientation,
                          HasLinearVelocity, HasPlayerState,
-                         HasItemSpawn};
+                         HasFullPlayerState, HasItemSpawn};
 pub use shared::components::{NetEntity, Position,
                              Orientation, LinearVelocity,
-                             PlayerState, ItemSpawn,
+                             PlayerState, FullPlayerState,
+                             ItemSpawn,
                              ComponentTypeTraits,
                              component_type_traits};
 
+#[derive(Default)]
 pub struct ServerNetEntity {
     // Components that should not be interpolated into the current tick
     pub forced_components: Vec<net::ComponentType>,
-}
-
-impl Default for ServerNetEntity {
-    fn default() -> ServerNetEntity {
-        ServerNetEntity {
-            forced_components: Vec::new(),
-        }
-    }
 }
 
 impl ServerNetEntity {
@@ -29,13 +23,8 @@ impl ServerNetEntity {
     }
 }
 
+#[derive(Default)]
 pub struct BouncyEnemy; 
-
-impl Default for BouncyEnemy {
-    fn default() -> BouncyEnemy {
-        BouncyEnemy
-    }
-}
 
 #[derive(Debug)]
 pub enum Shape { // might wanna make this a shared component
@@ -58,6 +47,7 @@ components! {
         #[hot] orientation: Orientation,
         #[hot] linear_velocity: LinearVelocity,
         #[cold] player_state: PlayerState,
+        #[cold] full_player_state: FullPlayerState,
         #[cold] item_spawn: ItemSpawn,
         #[cold] bouncy_enemy: BouncyEnemy,
     }
@@ -96,6 +86,15 @@ impl HasPlayerState for Components {
     }
     fn player_state_mut(&mut self) -> &mut ComponentList<Components, PlayerState> {
         &mut self.player_state
+    }
+}
+
+impl HasFullPlayerState for Components {
+    fn full_player_state(&self) -> &ComponentList<Components, FullPlayerState> {
+        &self.full_player_state
+    }
+    fn full_player_state_mut(&mut self) -> &mut ComponentList<Components, FullPlayerState> {
+        &mut self.full_player_state
     }
 }
 

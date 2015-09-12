@@ -16,56 +16,24 @@ pub struct NetEntity {
     pub owner: PlayerId,
 }
 
-#[derive(CerealData, Clone)]
+#[derive(Clone, Default, CerealData)]
 pub struct Position {
     pub p: math::Vec2,
 }
 
-#[derive(CerealData, Clone)]
+#[derive(Clone, Default, CerealData)]
 pub struct Orientation {
     pub angle: f64,
 }
 
-#[derive(CerealData, Clone)]
+#[derive(Clone, Default, CerealData)]
 pub struct LinearVelocity {
     pub v: math::Vec2,
 }
 
-#[derive(CerealData, Clone)]
+#[derive(Clone, Default, CerealData)]
 pub struct ItemSpawn {
     pub item: Option<ItemType>,
-}
-
-impl Default for Position {
-    fn default() -> Position {
-        Position {
-            p: [0.0, 0.0]
-        }
-    }
-}
-
-impl Default for Orientation {
-    fn default() -> Orientation {
-        Orientation {
-            angle: 0.0
-        }
-    }
-}
-
-impl Default for LinearVelocity {
-    fn default() -> LinearVelocity {
-        LinearVelocity {
-            v: [0.0, 0.0]
-        }
-    }
-}
-
-impl Default for ItemSpawn {
-    fn default() -> ItemSpawn {
-        ItemSpawn {
-            item: None,
-        }
-    }
 }
 
 // Some boilerplate code for each net component type follows...
@@ -88,6 +56,11 @@ pub trait HasLinearVelocity {
 pub trait HasPlayerState {
     fn player_state(&self) -> &ComponentList<Self, PlayerState>;
     fn player_state_mut(&mut self) -> &mut ComponentList<Self, PlayerState>;
+}
+
+pub trait HasFullPlayerState {
+    fn full_player_state(&self) -> &ComponentList<Self, FullPlayerState>;
+    fn full_player_state_mut(&mut self) -> &mut ComponentList<Self, FullPlayerState>;
 }
 
 pub trait HasItemSpawn {
@@ -119,6 +92,7 @@ state_component_impl!(HasPosition, Position, position, position_mut);
 state_component_impl!(HasOrientation, Orientation, orientation, orientation_mut);
 state_component_impl!(HasLinearVelocity, LinearVelocity, linear_velocity, linear_velocity_mut);
 state_component_impl!(HasPlayerState, PlayerState, player_state, player_state_mut);
+state_component_impl!(HasFullPlayerState, FullPlayerState, full_player_state, full_player_state_mut);
 state_component_impl!(HasItemSpawn, ItemSpawn, item_spawn, item_spawn_mut);
 
 pub type ComponentTypeTraits<T> = Vec<Box<StateComponent<T>>>;
@@ -128,6 +102,7 @@ pub fn component_type_traits<T: ComponentManager +
                                 HasOrientation +
                                 HasLinearVelocity +
                                 HasPlayerState +
+                                HasFullPlayerState +
                                 HasItemSpawn>() -> ComponentTypeTraits<T> {
     let mut traits = ComponentTypeTraits::<T>::new();
 
@@ -141,6 +116,8 @@ pub fn component_type_traits<T: ComponentManager +
                 traits.push(Box::new(StateComponentImpl::<LinearVelocity>(PhantomData))),
             ComponentType::PlayerState =>
                 traits.push(Box::new(StateComponentImpl::<PlayerState>(PhantomData))),
+            ComponentType::FullPlayerState =>
+                traits.push(Box::new(StateComponentImpl::<FullPlayerState>(PhantomData))),
             ComponentType::ItemSpawn =>
                 traits.push(Box::new(StateComponentImpl::<ItemSpawn>(PhantomData))),
         };

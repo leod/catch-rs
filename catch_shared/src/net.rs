@@ -75,6 +75,7 @@ pub enum ComponentType {
     Orientation,
     LinearVelocity,
     PlayerState,
+    FullPlayerState,
     ItemSpawn
 }
 
@@ -89,33 +90,37 @@ pub const COMPONENT_TYPES: &'static [ComponentType] = &[
     ComponentType::Orientation,
     ComponentType::LinearVelocity,
     ComponentType::PlayerState,
+    ComponentType::FullPlayerState,
+    ComponentType::ItemSpawn,
 ];
 
-#[derive(CerealData, Clone)]
+#[derive(Clone, CerealData)]
 pub struct EntityType {
+    // Net components of this entity type, i.e. components whose states are sent to clients in
+    // ticks
     pub component_types: Vec<ComponentType>,
+
+    // Components that should be sent only to the owner of the object
+    // Example: the full state of a player including cooldowns etc. is only needed by the owner
+    pub owner_component_types: Vec<ComponentType>,
 }
 
 pub type EntityTypes = Vec<(String, EntityType)>;
 
 pub fn all_entity_types() -> EntityTypes {
-    let mut entity_types: Vec<(String, EntityType)> = Vec::new();
-
-    entity_types.push(("player".to_string(),
-        EntityType {
-            component_types: [ComponentType::Position,
-                              ComponentType::Orientation,
-                              ComponentType::LinearVelocity,
-                              ComponentType::PlayerState].to_vec()
-        }));
-
-    entity_types.push(("bouncy_enemy".to_string(),
-        EntityType {
-            component_types: [ComponentType::Position,
-                              ComponentType::Orientation].to_vec()
-        }));
-
-    entity_types
+    vec![("player".to_string(), EntityType {
+              component_types: vec![ComponentType::Position,
+                                    ComponentType::Orientation,
+                                    ComponentType::LinearVelocity,
+                                    ComponentType::PlayerState],
+              owner_component_types: vec![ComponentType::FullPlayerState],
+         }),
+         ("bouncy_enemy".to_string(), EntityType {
+              component_types: vec![ComponentType::Position,
+                                    ComponentType::Orientation],
+              owner_component_types: vec![],
+         }),
+        ]
 }
 
 impl fmt::Debug for GameInfo {

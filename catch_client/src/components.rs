@@ -3,32 +3,21 @@ use ecs::ComponentList;
 use shared::math;
 use shared::components::{HasPosition, HasOrientation,
                          HasLinearVelocity, HasPlayerState,
-                         HasItemSpawn};
+                         HasFullPlayerState, HasItemSpawn};
 pub use shared::components::{NetEntity, Position,
                              Orientation, LinearVelocity, 
-                             PlayerState, ItemSpawn,
+                             PlayerState, FullPlayerState,
+                             ItemSpawn,
                              ComponentTypeTraits,
                              component_type_traits};
 
+#[derive(Default)]
 pub struct DrawPlayer {
     pub scale_x: f64
 }
 
+#[derive(Default)]
 pub struct DrawBouncyEnemy;
-
-impl Default for DrawPlayer {
-    fn default() -> DrawPlayer {
-        DrawPlayer {
-            scale_x: 1.0,
-        }
-    }
-}
-
-impl Default for DrawBouncyEnemy {
-    fn default() -> DrawBouncyEnemy {
-        DrawBouncyEnemy
-    }
-}
 
 pub trait Interpolatable {
     fn interpolate(&Self, &Self, t: f64) -> Self; 
@@ -60,6 +49,7 @@ components! {
         #[hot] orientation: Orientation,
         #[hot] linear_velocity: LinearVelocity,
         #[cold] player_state: PlayerState,
+        #[cold] full_player_state: FullPlayerState, // We will only have our own full player state 
         #[cold] item_spawn: ItemSpawn,
 
         #[hot] interp_position: InterpolationState<Position>,
@@ -120,6 +110,15 @@ impl HasPlayerState for Components {
     }
     fn player_state_mut(&mut self) -> &mut ComponentList<Components, PlayerState> {
         &mut self.player_state
+    }
+}
+
+impl HasFullPlayerState for Components {
+    fn full_player_state(&self) -> &ComponentList<Components, FullPlayerState> {
+        &self.full_player_state
+    }
+    fn full_player_state_mut(&mut self) -> &mut ComponentList<Components, FullPlayerState> {
+        &mut self.full_player_state
     }
 }
 

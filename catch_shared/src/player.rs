@@ -25,11 +25,10 @@ impl PlayerState {
 }
 
 // Attached to players on the server and the clients controlling them
-#[derive(CerealData, Clone)]
+// Item states, cooldowns etc.
+#[derive(Clone, Default, CerealData)]
 pub struct FullPlayerState {
-    unchi: bool
-
-    // Item states, cooldowns etc.
+    dash_cooldown_s: Option<f64>,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
