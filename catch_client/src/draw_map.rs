@@ -2,6 +2,7 @@ use gl;
 
 use std::path::Path;
 
+use graphics::rectangle;
 use graphics::Transformed;
 use graphics::{Context, Image};
 use opengl_graphics::{GlGraphics, Texture};

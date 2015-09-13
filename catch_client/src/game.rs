@@ -95,7 +95,7 @@ impl Game {
             self.send_input(simulation_time_s);
             self.manage_ticks(simulation_time_s);
             self.interpolate();
-            self.draw(gl);
+            self.draw(simulation_time_s, gl);
 
             //thread::sleep_ms(10);
 
@@ -185,13 +185,11 @@ impl Game {
         if self.tick_progress >= 1.0 {
             // Load the next ticks if we have them
             if self.client.num_ticks() >= 2 {
-                let (_, tick) = self.client.pop_next_tick();
-                self.game_state.run_tick(&tick);
-
+                let tick = self.client.pop_next_tick().1;
                 let next_tick = &self.client.get_next_tick().1;
 
+                self.game_state.run_tick(&tick);
                 self.game_state.load_interp_tick_state(&tick, next_tick);
-
                 self.current_tick = Some(tick);
 
                 self.tick_progress -= 1.0;
@@ -206,7 +204,7 @@ impl Game {
             .interpolate(self.tick_progress, &mut self.game_state.world.data);
     }
 
-    fn draw(&mut self, gl: &mut GlGraphics) {
+    fn draw(&mut self, simulation_time_s: f64, gl: &mut GlGraphics) {
         let draw_width = self.window.draw_size().width;
         let draw_height = self.window.draw_size().height;
 
@@ -227,7 +225,7 @@ impl Game {
 
             let half_width = draw_width as f64 / 2.0;
             let half_height = draw_height as f64 / 2.0;
-            let zoom = 1.5;
+            let zoom = 5.0;
 
             // Clip camera position to map size in pixels
             if self.cam_pos[0] < half_width / zoom {
@@ -249,6 +247,31 @@ impl Game {
                          .trans(-self.cam_pos[0], -self.cam_pos[1]);
 
                 self.draw_map.draw(&self.game_state.map, c, gl);
+
+                /*if let Some(entity) = self.my_player_entity() {
+                    let (p, angle, vel) = self.game_state.world.with_entity_data(&entity, |e, c| {
+                        (c.position[e].p, c.orientation[e].angle, c.linear_velocity[e].v)
+                    }).unwrap();
+
+                    let dir = [angle.cos(), angle.sin()];
+                    let b = math::add(p, math::scale(dir, simulation_time_s));
+
+                    let b = math::add(p, math::scale(vel, simulation_time_s));
+
+                    for (i, (tx, ty)) in self.game_state.map.trace_line(p, b).enumerate() {
+                        graphics::rectangle([0.0, 0.3 * i as f32 / 5.0, 0.2, 1.0],
+                                            [0.0, 0.0, self.game_state.map.width() as f64, self.game_state.map.height() as f64],
+                                            c.trans((tx * self.game_state.map.width()) as f64, ((ty * self.game_state.map.height()) as f64)).transform,
+                                            gl);
+                    }
+
+                    graphics::rectangle([1.0, 0.0, 0.0, 1.0],
+                                        [1.0, -0.5, math::square_len(vel).sqrt() * simulation_time_s, 1.0],
+                                        c.trans(p[0], p[1])
+                                         .rot_rad(angle).transform,
+                                        gl);
+                }*/
+
                 self.game_state.world.systems
                     .draw_player_system
                     .draw(&mut self.game_state.world.data, c, gl);

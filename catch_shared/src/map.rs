@@ -87,6 +87,112 @@ impl<'a> Iterator for TileIter<'a> {
     }
 }
 
+pub struct TraceIter<'a> {
+    map: &'a Map,
+    
+    // Current position in tiles
+    tx: isize,
+    ty: isize,
+
+    // Number of tiles left that we will hit
+    n: usize,
+
+    // Progress
+    t: f64,
+
+    dt_dx: f64,
+    dt_dy: f64,
+
+    x_inc: isize,
+    y_inc: isize,
+    
+    t_next_vertical: f64,
+    t_next_horizontal: f64,
+}
+
+impl<'a> TraceIter<'a> {
+    // http://playtechs.blogspot.de/2007/03/raytracing-on-grid.html
+
+    fn new(map: &'a Map,
+           ax: f64, ay: f64,
+           bx: f64, by: f64) -> TraceIter<'a> {
+        let tx = ax as isize / map.tile_width() as isize;
+        let ty = ay as isize / map.tile_height() as isize;
+        let (dx, dy) = (bx - ax, by - ay);
+        let dt_dx = 1.0 / dx.abs();
+        let dt_dy = 1.0 / dy.abs();
+
+        // Calculate distances from start point to the tile border
+        let (x_inc, t_next_horizontal) =
+            if bx > ax {
+                (1,
+                 (((ax as usize / map.tile_width() + 1) * map.tile_width()) as f64 - ax) * dt_dx)
+            } else if bx < ax {
+                (-1,
+                 (ax - (ax as usize / map.tile_width() * map.tile_width()) as f64) * dt_dx)
+            } else {
+                (0,
+                 dt_dx) // Infinity
+            };
+
+        let (y_inc, t_next_vertical) =
+            if by > ay {
+                (1,
+                 (((ay as usize / map.tile_height() + 1) * map.tile_height()) as f64 - ay) * dt_dy)
+            } else if by < ay {
+                (-1,
+                 (ay - (ay as usize / map.tile_height() * map.tile_height()) as f64) * dt_dy)
+            } else {
+                (0,
+                 dt_dy) // Infinity
+            };
+
+        assert!(t_next_horizontal >= 0.0);
+        assert!(t_next_vertical >= 0.0);
+
+        TraceIter {
+            map: map,
+            tx: tx, ty: ty,
+            n: 0,
+            t: 0.0,
+            dt_dx: dt_dx, dt_dy: dt_dy,
+            x_inc: x_inc, y_inc: y_inc,
+            t_next_horizontal: t_next_horizontal,
+            t_next_vertical: t_next_vertical,
+        }
+    }
+}
+
+impl<'a> Iterator for TraceIter<'a> {
+    type Item = (usize, usize);
+
+    fn next(&mut self) -> Option<(usize, usize)> {
+        if self.t > 1.0 {
+            return None;
+        }
+
+        let (rx, ry) = (self.tx, self.ty);
+
+        if rx < 0 || rx as usize >= self.map.width() ||
+           ry < 0 || ry as usize >= self.map.height() {
+            return None;
+        }
+
+        // Which side of the tile is crossed first?
+        if self.t_next_vertical > self.t_next_horizontal {
+            self.tx += self.x_inc;
+            self.t = self.t_next_horizontal;
+            self.t_next_horizontal += self.map.width() as f64 * self.dt_dx;
+        } else {
+            self.ty += self.y_inc;
+            self.t = self.t_next_vertical;
+            self.t_next_vertical += self.map.height() as f64 * self.dt_dy;
+        }
+
+        Some((rx as usize, ry as usize))
+    }
+}
+
 impl Map {
     fn convert_layer(tilesets: &Vec<tiled::Tileset>,
                      layer: &tiled::Layer) -> Layer {
@@ -218,12 +324,16 @@ impl Map {
         TileIter::new(self, id.to_index())
     }
 
+    /// Returns an iterator for the tiles hit by the line (in pixels) from `p` to `q`
+    pub fn trace_line<'a>(&'a self, p: math::Vec2, q: math::Vec2) -> TraceIter<'a> {
+        TraceIter::new(self, p[0], p[1], q[0], q[1])
+    }
+
     pub fn line_segment_intersection(&self, p: math::Vec2, q: math::Vec2) -> Option<(usize, usize, math::Vec2, f64)> {
         let mut i_min = None;
 
-        // TODO: Determine what tiles to check using some kind of bresenham
-
-        for (x_i, y_i, tile) in self.iter_layer(LayerId::Block) {
+        for (x_i, y_i) in self.trace_line(p, q) {
+            let tile = self.get_tile(LayerId::Block, x_i, y_i);
             if let Some(_) = tile {
                 let x = (x_i * self.tile_width()) as f64;
                 let y = (y_i * self.tile_width()) as f64;
@@ -249,10 +359,6 @@ impl Map {
                 i_min = math::min_intersection(i_min, i);
             }
         }
-
-        /*if i_min.is_some() {
-            println!("{:?}", i_min.unwrap());
-        }*/
 
         i_min.map(|((x, y, n), t)| (x, y, n, t))
     }
