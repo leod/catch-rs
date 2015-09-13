@@ -19,8 +19,8 @@ systems! {
             aspect!(<Components> all: [position, interp_position]),
             aspect!(<Components> all: [orientation, interp_orientation])),
         draw_player_system: DrawPlayerSystem = DrawPlayerSystem::new(
-            aspect!(<Components> all: [position, orientation, player_state])),
+            aspect!(<Components> all: [draw_player])),
         draw_bouncy_enemy_system: DrawBouncyEnemySystem = DrawBouncyEnemySystem::new(
-            aspect!(<Components> all: [position, draw_bouncy_enemy])),
+            aspect!(<Components> all: [draw_bouncy_enemy])),
     }
 }

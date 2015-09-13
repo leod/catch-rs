@@ -122,7 +122,7 @@ impl<'a> TraceIter<'a> {
         let dt_dx = 1.0 / dx.abs();
         let dt_dy = 1.0 / dy.abs();
 
-        // Calculate distances from start point to the tile border
+        // Calculate distances from the start point to the tile borders
         let (x_inc, t_next_horizontal) =
             if bx > ax {
                 (1,
