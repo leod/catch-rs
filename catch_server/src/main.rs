@@ -1,8 +1,7 @@
 #![feature(libc)]
 
-#[macro_use]
-extern crate ecs;
-extern crate catch_shared as shared;
+#[macro_use] extern crate ecs;
+#[macro_use] extern crate catch_shared as shared;
 extern crate renet as enet;
 extern crate libc;
 extern crate cereal;

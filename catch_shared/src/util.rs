@@ -79,3 +79,33 @@ impl<T: ComponentManager> CachedAspect<T> {
     }
 }
 
+#[macro_export]
+macro_rules! impl_cached_system { 
+    ($c:ident, $s:ident, $x:ident, $($y:ident),*) => {
+        impl ::ecs::System for $x {
+            type Components = $c;
+            type Services = $s;
+
+            fn activated(&mut self, entity: &::ecs::EntityData<$c>, components: &$c,
+                         _: &mut $s) {
+                $(
+                    self.$y.activated(entity, components);
+                )*
+            }
+
+            fn reactivated(&mut self, entity: &::ecs::EntityData<$c>, components: &$c,
+                           _: &mut $s) {
+                $(
+                    self.$y.reactivated(entity, components);
+                )*
+            }
+
+            fn deactivated(&mut self, entity: &::ecs::EntityData<$c>, components: &$c,
+                           _: &mut $s) {
+                $(
+                    self.$y.deactivated(entity, components);
+                )*
+            }
+        }
+    }
+}

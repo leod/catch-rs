@@ -12,7 +12,7 @@ pub mod event;
 pub mod components;
 pub mod tick;
 pub mod player;
-pub mod util;
+#[macro_use] pub mod util;
 pub mod map;
 pub mod math;
 pub mod item;

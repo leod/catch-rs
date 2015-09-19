@@ -5,8 +5,8 @@ use ecs::{ComponentManager, ComponentList, BuildData, EntityData};
 pub use player::{PlayerState, FullPlayerState};
 use net::{StateComponent, EntityId, EntityTypeId, COMPONENT_TYPES, ComponentType};
 use player::PlayerId;
+use item::Item;
 use tick::NetState;
-use item::ItemType;
 use math;
 
 /// Every entity that wants its component state synchronized needs to have this component
@@ -33,7 +33,7 @@ pub struct LinearVelocity {
 
 #[derive(Clone, Default, CerealData)]
 pub struct ItemSpawn {
-    pub item: Option<ItemType>,
+    pub item: Option<Item>,
 }
 
 // Some boilerplate code for each net component type follows...

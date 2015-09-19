@@ -33,25 +33,8 @@ impl InterpolationSystem {
     }
 }
 
-impl System for InterpolationSystem {
-    type Components = Components;
-    type Services = Services;
-
-    fn activated(&mut self, entity: &EntityData<Components>, components: &Components, _: &mut Services) {
-        self.position_aspect.activated(entity, components);
-        self.orientation_aspect.activated(entity, components);
-    }
-
-    fn reactivated(&mut self, entity: &EntityData<Components>, components: &Components, _: &mut Services) {
-        self.position_aspect.reactivated(entity, components);
-        self.orientation_aspect.reactivated(entity, components);
-    }
-
-    fn deactivated(&mut self, entity: &EntityData<Components>, components: &Components, _: &mut Services) {
-        self.position_aspect.deactivated(entity, components);
-        self.orientation_aspect.deactivated(entity, components);
-    }
-}
+impl_cached_system!(Components, Services, InterpolationSystem,
+                    position_aspect, orientation_aspect);
 
 impl Process for InterpolationSystem {
     fn process(&mut self, _: &mut DataHelper<Components, Services>) {

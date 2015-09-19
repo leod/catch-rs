@@ -26,13 +26,13 @@ impl PlayerMovementSystem {
         let q = math::add(p, delta);
 
         data.position[e].p = match map.line_segment_intersection(p, q) {
-            Some((_, _, _, s)) => { // Walk as far as we can
+            Some(intersection) => { // Walk as far as we can
                 if data.player_state[e].dashing.is_some() &&
                    data.player_state[e].dashing.unwrap() < 0.9 {
                     data.player_state[e].dashing = Some(0.9);
                 }
 
-                let s = (s - 0.0001).max(0.0);
+                let s = (intersection.t - 0.0001).max(0.0);
                 math::add(p, math::scale(delta, s))
             }
             None =>
@@ -49,10 +49,10 @@ impl PlayerMovementSystem {
         let q = math::add(p, delta);
 
         match map.line_segment_intersection(p, q) {
-            Some((_, _, n, _)) => {
+            Some(intersection) => {
                 // We walked into a surface with normal n.
                 // Find parts of delta parallel and orthogonal to n
-                let u = math::scale(n, math::dot(delta, n));
+                let u = math::scale(intersection.n, math::dot(delta, intersection.n));
                 let v = math::sub(delta, u);
 
                 self.move_straight(e, u, map, data);
@@ -73,8 +73,8 @@ impl PlayerMovementSystem {
         let q = math::add(p, delta);
 
         match map.line_segment_intersection(p, q) {
-            Some((_, _, n, s)) => {
-                let n_angle = n[1].atan2(n[0]);
+            Some(intersection) => {
+                let n_angle = intersection.n[1].atan2(intersection.n[0]);
                 let angle = data.orientation[e].angle;
 
                 data.orientation[e].angle = f64::consts::PI + n_angle - (angle - n_angle);
@@ -87,7 +87,7 @@ impl PlayerMovementSystem {
                     data.orientation[e].angle.sin() * (speed + 1.0),
                 ];
 
-                let s = (s - 0.0001).max(0.0);
+                let s = (intersection.t - 0.0001).max(0.0);
                 data.position[e].p = math::add(p, math::scale(delta, s));
             }
             None => {

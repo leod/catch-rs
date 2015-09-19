@@ -32,8 +32,8 @@ impl BouncyEnemySystem {
         let q = math::add(p, delta);
 
         data.position[e].p = match map.line_segment_intersection(p, q) {
-            Some((_, _, _, s)) => { // Walk as far as we can
-                let s = (s - 0.0001).max(0.0);
+            Some(intersection) => { // Walk as far as we can
+                let s = (intersection.t - 0.0001).max(0.0);
                 math::add(p, math::scale(delta, s))
             }
             None =>
@@ -50,8 +50,8 @@ impl BouncyEnemySystem {
         let q = math::add(p, delta);
 
         match map.line_segment_intersection(p, q) {
-            Some((_, _, n, s)) => {
-                let n_angle = n[1].atan2(n[0]);
+            Some(intersection) => {
+                let n_angle = intersection.n[1].atan2(intersection.n[0]);
                 let angle = data.orientation[e].angle;
 
                 data.orientation[e].angle = f64::consts::PI + n_angle - (angle - n_angle);
@@ -64,7 +64,7 @@ impl BouncyEnemySystem {
                     data.orientation[e].angle.sin() * (speed + 1.0),
                 ];
 
-                let s = (s - 0.0001).max(0.0);
+                let s = (intersection.t - 0.0001).max(0.0);
                 data.position[e].p = math::add(p, math::scale(delta, s));
             }
             None => {
@@ -92,25 +92,8 @@ impl BouncyEnemySystem {
     }
 }
 
-impl System for BouncyEnemySystem {
-    type Components = Components;
-    type Services = Services;
-
-    fn activated(&mut self, entity: &EntityData<Components>, components: &Components,
-                 _: &mut Services) {
-        self.aspect.activated(entity, components);
-    }
-
-    fn reactivated(&mut self, entity: &EntityData<Components>, components: &Components,
-                   _: &mut Services) {
-        self.aspect.reactivated(entity, components);
-    }
-
-    fn deactivated(&mut self, entity: &EntityData<Components>, components: &Components,
-                   _: &mut Services) {
-        self.aspect.deactivated(entity, components);
-    }
-}
+impl_cached_system!(Components, Services, BouncyEnemySystem,
+                    aspect);
 
 impl Process for BouncyEnemySystem {
     fn process(&mut self, _: &mut DataHelper<Components, Services>) {

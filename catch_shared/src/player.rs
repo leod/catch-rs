@@ -9,7 +9,7 @@ pub type PlayerInputNumber = u32;
 pub const NEUTRAL_PLAYER_ID: PlayerId = 0;
 
 // Component attached to any player for both client and server
-#[derive(CerealData, Clone)]
+#[derive(CerealData, Clone, Default)]
 pub struct PlayerState { 
     pub color: u32,
     pub dashing: Option<f64>,
@@ -133,15 +133,4 @@ impl CerealData for PlayerInput {
         Ok(())
     }
 }
-
-impl Default for PlayerState {
-    fn default() -> PlayerState {
-        PlayerState {
-            color: 0,
-            dashing: None,
-            invulnerable_s: None,
-        }
-    }
-}
-
 

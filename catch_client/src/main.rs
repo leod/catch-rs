@@ -11,7 +11,7 @@ extern crate time;
 extern crate gl;
 extern crate getopts;
 
-extern crate catch_shared as shared;
+#[macro_use] extern crate catch_shared as shared;
 
 mod client;
 mod player_input;

@@ -194,6 +194,19 @@ impl<'a> Iterator for TraceIter<'a> {
     }
 }
 
+// Intersection of a line segment with a tile in the map
+pub struct LineSegmentIntersection {
+    // Tile position
+    pub tx: usize,
+    pub ty: usize,
+
+    // Can be used to find the intersection point, 0 <= t <= 1
+    pub t: f64,
+
+    // Normal at the intersection
+    pub n: math::Vec2,
+}
+
 impl Map {
     pub fn width(&self) -> usize {
         self.map.width as usize
@@ -254,25 +267,7 @@ impl Map {
             Map::convert_layer(&map.tilesets, &layer)
         }).collect();
 
-        let mut objects = Vec::new();
-        for object_group in map.object_groups.iter() {
-            for object in object_group.objects.iter() {
-                match object {
-                    &tiled::Object::Rect { ref x, ref y, ref width, ref height,
-                                           ref type_str, visible: _ } => {
-                        objects.push(MapObject {
-                            x: *x as f64,
-                            y: *y as f64,
-                            width: *width as f64,
-                            height: *height as f64,
-                            type_str: type_str.clone(),
-                        });
-                    }
-                    _ =>
-                        return Err("Only rectangle objects can be used".to_string())
-                }
-            }
-        }
+        let objects = try!(Map::convert_objects(&map.object_groups));
 
         Ok(Map {
             map: map,
@@ -291,9 +286,10 @@ impl Map {
         TraceIter::new(self, p[0], p[1], q[0], q[1])
     }
 
-    /// 
+    /// Checks if the given line segment from `p` to `q` intersects with a blocking tile
+    /// in the map
     pub fn line_segment_intersection(&self, p: math::Vec2, q: math::Vec2)
-                                     -> Option<(usize, usize, math::Vec2, f64)> {
+                                     -> Option<LineSegmentIntersection> {
         let mut i_min = None;
 
         for (x_i, y_i) in self.trace_line(p, q) {
@@ -324,7 +320,12 @@ impl Map {
             }
         }
 
-        i_min.map(|((x, y, n), t)| (x, y, n, t))
+        i_min.map(|((x, y, n), t)| LineSegmentIntersection {
+            tx: x,
+            ty: y,
+            t: t,
+            n: n,
+        })
     }
 
     fn tile_from_number(tilesets: &Vec<tiled::Tileset>,
@@ -367,4 +368,29 @@ impl Map {
         }
     }
 
+    /// Converts from tiled's MapObject to our's
+    fn convert_objects(object_groups: &Vec<tiled::ObjectGroup>) 
+                       -> Result<Vec<MapObject>, String> {
+        let mut objects = Vec::new();
+        for object_group in object_groups.iter() {
+            for object in object_group.objects.iter() {
+                match object {
+                    &tiled::Object::Rect { ref x, ref y, ref width, ref height,
+                                           ref type_str, visible: _ } => {
+                        objects.push(MapObject {
+                            x: *x as f64,
+                            y: *y as f64,
+                            width: *width as f64,
+                            height: *height as f64,
+                            type_str: type_str.clone(),
+                        });
+                    }
+                    _ =>
+                        return Err("Only rectangle objects can be used".to_string())
+                }
+            }
+        }
+
+        Ok(objects)
+    }
 }

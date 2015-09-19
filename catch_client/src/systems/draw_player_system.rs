@@ -60,22 +60,7 @@ impl DrawPlayerSystem {
     }
 }
 
-impl System for DrawPlayerSystem {
-    type Components = Components;
-    type Services = Services;
-
-    fn activated(&mut self, entity: &EntityData<Components>, components: &Components, _: &mut Services) {
-        self.aspect.activated(entity, components);
-    }
-
-    fn reactivated(&mut self, entity: &EntityData<Components>, components: &Components, _: &mut Services) {
-        self.aspect.reactivated(entity, components);
-    }
-
-    fn deactivated(&mut self, entity: &EntityData<Components>, components: &Components, _: &mut Services) {
-        self.aspect.deactivated(entity, components);
-    }
-}
+impl_cached_system!(Components, Services, DrawPlayerSystem, aspect);
 
 impl Process for DrawPlayerSystem {
     fn process(&mut self, _: &mut DataHelper<Components, Services>) {

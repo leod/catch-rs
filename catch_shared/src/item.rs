@@ -1,6 +1,12 @@
 #[derive(CerealData, Clone)]
-pub enum ItemType {
-    SpeedBoost,
-    PlaceBlock,
-    Gun,
+pub enum Item {
+    Weapon {
+        charges: usize,
+    },
+    SpeedBoost {
+        duration_s: f64,
+    },
+    BlockPlacer {
+        charges: usize,
+    }
 }
