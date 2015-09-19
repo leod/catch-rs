@@ -3,6 +3,7 @@ mod player_movement_system;
 mod player_item_system;
 mod bouncy_enemy_system;
 mod interaction_system;
+mod interactions;
 
 use super::components::{Components};
 use super::services::Services;
@@ -22,10 +23,10 @@ systems! {
         interaction_system: InteractionSystem = InteractionSystem::new(
             vec![(aspect!(<Components> all: [player_state]),
                   aspect!(<Components> all: [bouncy_enemy]),
-                  Box::new(interaction_system::PlayerBouncyEnemyInteraction)),
+                  Box::new(interactions::PlayerBouncyEnemyInteraction)),
                  (aspect!(<Components> all: [bouncy_enemy]),
                   aspect!(<Components> all: [bouncy_enemy]),
-                  Box::new(interaction_system::BouncyEnemyBouncyEnemyInteraction)),
+                  Box::new(interactions::BouncyEnemyInteraction)),
                 ])
     }
 }

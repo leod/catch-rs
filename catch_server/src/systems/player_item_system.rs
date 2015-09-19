@@ -20,7 +20,7 @@ impl PlayerItemSystem {
                             map: &Map,
                             data: &mut DataHelper<Components, Services>) {
         data.with_entity_data(&entity, |e, c| {
-
+            
         });
     }
 }
