@@ -16,10 +16,8 @@ use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
 
 use shared::math;
-use shared::net::{ClientMessage, TickNumber, TimedPlayerInput};
-use shared::map::Map;
+use shared::net::{ClientMessage, TimedPlayerInput};
 use shared::tick::Tick;
-use shared::util::PeriodicTimer;
 
 use client::Client;
 use state::GameState;
@@ -204,7 +202,7 @@ impl Game {
             .interpolate(self.tick_progress, &mut self.game_state.world.data);
     }
 
-    fn draw(&mut self, simulation_time_s: f64, gl: &mut GlGraphics) {
+    fn draw(&mut self, _simulation_time_s: f64, gl: &mut GlGraphics) {
         let draw_width = self.window.draw_size().width;
         let draw_height = self.window.draw_size().height;
 
@@ -248,6 +246,7 @@ impl Game {
 
                 self.draw_map.draw(&self.game_state.map, c, gl);
 
+                // Debugging code to display velocities of entities
                 /*if let Some(entity) = self.my_player_entity() {
                     let (p, angle, vel) = self.game_state.world.with_entity_data(&entity, |e, c| {
                         (c.position[e].p, c.orientation[e].angle, c.linear_velocity[e].v)
@@ -289,10 +288,18 @@ impl Game {
 
     fn debug_text(&mut self, c: graphics::Context, gl: &mut GlGraphics) {
         let color = [1.0, 0.0, 1.0, 1.0];
-        let s = &format!("fps: {:.1}", self.fps); self.draw_text(color, 10.0, 30.0, s, c, gl);
-        let s = &format!("# queued ticks: {}", self.client.num_ticks()); self.draw_text(color, 10.0, 65.0, s, c, gl);
-        let s = &format!("tick progress: {:.1}", self.tick_progress); self.draw_text(color, 10.0, 100.0, s, c, gl);
-        let s = &format!("time factor: {:.1}", self.time_factor); self.draw_text(color, 10.0, 135.0, s, c, gl);
+
+        let s = &format!("fps: {:.1}", self.fps);
+        self.draw_text(color, 10.0, 30.0, s, c, gl);
+
+        let s = &format!("# queued ticks: {}", self.client.num_ticks());
+        self.draw_text(color, 10.0, 65.0, s, c, gl);
+
+        let s = &format!("tick progress: {:.1}", self.tick_progress);
+        self.draw_text(color, 10.0, 100.0, s, c, gl);
+
+        let s = &format!("time factor: {:.1}", self.time_factor);
+        self.draw_text(color, 10.0, 135.0, s, c, gl);
     }
 
     fn cooldown_text(&mut self, context: graphics::Context, gl: &mut GlGraphics) {
@@ -306,14 +313,16 @@ impl Game {
             let color1 = [0.0, 0.0, 1.0, 1.0];
             let color2 = [0.4, 0.4, 0.4, 1.0];
 
-            self.draw_text(if dash_cooldown_s.is_none() { color1 } else { color2 }, 20.0, y1, "dash", context, gl);
+            self.draw_text(if dash_cooldown_s.is_none() { color1 } else { color2 },
+                           20.0, y1, "dash", context, gl);
             if let Some(t) = dash_cooldown_s {
                 self.draw_text(color2, 25.0, y2, &format!("{:.1}", t), context, gl);
             }
         }
     }
 
-    fn draw_text(&mut self, color: [f32; 4], x: f64, y: f64, s: &str, c: graphics::Context, gl: &mut GlGraphics) {
+    fn draw_text(&mut self, color: [f32; 4], x: f64, y: f64, s: &str, c: graphics::Context,
+                 gl: &mut GlGraphics) {
         Text::new_color(color, 30).draw(
             s,
             &mut self.glyphs,

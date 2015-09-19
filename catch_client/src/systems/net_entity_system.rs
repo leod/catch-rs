@@ -15,8 +15,11 @@ use services::Services;
 
 pub struct NetEntitySystem {
     entity_types: net::EntityTypes,
+
+    // List of trait objects for each net component type for loading and storing the state
     component_type_traits: components::ComponentTypeTraits<Components>,
 
+    // Map from network entity ids to the local component system's entity id
     entities: HashMap<net::EntityId, ecs::Entity>,
 
     my_id: PlayerId,
@@ -34,16 +37,17 @@ impl NetEntitySystem {
         }
     }
 
-    fn component_type_trait(&self, component_type: net::ComponentType) -> &Box<net::StateComponent<Components>> {
-        &self.component_type_traits[component_type as usize]
-    }
-
     pub fn my_player_entity_id(&self) -> Option<net::EntityId> {
         self.my_player_entity_id
     }
 
     pub fn get_entity(&self, id: net::EntityId) -> Option<ecs::Entity> {
         self.entities.get(&id).map(|entity| *entity)
+    }
+
+    fn component_type_trait(&self, component_type: net::ComponentType)
+                            -> &Box<net::StateComponent<Components>> {
+        &self.component_type_traits[component_type as usize]
     }
     
     fn create_entity(&mut self,
@@ -66,7 +70,8 @@ impl NetEntitySystem {
                 owner: owner,
             });
 
-            for net_component in &self.entity_types[entity_type_id as usize].1.component_types {
+            for net_component in &self.entity_types[entity_type_id as usize].1
+                                      .component_types {
                 self.component_type_trait(*net_component).add(entity, data);
 
                 // Add interpolation state components for certain net component types
@@ -81,7 +86,8 @@ impl NetEntitySystem {
                 };
             }
             if self.my_id == owner {
-                for net_component in &self.entity_types[entity_type_id as usize].1.owner_component_types {
+                for net_component in &self.entity_types[entity_type_id as usize].1
+                                          .owner_component_types {
                     self.component_type_trait(*net_component).add(entity, data);
                 }
             }
@@ -123,8 +129,9 @@ impl NetEntitySystem {
         }
     }
 
-    // Creates entities that are new in a tick and removes those that are to be removed
-    pub fn process_entity_events(&mut self, tick: &Tick, data: &mut DataHelper<Components, Services>) {
+    /// Creates entities that are new in a tick and removes those that are to be removed
+    pub fn process_entity_events(&mut self, tick: &Tick,
+                                 data: &mut DataHelper<Components, Services>) {
         for event in tick.events.iter() {
             match *event {
                 GameEvent::CreateEntity(entity_id, entity_type_id, owner) => {
@@ -138,6 +145,7 @@ impl NetEntitySystem {
         }
     }
 
+    /// Loads net state from the given `Tick` into our entities
     pub fn load_tick_state(&mut self, tick: &Tick, data: &mut DataHelper<Components, Services>) {
         // TODO: If these tick methods turn out to be a bottleneck, I'll need to find a better
         // representation for TickState than a bunch of HashMaps
@@ -161,6 +169,7 @@ impl NetEntitySystem {
         }
     }
 
+    /// Loads state that is to be interpolated between `tick_a` and `tick_b`
     pub fn load_interp_tick_state(&mut self, tick_a: &Tick, tick_b: &Tick,
                                   data: &mut DataHelper<Components, Services>) {
         // TODO: This would be more efficient if we stepped through tick_a's and tick_b's entity

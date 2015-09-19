@@ -1,6 +1,5 @@
 use ecs::{Aspect, System, EntityData, DataHelper, Process};
 
-use shared::math;
 use shared::util::CachedAspect;
 use components::{Components, Interpolatable, Position, Orientation};
 use services::Services;

@@ -23,6 +23,7 @@ pub struct Map {
     pub objects: Vec<MapObject>,
 }
 
+/// Information about an entity on a map
 pub struct MapObject {
     pub x: f64,
     pub y: f64,
@@ -194,47 +195,6 @@ impl<'a> Iterator for TraceIter<'a> {
 }
 
 impl Map {
-    fn convert_layer(tilesets: &Vec<tiled::Tileset>,
-                     layer: &tiled::Layer) -> Layer {
-        let tiles = layer.tiles.iter().map(|row| {
-            row.iter().map(|&number| {
-                if number == 0 {
-                    None
-                } else {
-                    // Find the tileset this tile belongs to
-                    for i in 0..tilesets.len() {
-                        let tileset = &tilesets[i];
-                        let num_tiles_w = tileset.images[0].width as usize /
-                                          tileset.tile_width as usize;
-                        let num_tiles_h = tileset.images[0].height as usize / 
-                                          tileset.tile_height as usize;
-                        let num_tiles = num_tiles_w * num_tiles_h;
-
-                        if number >= tileset.first_gid &&
-                           number < tileset.first_gid + num_tiles as u32 {
-                            let number_rel = number as usize -
-                                             tileset.first_gid as usize;
-                            let x = number_rel % num_tiles_h;
-                            let y = number_rel / num_tiles_w;
-
-                            return Some(Tile {
-                                tileset: i,
-                                x: x,
-                                y: y
-                            });
-                        }
-                    }
-
-                    return None;
-                }
-            }).collect()
-        }).collect();
-
-        Layer {
-            tiles: tiles,
-        }
-    }
-
     pub fn width(&self) -> usize {
         self.map.width as usize
     }
@@ -298,7 +258,8 @@ impl Map {
         for object_group in map.object_groups.iter() {
             for object in object_group.objects.iter() {
                 match object {
-                    &tiled::Object::Rect { ref x, ref y, ref width, ref height, ref type_str, visible: _ } => {
+                    &tiled::Object::Rect { ref x, ref y, ref width, ref height,
+                                           ref type_str, visible: _ } => {
                         objects.push(MapObject {
                             x: *x as f64,
                             y: *y as f64,
@@ -320,6 +281,7 @@ impl Map {
         })
     }
 
+    /// Returns an iterator for all tiles contained in the given layer `id`
     pub fn iter_layer<'a>(&'a self, id: LayerId) -> TileIter<'a> {
         TileIter::new(self, id.to_index())
     }
@@ -329,7 +291,9 @@ impl Map {
         TraceIter::new(self, p[0], p[1], q[0], q[1])
     }
 
-    pub fn line_segment_intersection(&self, p: math::Vec2, q: math::Vec2) -> Option<(usize, usize, math::Vec2, f64)> {
+    /// 
+    pub fn line_segment_intersection(&self, p: math::Vec2, q: math::Vec2)
+                                     -> Option<(usize, usize, math::Vec2, f64)> {
         let mut i_min = None;
 
         for (x_i, y_i) in self.trace_line(p, q) {
@@ -362,4 +326,45 @@ impl Map {
 
         i_min.map(|((x, y, n), t)| (x, y, n, t))
     }
+
+    fn tile_from_number(tilesets: &Vec<tiled::Tileset>,
+                        number: u32) 
+                        -> Option<Tile> {
+        for (i, tileset) in tilesets.iter().enumerate() {
+            let num_tiles_w = tileset.images[0].width as usize /
+                              tileset.tile_width as usize;
+            let num_tiles_h = tileset.images[0].height as usize / 
+                              tileset.tile_height as usize;
+            let num_tiles = num_tiles_w * num_tiles_h;
+
+            if number >= tileset.first_gid &&
+               number < tileset.first_gid + num_tiles as u32 {
+                let number_rel = number as usize -
+                                 tileset.first_gid as usize;
+                let x = number_rel % num_tiles_h;
+                let y = number_rel / num_tiles_w;
+
+                return Some(Tile { tileset: i,
+                                   x: x,
+                                   y: y });
+            }
+        }
+
+        None
+    }
+
+    /// Converts a `tiled::Layer` into our type `Layer`
+    fn convert_layer(tilesets: &Vec<tiled::Tileset>,
+                     layer: &tiled::Layer) -> Layer {
+        let tiles = layer.tiles.iter().map(|row| {
+            row.iter().map(|&number| {
+                Map::tile_from_number(tilesets, number)
+            }).collect()
+        }).collect();
+
+        Layer {
+            tiles: tiles,
+        }
+    }
+
 }

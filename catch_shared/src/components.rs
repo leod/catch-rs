@@ -72,11 +72,13 @@ struct StateComponentImpl<C>(PhantomData<C>);
 
 macro_rules! state_component_impl {
     ($trait_ty: ident, $ty: ident, $field: ident, $field_mut: ident) => {
-        impl<T: ComponentManager> StateComponent<T> for StateComponentImpl<$ty> where T: $trait_ty {
+        impl<T: ComponentManager> StateComponent<T> for StateComponentImpl<$ty>
+            where T: $trait_ty {
             fn add(&self, entity: BuildData<T>, c: &mut T) {
                 c.$field_mut().add(&entity, $ty::default());
             }
-            fn store(&self, entity: EntityData<T>, id: EntityId, net_state: &mut NetState, c: &T) {
+            fn store(&self, entity: EntityData<T>, id: EntityId, net_state: &mut NetState,
+                     c: &T) {
                 net_state.$field.insert(id, c.$field()[entity].clone());
             }
             fn load(&self, entity: EntityData<T>, id: EntityId, net_state: &NetState, c: &mut T) {

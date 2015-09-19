@@ -167,7 +167,8 @@ impl PlayerMovementSystem {
                     accel = math::add(math::scale(direction, -BACK_ACCEL), accel);
                 }
 
-                c.linear_velocity[e].v = math::add(c.linear_velocity[e].v, math::scale(accel, dur_s));
+                c.linear_velocity[e].v = math::add(c.linear_velocity[e].v,
+                                                   math::scale(accel, dur_s));
 
                 if c.linear_velocity[e].v[0].abs() <= MIN_SPEED {
                     c.linear_velocity[e].v[0] = 0.0;

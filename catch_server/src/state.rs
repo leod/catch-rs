@@ -91,7 +91,8 @@ impl GameState {
         let num_bouncies = 20;
 
         for i in 0..num_bouncies {
-            let net_entity_type_id = self.world.systems.net_entity_system.type_id("bouncy_enemy".to_string());
+            let net_entity_type_id = self.world.systems.net_entity_system
+                                         .type_id("bouncy_enemy".to_string());
             let (_, entity) = 
                 self.world.systems.net_entity_system
                     .create_entity(net_entity_type_id, 0, &mut self.world.data);
@@ -108,8 +109,10 @@ impl GameState {
                 }
             }
 
-            let position = [(rx * self.map.tile_width()) as f64 + self.map.tile_width() as f64 / 2.0,
-                            (ry * self.map.tile_height()) as f64 + self.map.tile_height() as f64 / 2.0];
+            let position = [(rx * self.map.tile_width()) as f64 +
+                            self.map.tile_width() as f64 / 2.0,
+                            (ry * self.map.tile_height()) as f64 +
+                            self.map.tile_height() as f64 / 2.0];
 
             self.world.with_entity_data(&entity, |e, c| {
                 c.position[e].p = position;
@@ -133,14 +136,16 @@ impl GameState {
         assert!(self.players[&id].controlled_entity.is_none(),
                 "Can't spawn a player that is already controlling an entity");
 
-        let net_entity_type_id = self.world.systems.net_entity_system.type_id("player".to_string());
+        let net_entity_type_id = self.world.systems.net_entity_system
+                                     .type_id("player".to_string());
         let (net_entity_id, entity) = 
             self.world.systems.net_entity_system
                 .create_entity(net_entity_type_id, id, &mut self.world.data);
         self.players.get_mut(&id).unwrap().controlled_entity = Some(net_entity_id);
 
         let position = {
-            let spawn_point = &self.spawn_points[rand::random::<usize>() % self.spawn_points.len()];
+            let spawn_point = &self.spawn_points[rand::random::<usize>() %
+                                                 self.spawn_points.len()];
             [spawn_point.position[0] + rand::random::<f64>() * spawn_point.size[0],
              spawn_point.position[1] + rand::random::<f64>() * spawn_point.size[1]]
         };

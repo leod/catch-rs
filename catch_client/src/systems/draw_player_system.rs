@@ -21,7 +21,8 @@ impl DrawPlayerSystem {
         }
     }
 
-    pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, c: graphics::Context, gl: &mut GlGraphics) {
+    pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, c: graphics::Context,
+                gl: &mut GlGraphics) {
         for entity in self.aspect.iter() {
             let p = data.position[entity].p;
             // TODO: Store this somwehere
@@ -34,7 +35,8 @@ impl DrawPlayerSystem {
                 1.0
             };
 
-            data.draw_player[entity].scale_x += (scale_x_target - data.draw_player[entity].scale_x) * 0.15;
+            let delta_scale = (scale_x_target - data.draw_player[entity].scale_x) * 0.15;
+            data.draw_player[entity].scale_x += delta_scale;
 
             let scale_x = data.draw_player[entity].scale_x;
             let transform = c.trans(p[0], p[1])

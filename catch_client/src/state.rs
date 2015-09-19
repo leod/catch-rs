@@ -48,7 +48,7 @@ impl GameState {
         &self.players[&id]
     }
 
-    pub fn on_local_player_input(&mut self, input: &PlayerInput) {
+    pub fn on_local_player_input(&mut self, _input: &PlayerInput) {
         // TODO: Client-side prediction
     }
 

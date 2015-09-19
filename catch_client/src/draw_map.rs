@@ -2,7 +2,6 @@ use gl;
 
 use std::path::Path;
 
-use graphics::rectangle;
 use graphics::Transformed;
 use graphics::{Context, Image};
 use opengl_graphics::{GlGraphics, Texture};
@@ -68,7 +67,8 @@ impl DrawMap {
                                                        (width as i32),
                                                        (height as i32)]);
                     let texture = &self.tileset_textures[id.to_index()];
-                    let transform = c.trans((tile_x * width) as f64, (tile_y * height) as f64).transform;
+                    let transform = c.trans((tile_x * width) as f64, (tile_y * height) as f64)
+                                     .transform;
                     image.draw(texture, &c.draw_state, transform, gl);
                 }
                 None => continue

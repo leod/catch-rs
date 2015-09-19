@@ -265,7 +265,8 @@ impl Server {
                         let tick_number = self.game_state.tick_number;
 
                         let mut tick = Tick::new(tick_number);
-                        tick.events = self.game_state.world.services.next_player_events[player_id].clone();
+                        tick.events = self.game_state.world.services.next_player_events[player_id]
+                                          .clone();
 
                         self.game_state.world.systems.net_entity_system
                             .store_in_net_state(*player_id,
