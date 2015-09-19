@@ -15,4 +15,3 @@ pub mod player;
 #[macro_use] pub mod util;
 pub mod map;
 pub mod math;
-pub mod item;

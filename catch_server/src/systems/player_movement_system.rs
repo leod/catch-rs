@@ -7,7 +7,7 @@ use shared::math;
 use shared::map::Map;
 use shared::net::{ComponentType, TimedPlayerInput};
 use shared::player::{PlayerInput, InputKey};
-use components::*;
+use components::Components;
 use services::Services;
 
 pub struct PlayerMovementSystem;
@@ -143,22 +143,19 @@ impl PlayerMovementSystem {
                     };
             } else {
                 let mut accel = math::scale(c.linear_velocity[e].v, -4.0);
+                let strafe_direction = [direction[1], -direction[0]];
 
-                if input.has(InputKey::Strafe) {
-                    let strafe_direction = [direction[1], -direction[0]];
-                    if input.has(InputKey::Left) {
-                        accel = math::add(math::scale(strafe_direction, STRAFE_ACCEL), accel);
-                    }
-                    if input.has(InputKey::Right) {
-                        accel = math::add(math::scale(strafe_direction, -STRAFE_ACCEL), accel);
-                    }
-                } else {
-                    if input.has(InputKey::Left) {
-                        c.orientation[e].angle -= TURN_SPEED * dur_s;
-                    }
-                    if input.has(InputKey::Right) {
-                        c.orientation[e].angle += TURN_SPEED * dur_s;
-                    }
+                if input.has(InputKey::StrafeLeft) {
+                    accel = math::add(math::scale(strafe_direction, STRAFE_ACCEL), accel);
+                }
+                if input.has(InputKey::StrafeRight) {
+                    accel = math::add(math::scale(strafe_direction, -STRAFE_ACCEL), accel);
+                }
+                if input.has(InputKey::Left) {
+                    c.orientation[e].angle -= TURN_SPEED * dur_s;
+                }
+                if input.has(InputKey::Right) {
+                    c.orientation[e].angle += TURN_SPEED * dur_s;
                 }
                 if input.has(InputKey::Forward) {
                     accel = math::add(math::scale(direction, MOVE_ACCEL), accel);

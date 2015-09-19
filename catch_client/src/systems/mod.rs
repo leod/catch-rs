@@ -5,12 +5,12 @@ mod draw_bouncy_enemy_system;
 
 use ecs::system::LazySystem;
 
+use super::components::*;
+use super::services::Services;
 pub use self::net_entity_system::NetEntitySystem;
 pub use self::interpolation_system::InterpolationSystem;
 pub use self::draw_player_system::DrawPlayerSystem;
 pub use self::draw_bouncy_enemy_system::DrawBouncyEnemySystem;
-use super::components::*;
-use super::services::Services;
 
 systems! {
     struct Systems<Components, Services> {

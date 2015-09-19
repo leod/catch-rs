@@ -1,47 +1,58 @@
 use std::collections::HashMap;
 
-pub use shared::player::{PlayerInput, InputKey};
 use piston::input::{Button, Key, Input};
+use piston::input::keyboard::{ModifierKey, NO_MODIFIER, ALT};
+
+pub use shared::player::{PlayerInput, InputKey};
 
 pub struct InputMap {
-    map: HashMap<Button, InputKey>
+    inputs: Vec<(ModifierKey, Button, InputKey)>,
 }
 
 impl InputMap {
     pub fn new() -> InputMap {
-        let mut map = HashMap::new();
-
-        map.insert(Button::Keyboard(Key::Left), InputKey::Left);
-        map.insert(Button::Keyboard(Key::Right), InputKey::Right);
-        map.insert(Button::Keyboard(Key::Up), InputKey::Forward);
-        map.insert(Button::Keyboard(Key::Down), InputKey::Back);
-        map.insert(Button::Keyboard(Key::LAlt), InputKey::Strafe);
-        map.insert(Button::Keyboard(Key::E), InputKey::Use);
-        map.insert(Button::Keyboard(Key::LShift), InputKey::Flip);
-        map.insert(Button::Keyboard(Key::Space), InputKey::Dash);
+        let inputs = vec![
+            (NO_MODIFIER, Button::Keyboard(Key::Left), InputKey::Left),
+            (NO_MODIFIER, Button::Keyboard(Key::Right), InputKey::Right),
+            (NO_MODIFIER, Button::Keyboard(Key::Up), InputKey::Forward),
+            (NO_MODIFIER, Button::Keyboard(Key::Down), InputKey::Back),
+            (ALT, Button::Keyboard(Key::Left), InputKey::StrafeLeft),
+            (ALT, Button::Keyboard(Key::Right), InputKey::StrafeRight),
+            //(NO_MODIFIER, Button::Keyboard(Key::E), InputKey::Use),
+            (NO_MODIFIER, Button::Keyboard(Key::LShift), InputKey::Flip),
+            (NO_MODIFIER, Button::Keyboard(Key::Space), InputKey::Dash),
+        ];
 
         InputMap {
-            map: map
+            inputs: inputs
         }
     }
 
-    pub fn update_player_input(&self, input: &Input, player_input: &mut PlayerInput) {
+    pub fn update_player_input(&self,
+                               modifier_key: ModifierKey,
+                               input: &Input,
+                               player_input: &mut PlayerInput) {
         match *input {
             Input::Press(button) =>
-                match self.map.get(&button) {
-                    Some(input_key) =>
-                        player_input.set(*input_key),
-                    _ =>
-                        ()
+                for &(_, ref b, ref input_key) in self.inputs.iter() {
+                    if *b == button {
+                        player_input.set(*input_key);
+                    }
                 },
-            Input::Release(button) =>
-                match self.map.get(&button) {
-                    Some(input_key) =>
-                        player_input.unset(*input_key),
-                    _ =>
-                        ()
+            Input::Release(button) => 
+                for &(_, ref b, ref input_key) in self.inputs.iter() {
+                    if *b == button {
+                        player_input.unset(*input_key);
+                    }
                 },
             _ => ()
+        }
+
+        // Disable any input key that doesn't have its modifiers pressed
+        for &(ref modifier, _, ref key) in self.inputs.iter() {
+            if modifier.bits() != modifier_key.bits() {
+                player_input.unset(*key);
+            }
         }
     }
 }

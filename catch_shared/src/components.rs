@@ -5,7 +5,7 @@ use ecs::{ComponentManager, ComponentList, BuildData, EntityData};
 pub use player::{PlayerState, FullPlayerState};
 use net::{StateComponent, EntityId, EntityTypeId, COMPONENT_TYPES, ComponentType};
 use player::PlayerId;
-use item::Item;
+use player::Item;
 use tick::NetState;
 use math;
 

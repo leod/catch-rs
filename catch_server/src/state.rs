@@ -46,10 +46,8 @@ pub struct GameState {
     pub game_info: GameInfo,
     pub map: Map,
     pub spawn_points: Vec<SpawnPoint>,
-
     pub world: ecs::World<Systems>, 
     pub tick_number: TickNumber,
-
     pub time_s: f64,
 
     players: HashMap<PlayerId, Player>,
@@ -185,6 +183,8 @@ impl GameState {
         let entity = self.world.systems.net_entity_system.get_entity(net_entity_id);
 
         self.world.systems.player_movement_system
+            .run_player_input(entity, input, &self.map, &mut self.world.data);
+        self.world.systems.player_item_system
             .run_player_input(entity, input, &self.map, &mut self.world.data);
 
         // Tell the player in that their input has been processed.

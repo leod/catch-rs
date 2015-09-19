@@ -12,6 +12,7 @@ use glutin_window::GlutinWindow;
 use piston_window::{PistonWindow, Text};
 use piston::window::Window;
 use piston::input::{Input, Button, Key};
+use piston::input::keyboard::ModifierKey;
 use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
 
@@ -35,6 +36,7 @@ pub struct Game {
 
     player_input_map: InputMap,
     player_input: PlayerInput,
+    modifier_key: ModifierKey,
 
     interpolation_ticks: usize,
     current_tick: Option<Tick>,
@@ -67,6 +69,7 @@ impl Game {
             client: connected_client,
             player_input_map: player_input_map,
             player_input: PlayerInput::new(),
+            modifier_key: ModifierKey::default(),
             interpolation_ticks: 2,
             current_tick: None,
             tick_progress: 0.0,
@@ -144,9 +147,13 @@ impl Game {
                 Input::Press(Button::Keyboard(Key::P)) => {
                     thread::sleep_ms(200);
                 }
-                _ => 
+                _ => {
+                    self.modifier_key.handle_input(&input);
                     self.player_input_map
-                        .update_player_input(&input, &mut self.player_input)
+                        .update_player_input(self.modifier_key,
+                                             &input,
+                                             &mut self.player_input);
+                }
             };
         }
     }

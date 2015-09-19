@@ -5,8 +5,23 @@ use cereal::{CerealData, CerealResult};
 
 pub type PlayerId = u32;
 pub type PlayerInputNumber = u32;
+pub type ItemSlot = u32;
 
 pub const NEUTRAL_PLAYER_ID: PlayerId = 0;
+pub const NUM_ITEM_SLOTS: ItemSlot = 3;
+
+#[derive(CerealData, Clone)]
+pub enum Item {
+    Weapon {
+        charges: usize,
+    },
+    SpeedBoost {
+        duration_s: f64,
+    },
+    BlockPlacer {
+        charges: usize,
+    }
+}
 
 // Component attached to any player for both client and server
 #[derive(CerealData, Clone, Default)]
@@ -15,12 +30,48 @@ pub struct PlayerState {
     pub dashing: Option<f64>,
     pub invulnerable_s: Option<f64>,
 
+    // Equipped items
+    pub items: Vec<Option<Item>>,
+
     // States like stunned etc.
 }
 
 impl PlayerState {
     pub fn vulnerable(&self) -> bool {
         self.dashing.is_none() && self.invulnerable_s.is_none()
+    }
+
+    pub fn get_item(&self, slot: ItemSlot) -> Option<&Item> {
+        assert!(slot < NUM_ITEM_SLOTS);
+
+        if (slot as usize) < self.items.len() {
+            self.items[slot as usize].as_ref()
+        } else {
+            None
+        }
+    }
+
+    pub fn get_item_mut(&mut self, slot: ItemSlot) -> Option<&mut Item> {
+        assert!(slot < NUM_ITEM_SLOTS);
+
+        if (slot as usize) < self.items.len() {
+            self.items[slot as usize].as_mut()
+        } else {
+            None
+        }
+    }
+
+    pub fn equip(&mut self, slot: ItemSlot, item: Item) {
+        if slot as usize >= self.items.len() {
+            //self.items.resize(slot as usize+1, None);
+            for i in self.items.len()..slot as usize +1 {
+                self.items.push(None);
+            }
+
+            assert!(self.items.len() == (slot as usize) + 1);
+        }
+
+        self.items[slot as usize] = Some(item);
     }
 }
 
@@ -29,6 +80,9 @@ impl PlayerState {
 #[derive(Clone, Default, CerealData)]
 pub struct FullPlayerState {
     pub dash_cooldown_s: Option<f64>,
+
+    // An item that the player picked up but hasn't equipped
+    pub hidden_item: Option<Item>,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -38,16 +92,24 @@ pub enum InputKey {
     Forward,
     Back,
 
-    Strafe,
+    StrafeLeft,
+    StrafeRight,
 
-    Use,
     Flip,
     Dash,
+
+    EquipTo1,
+    EquipTo2,
+    EquipTo3,
+
+    Use1,
+    Use2,
+    Use3,
 
     //Max,
 }
 
-pub const NUM_INPUT_KEYS: usize = 9; //usize = InputKey::Max as usize;
+pub const NUM_INPUT_KEYS: usize = 14; //usize = InputKey::Max as usize;
 
 #[derive(Clone)]
 pub struct PlayerInput {
