@@ -45,6 +45,7 @@ components! {
     struct Components {
         #[hot] net_entity: NetEntity,
 
+        // Networked components
         #[hot] position: Position,
         #[hot] orientation: Orientation,
         #[hot] linear_velocity: LinearVelocity,
@@ -52,9 +53,11 @@ components! {
         #[cold] full_player_state: FullPlayerState, // We will only have our own full player state 
         #[cold] item_spawn: ItemSpawn,
 
+        // Interpolation
         #[hot] interp_position: InterpolationState<Position>,
         #[hot] interp_orientation: InterpolationState<Orientation>,
 
+        // Display
         #[cold] draw_player: DrawPlayer,
         #[cold] draw_bouncy_enemy: DrawBouncyEnemy,
     }

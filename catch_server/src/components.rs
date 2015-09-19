@@ -42,8 +42,9 @@ components! {
         #[hot] server_net_entity: ServerNetEntity,
 
         #[hot] shape: Shape,
-        #[hot] interact: Interact,
+        //#[hot] interact: Interact,
 
+        // Networked components
         #[hot] position: Position,
         #[hot] orientation: Orientation,
         #[hot] linear_velocity: LinearVelocity,

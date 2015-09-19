@@ -192,7 +192,7 @@ impl GameState {
     // For now, the resulting tick data will be written in Services::next_tick
     pub fn tick(&mut self) {
         self.tick_number += 1;
-        self.world.services.tick_dur_s = (1.0 / (self.game_info.ticks_per_second as f64)); 
+        self.world.services.tick_dur_s = 1.0 / (self.game_info.ticks_per_second as f64); 
         self.world.services.prepare_for_tick(self.tick_number, self.players.keys().map(|i| *i));
 
         if self.tick_number == 1 {

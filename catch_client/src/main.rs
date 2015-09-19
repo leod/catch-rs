@@ -50,10 +50,7 @@ fn main() {
 
     let opengl = OpenGL::V3_2;
     let window = GlutinWindow::new(
-        WindowSettings::new(
-            "catching game",
-            [1024, 768]
-        )
+        WindowSettings::new("catching game", [1024, 768])
         .opengl(opengl)
         .exit_on_esc(true)
         .vsync(true)
@@ -64,7 +61,7 @@ fn main() {
     enet::initialize().unwrap();
     println!("Connecting to {}", address);
     let mut client = Client::connect(5000,
-                                     "127.0.0.1".to_string(),
+                                     address,
                                      2338,
                                      "leo".to_string()).unwrap();
     client.finish_connecting(5000).unwrap();

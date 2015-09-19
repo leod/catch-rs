@@ -84,7 +84,8 @@ impl BouncyEnemySystem {
 
             let accel = math::add(math::scale(direction, MOVE_ACCEL),
                                   math::scale(data.linear_velocity[e].v, -4.0));
-            data.linear_velocity[e].v = math::add(data.linear_velocity[e].v, math::scale(accel, dur_s));
+            data.linear_velocity[e].v = math::add(data.linear_velocity[e].v,
+                                                  math::scale(accel, dur_s));
 
             self.move_flipping(e, math::scale(data.linear_velocity[e].v, dur_s), map, data);
         }
@@ -95,15 +96,18 @@ impl System for BouncyEnemySystem {
     type Components = Components;
     type Services = Services;
 
-    fn activated(&mut self, entity: &EntityData<Components>, components: &Components, _: &mut Services) {
+    fn activated(&mut self, entity: &EntityData<Components>, components: &Components,
+                 _: &mut Services) {
         self.aspect.activated(entity, components);
     }
 
-    fn reactivated(&mut self, entity: &EntityData<Components>, components: &Components, _: &mut Services) {
+    fn reactivated(&mut self, entity: &EntityData<Components>, components: &Components,
+                   _: &mut Services) {
         self.aspect.reactivated(entity, components);
     }
 
-    fn deactivated(&mut self, entity: &EntityData<Components>, components: &Components, _: &mut Services) {
+    fn deactivated(&mut self, entity: &EntityData<Components>, components: &Components,
+                   _: &mut Services) {
         self.aspect.deactivated(entity, components);
     }
 }

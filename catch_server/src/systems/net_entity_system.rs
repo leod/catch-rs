@@ -39,14 +39,16 @@ impl NetEntitySystem {
             .0 as net::EntityTypeId
     }
 
-    fn component_type_trait(&self, component_type: net::ComponentType) -> &Box<net::StateComponent<Components>> {
+    fn component_type_trait(&self, component_type: net::ComponentType)
+                            -> &Box<net::StateComponent<Components>> {
         &self.component_type_traits[component_type as usize]
     }
 
     pub fn create_entity(&mut self,
                          entity_type_id: net::EntityTypeId,
                          player_id: PlayerId,
-                         data: &mut DataHelper<Components, Services>) -> (net::EntityId, ecs::Entity) {
+                         data: &mut DataHelper<Components, Services>)
+                         -> (net::EntityId, ecs::Entity) {
         self.id_counter += 1;
 
         println!("Creating entity {} of type {} with owner {}",
@@ -70,10 +72,12 @@ impl NetEntitySystem {
             });
             data.server_net_entity.add(&entity, ServerNetEntity::default());
 
-            for net_component in &self.entity_types[entity_type_id as usize].1.component_types {
+            for net_component in &self.entity_types[entity_type_id as usize].1
+                                      .component_types {
                 self.component_type_trait(*net_component).add(entity, data);
             }
-            for net_component in &self.entity_types[entity_type_id as usize].1.owner_component_types {
+            for net_component in &self.entity_types[entity_type_id as usize].1
+                                      .owner_component_types {
                 self.component_type_trait(*net_component).add(entity, data);
             }
 
@@ -82,10 +86,10 @@ impl NetEntitySystem {
             // TODO: probably don't wanna keep this hardcoded here
             if &type_name == "player" {
                 data.shape.add(&entity, Shape::Circle { radius: 9.0 });
-                data.interact.add(&entity, Interact);
+                //data.interact.add(&entity, Interact);
             } else if &type_name == "bouncy_enemy" {
                 data.shape.add(&entity, Shape::Circle { radius: 6.0 });
-                data.interact.add(&entity, Interact);
+                //data.interact.add(&entity, Interact);
                 data.linear_velocity.add(&entity, LinearVelocity::default());
                 data.bouncy_enemy.add(&entity, BouncyEnemy::default());
             } else {
@@ -113,6 +117,7 @@ impl NetEntitySystem {
         }
     }
 
+    /// Remove all entities owned by `player_id`
     pub fn remove_player_entities(&mut self,
                                   player_id: PlayerId,
                                   data: &mut DataHelper<Components, Services>) {
@@ -136,8 +141,9 @@ impl NetEntitySystem {
         self.entities[&net_entity_id]
     }
 
-    // Queue up CreateEntity events for a freshly connected player
-    pub fn replicate_entities(&self, player_id: PlayerId, data: &mut DataHelper<Components, Services>) {
+    /// Queue up CreateEntity events for a freshly connected player
+    pub fn replicate_entities(&self, player_id: PlayerId,
+                              data: &mut DataHelper<Components, Services>) {
         for (net_entity_id, entity) in self.entities.iter() {
             let (entity_type_id, owner) = data.with_entity_data(entity, |e, c| {
                 (c.net_entity[e].type_id, c.net_entity[e].owner)
@@ -148,12 +154,12 @@ impl NetEntitySystem {
         }
     }
 
-    // Writes the current state into a NetState
-    pub fn store_in_net_state(&self, player_id: PlayerId, net_state: &mut NetState, data: &mut DataHelper<Components, Services>) {
+    /// Write the current state into a NetState
+    pub fn store_in_net_state(&self, player_id: PlayerId, net_state: &mut NetState,
+                              data: &mut DataHelper<Components, Services>) {
         let mut forced_components = Vec::new();
 
         for (net_id, entity) in self.entities.iter() {
-
             data.with_entity_data(entity, |e, c| {
                 let &(_, ref entity_type) = &self.entity_types[c.net_entity[e].type_id as usize];
 
@@ -162,6 +168,7 @@ impl NetEntitySystem {
                         .store(e, *net_id, net_state, c);
                 }
 
+                // Some components only need to be sent to the owner of the net entity
                 if player_id == c.net_entity[e].owner {
                     for component_type in &entity_type.owner_component_types {
                         self.component_type_trait(*component_type)
