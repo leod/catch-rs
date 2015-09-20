@@ -9,6 +9,7 @@ extern crate time;
 extern crate rand;
 
 pub mod components;
+pub mod entities;
 pub mod services;
 pub mod systems;
 pub mod state;
@@ -21,7 +22,6 @@ use time::{Duration, Timespec};
 use cereal::CerealData;
 
 use shared::net;
-use shared::entities;
 use shared::{PlayerId, PlayerInfo, TickNumber, GameInfo, Tick};
 use shared::net::{ClientMessage, ServerMessage};
 use shared::util::PeriodicTimer;
@@ -304,7 +304,7 @@ impl Server {
 fn main() {
     enet::initialize().unwrap();
 
-    let entity_types = entities::all_entity_types();
+    let entity_types = shared::entities::all_entity_types();
     let game_info = GameInfo {
         map_name: "../data/maps/lars2.tmx".to_string(),
         entity_types: entity_types,

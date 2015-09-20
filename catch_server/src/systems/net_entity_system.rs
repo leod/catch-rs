@@ -3,14 +3,15 @@ use std::collections::HashMap;
 use ecs;
 use ecs::{Process, System, BuildData, EntityData, EntityIter, DataHelper};
 
+use shared;
 use shared::net;
-use shared::entities;
 use shared::components::StateComponent;
 use shared::{EntityId, EntityTypeId, EntityTypes, PlayerId, GameEvent, TickState};
 
 use components;
 use components::{Components, NetEntity, Shape, Interact, ServerNetEntity, LinearVelocity,
                  BouncyEnemy};
+use entities;
 use services::Services;
 
 pub struct NetEntitySystem {
@@ -25,7 +26,7 @@ impl NetEntitySystem {
         NetEntitySystem {
             id_counter: 0,
             entities: HashMap::new(),
-            entity_types: entities::all_entity_types(),
+            entity_types: shared::entities::all_entity_types(),
             component_type_traits: components::component_type_traits(),
         }
     }
@@ -71,6 +72,7 @@ impl NetEntitySystem {
             });
             data.server_net_entity.add(&entity, ServerNetEntity::default());
 
+            // Add net component to the entity using its type
             for net_component in &self.entity_types[entity_type_id as usize].1
                                       .component_types {
                 self.component_type_trait(*net_component).add(entity, data);
@@ -80,20 +82,9 @@ impl NetEntitySystem {
                 self.component_type_trait(*net_component).add(entity, data);
             }
 
-            let type_name = self.entity_types[entity_type_id as usize].0.clone();
-
-            // TODO: probably don't wanna keep this hardcoded here
-            if &type_name == "player" {
-                data.shape.add(&entity, Shape::Circle { radius: 9.0 });
-                //data.interact.add(&entity, Interact);
-            } else if &type_name == "bouncy_enemy" {
-                data.shape.add(&entity, Shape::Circle { radius: 6.0 });
-                //data.interact.add(&entity, Interact);
-                data.linear_velocity.add(&entity, LinearVelocity::default());
-                data.bouncy_enemy.add(&entity, BouncyEnemy::default());
-            } else {
-                panic!("Unknown net entity type: {}", type_name);
-            }
+            // Add server-side only components
+            let type_name = &self.entity_types[entity_type_id as usize].0;
+            entities::build(type_name, entity, data);
         });
 
         self.entities.insert(self.id_counter, entity);

@@ -17,6 +17,7 @@ mod client;
 mod player_input;
 mod draw_map;
 mod components;
+mod entities;
 mod services;
 mod systems;
 mod state;

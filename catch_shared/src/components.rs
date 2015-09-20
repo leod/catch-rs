@@ -136,7 +136,8 @@ pub fn component_type_traits<T: ComponentManager +
                                 HasLinearVelocity +
                                 HasShape +
                                 HasPlayerState +
-                                HasFullPlayerState>() -> ComponentTypeTraits<T> {
+                                HasFullPlayerState>()
+                             -> ComponentTypeTraits<T> {
     let mut traits = ComponentTypeTraits::<T>::new();
 
     for component_type in COMPONENT_TYPES.iter() {

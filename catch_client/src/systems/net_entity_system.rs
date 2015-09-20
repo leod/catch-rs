@@ -4,13 +4,13 @@ use ecs;
 use ecs::{System, DataHelper, BuildData, Process};
 
 use shared::net;
-use shared::entities;
 use shared::net::ComponentType;
 use shared::components::StateComponent;
 use shared::{Tick, GameEvent, PlayerId, EntityId, EntityTypes, EntityTypeId};
 
 use components;
 use components::{Components, NetEntity, InterpolationState, DrawPlayer, DrawBouncyEnemy};
+use entities;
 use services::Services;
 
 pub struct NetEntitySystem {
@@ -70,6 +70,7 @@ impl NetEntitySystem {
                 owner: owner,
             });
 
+            // Create net components of the entity type locally
             for net_component in &self.entity_types[entity_type_id as usize].1
                                       .component_types {
                 self.component_type_trait(*net_component).add(entity, data);
@@ -85,6 +86,8 @@ impl NetEntitySystem {
                     _ => ()
                 };
             }
+
+            // If we own the object, potentially add some more net components
             if self.my_id == owner {
                 for net_component in &self.entity_types[entity_type_id as usize].1
                                           .owner_component_types {
@@ -92,16 +95,10 @@ impl NetEntitySystem {
                 }
             }
 
-            let type_name = self.entity_types[entity_type_id as usize].0.clone();
+            // Add client-side components to the entity (e.g. for drawing)
+            let type_name = &self.entity_types[entity_type_id as usize].0;
 
-            // TODO: probably don't wanna keep this hardcoded here
-            if &type_name == "player" {
-                data.draw_player.add(&entity, DrawPlayer::default());
-            } else if &type_name == "bouncy_enemy" {
-                data.draw_bouncy_enemy.add(&entity, DrawBouncyEnemy::default());
-            } else {
-                panic!("Unknown net entity type: {}", type_name);
-            }
+            entities::build(type_name, entity, data);
         });
 
         // TODO: detection of player entities
