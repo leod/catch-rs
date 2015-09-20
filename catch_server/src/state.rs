@@ -154,6 +154,30 @@ impl GameState {
         });
     }
 
+    fn process_event(&mut self, event: GameEvent) {
+        match event {
+            GameEvent::PlayerDied(player_id, cause_player_id) => {
+                if !self.get_player_info(player_id).alive {
+                    println!("Killing a dead player! HAH!");
+                } else {
+                    let entity_id = {
+                        let player = self.players.get_mut(&player_id).unwrap();
+                        let entity_id = player.controlled_entity.unwrap();
+                        player.info.alive = false;
+                        player.controlled_entity = None;
+                        player.respawn_time = Some(5.0);
+                        entity_id 
+                    };
+
+                    // This also tells the clients about the removal:
+                    self.world.systems.net_entity_system
+                        .remove_entity(entity_id, &mut self.world.data);
+                }
+            },
+            _ => (),
+        }
+    }
+
     pub fn remove_player(&mut self, id: PlayerId) {
         assert!(self.players.get(&id).is_some());
         self.world.systems.net_entity_system
@@ -282,27 +306,9 @@ impl GameState {
         // Process generated events
         // TODO: There might be a subtle problem with orderings here
         for i in 0..self.world.services.next_events.len() {
-            match self.world.services.next_events[i].clone() {
-                GameEvent::PlayerDied(player_id, cause_player_id) => {
-                    if !self.get_player_info(player_id).alive {
-                        println!("Killing a dead player! HAH!");
-                    } else {
-                        let entity_id = {
-                            let player = self.players.get_mut(&player_id).unwrap();
-                            let entity_id = player.controlled_entity.unwrap();
-                            player.info.alive = false;
-                            player.controlled_entity = None;
-                            player.respawn_time = Some(5.0);
-                            entity_id 
-                        };
-
-                        // This also tells the clients about the removal:
-                        self.world.systems.net_entity_system
-                            .remove_entity(entity_id, &mut self.world.data);
-                    }
-                },
-                _ => ()
-            };
+            let event = self.world.services.next_events[i].clone();
+            self.process_event(event);
+            self.world.flush_queue();
         }
         self.world.services.next_events.clear();
 

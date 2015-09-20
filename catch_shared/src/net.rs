@@ -74,9 +74,9 @@ pub enum ComponentType {
     Position,
     Orientation,
     LinearVelocity,
+    Shape,
     PlayerState,
     FullPlayerState,
-    ItemSpawn
 }
 
 pub trait StateComponent<T: ComponentManager> {
@@ -94,9 +94,9 @@ pub const COMPONENT_TYPES: &'static [ComponentType] = &[
     ComponentType::Position,
     ComponentType::Orientation,
     ComponentType::LinearVelocity,
+    ComponentType::Shape,
     ComponentType::PlayerState,
     ComponentType::FullPlayerState,
-    ComponentType::ItemSpawn,
 ];
 
 #[derive(Clone, CerealData)]
@@ -121,6 +121,11 @@ pub fn all_entity_types() -> EntityTypes {
               owner_component_types: vec![ComponentType::FullPlayerState],
          }),
          ("bouncy_enemy".to_string(), EntityType {
+              component_types: vec![ComponentType::Position,
+                                    ComponentType::Orientation],
+              owner_component_types: vec![],
+         }),
+         ("item".to_string(), EntityType {
               component_types: vec![ComponentType::Position,
                                     ComponentType::Orientation],
               owner_component_types: vec![],

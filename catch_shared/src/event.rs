@@ -20,6 +20,6 @@ pub enum GameEvent {
     // Not yet used, since we haven't implemented client-side prediction so far
     CorrectState(TickNumber),
 
-    //TakeItem(PlayerId, ItemType),
+    TakeItem(PlayerId, EntityId),
     //UseItem(PlayerId, ItemType),
 }

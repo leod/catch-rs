@@ -1,4 +1,4 @@
-use ecs::{Aspect, System, EntityData, DataHelper, Process};
+use ecs::{Aspect, System, DataHelper, Process};
 
 use graphics;
 use graphics::context::Context;

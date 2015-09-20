@@ -2,11 +2,13 @@ use ecs::ComponentList;
 
 use shared::net;
 use shared::math;
+use shared::player::Item;
 use shared::components::{HasPosition, HasOrientation,
-                         HasLinearVelocity, HasPlayerState,
-                         HasFullPlayerState, HasItemSpawn};
+                         HasLinearVelocity, HasShape,
+                         HasPlayerState, HasFullPlayerState};
 pub use shared::components::{NetEntity, Position,
                              Orientation, LinearVelocity,
+                             Shape,
                              PlayerState, FullPlayerState,
                              ItemSpawn,
                              ComponentTypeTraits,
@@ -27,13 +29,6 @@ impl ServerNetEntity {
 #[derive(Default)]
 pub struct BouncyEnemy; 
 
-#[derive(Debug)]
-pub enum Shape { // might wanna make this a shared component
-    Circle {
-        radius: f64
-    }
-}
-
 pub struct Interact;
 
 components! {
@@ -41,17 +36,17 @@ components! {
         #[hot] net_entity: NetEntity,
         #[hot] server_net_entity: ServerNetEntity,
 
-        #[hot] shape: Shape,
-        //#[hot] interact: Interact,
-
         // Networked components
         #[hot] position: Position,
         #[hot] orientation: Orientation,
         #[hot] linear_velocity: LinearVelocity,
+        #[hot] shape: Shape,
         #[cold] player_state: PlayerState,
         #[cold] full_player_state: FullPlayerState,
         #[cold] item_spawn: ItemSpawn,
         #[cold] bouncy_enemy: BouncyEnemy,
+
+        #[cold] item: Item,
     }
 }
 
@@ -82,6 +77,15 @@ impl HasLinearVelocity for Components {
     }
 }
 
+impl HasShape for Components {
+    fn shape(&self) -> &ComponentList<Components, Shape> {
+        &self.shape
+    }
+    fn shape_mut(&mut self) -> &mut ComponentList<Components, Shape> {
+        &mut self.shape
+    }
+}
+
 impl HasPlayerState for Components {
     fn player_state(&self) -> &ComponentList<Components, PlayerState> {
         &self.player_state
@@ -97,14 +101,5 @@ impl HasFullPlayerState for Components {
     }
     fn full_player_state_mut(&mut self) -> &mut ComponentList<Components, FullPlayerState> {
         &mut self.full_player_state
-    }
-}
-
-impl HasItemSpawn for Components {
-    fn item_spawn(&self) -> &ComponentList<Components, ItemSpawn> {
-        &self.item_spawn
-    }
-    fn item_spawn_mut(&mut self) -> &mut ComponentList<Components, ItemSpawn> {
-        &mut self.item_spawn
     }
 }

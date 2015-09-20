@@ -44,3 +44,10 @@ impl Interaction for BouncyEnemyInteraction {
     }
 }
 
+impl Interaction for PlayerItemInteraction {
+    fn apply(&self,
+             player_e: EntityData<Components>, item_e: EntityData<Components>,
+             data: &mut DataHelper<Components, Services>) {
+        data.full_player_state[player_e].hidden_item = Some(data.item[item_e].clone());
+    }
+}

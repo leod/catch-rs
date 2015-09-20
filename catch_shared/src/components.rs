@@ -31,10 +31,21 @@ pub struct LinearVelocity {
     pub v: math::Vec2,
 }
 
-#[derive(Clone, Default, CerealData)]
-pub struct ItemSpawn {
-    pub item: Option<Item>,
+#[derive(Clone, CerealData)]
+pub enum Shape { 
+    Circle {
+        radius: f64
+    }
 }
+
+impl Default for Shape {
+    fn default() -> Shape {
+        Shape::Circle { radius: 1.0 } // meh
+    }
+}
+
+#[derive(Clone, Default, CerealData)]
+pub struct ItemSpawn;
 
 // Some boilerplate code for each net component type follows...
 
@@ -53,6 +64,11 @@ pub trait HasLinearVelocity {
     fn linear_velocity_mut(&mut self) -> &mut ComponentList<Self, LinearVelocity>;
 }
 
+pub trait HasShape {
+    fn shape(&self) -> &ComponentList<Self, Shape>;
+    fn shape_mut(&mut self) -> &mut ComponentList<Self, Shape>;
+}
+
 pub trait HasPlayerState {
     fn player_state(&self) -> &ComponentList<Self, PlayerState>;
     fn player_state_mut(&mut self) -> &mut ComponentList<Self, PlayerState>;
@@ -61,11 +77,6 @@ pub trait HasPlayerState {
 pub trait HasFullPlayerState {
     fn full_player_state(&self) -> &ComponentList<Self, FullPlayerState>;
     fn full_player_state_mut(&mut self) -> &mut ComponentList<Self, FullPlayerState>;
-}
-
-pub trait HasItemSpawn {
-    fn item_spawn(&self) -> &ComponentList<Self, ItemSpawn>;
-    fn item_spawn_mut(&mut self) -> &mut ComponentList<Self, ItemSpawn>;
 }
 
 struct StateComponentImpl<C>(PhantomData<C>);
@@ -93,9 +104,9 @@ macro_rules! state_component_impl {
 state_component_impl!(HasPosition, Position, position, position_mut);
 state_component_impl!(HasOrientation, Orientation, orientation, orientation_mut);
 state_component_impl!(HasLinearVelocity, LinearVelocity, linear_velocity, linear_velocity_mut);
+state_component_impl!(HasShape, Shape, shape, shape_mut);
 state_component_impl!(HasPlayerState, PlayerState, player_state, player_state_mut);
 state_component_impl!(HasFullPlayerState, FullPlayerState, full_player_state, full_player_state_mut);
-state_component_impl!(HasItemSpawn, ItemSpawn, item_spawn, item_spawn_mut);
 
 pub type ComponentTypeTraits<T> = Vec<Box<StateComponent<T>>>;
 
@@ -103,9 +114,9 @@ pub fn component_type_traits<T: ComponentManager +
                                 HasPosition +
                                 HasOrientation +
                                 HasLinearVelocity +
+                                HasShape +
                                 HasPlayerState +
-                                HasFullPlayerState +
-                                HasItemSpawn>() -> ComponentTypeTraits<T> {
+                                HasFullPlayerState>() -> ComponentTypeTraits<T> {
     let mut traits = ComponentTypeTraits::<T>::new();
 
     for component_type in COMPONENT_TYPES.iter() {
@@ -116,12 +127,12 @@ pub fn component_type_traits<T: ComponentManager +
                 traits.push(Box::new(StateComponentImpl::<Orientation>(PhantomData))),
             ComponentType::LinearVelocity =>
                 traits.push(Box::new(StateComponentImpl::<LinearVelocity>(PhantomData))),
+            ComponentType::Shape =>
+                traits.push(Box::new(StateComponentImpl::<Shape>(PhantomData))),
             ComponentType::PlayerState =>
                 traits.push(Box::new(StateComponentImpl::<PlayerState>(PhantomData))),
             ComponentType::FullPlayerState =>
                 traits.push(Box::new(StateComponentImpl::<FullPlayerState>(PhantomData))),
-            ComponentType::ItemSpawn =>
-                traits.push(Box::new(StateComponentImpl::<ItemSpawn>(PhantomData))),
         };
     }
 

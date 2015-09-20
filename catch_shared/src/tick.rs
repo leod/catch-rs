@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use components::{Position, Orientation,
-                 LinearVelocity, PlayerState,
-                 FullPlayerState, ItemSpawn};
+                 LinearVelocity, Shape,
+                 PlayerState, FullPlayerState};
 use event::GameEvent;
 use net;
 
@@ -16,9 +16,9 @@ pub struct NetState {
     pub position: ComponentsNetState<Position>, 
     pub orientation: ComponentsNetState<Orientation>,
     pub linear_velocity: ComponentsNetState<LinearVelocity>,
+    pub shape: ComponentsNetState<Shape>,
     pub player_state: ComponentsNetState<PlayerState>,
     pub full_player_state: ComponentsNetState<FullPlayerState>,
-    pub item_spawn: ComponentsNetState<ItemSpawn>,
 
     // List of components that should not be interpolated into this tick
     // (e.g. you wouldn't want to interpolate the position of a player that was just teleported)

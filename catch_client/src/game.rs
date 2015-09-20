@@ -150,7 +150,7 @@ impl Game {
                 _ => {
                     self.modifier_key.handle_input(&input);
                     self.player_input_map
-                        .update_player_input(self.modifier_key,
+                        .update_player_input(//self.modifier_key,
                                              &input,
                                              &mut self.player_input);
                 }

@@ -1,4 +1,4 @@
-use ecs::{Aspect, System, EntityData, DataHelper, Process};
+use ecs::{Aspect, System, DataHelper, Process};
 
 use shared::util::CachedAspect;
 use components::{Components, Interpolatable, Position, Orientation};

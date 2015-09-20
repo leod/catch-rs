@@ -2,12 +2,13 @@ use ecs::ComponentList;
 
 use shared::math;
 use shared::components::{HasPosition, HasOrientation,
-                         HasLinearVelocity, HasPlayerState,
-                         HasFullPlayerState, HasItemSpawn};
+                         HasLinearVelocity, HasShape,
+                         HasPlayerState, HasFullPlayerState};
 pub use shared::components::{NetEntity, Position,
                              Orientation, LinearVelocity, 
+                             Shape,
                              PlayerState, FullPlayerState,
-                             ItemSpawn,
+                             ItemSpawn, 
                              ComponentTypeTraits,
                              component_type_traits};
 
@@ -18,6 +19,9 @@ pub struct DrawPlayer {
 
 #[derive(Default)]
 pub struct DrawBouncyEnemy;
+
+#[derive(Default)]
+pub struct DrawItem;
 
 pub trait Interpolatable {
     fn interpolate(&Self, &Self, t: f64) -> Self; 
@@ -49,9 +53,9 @@ components! {
         #[hot] position: Position,
         #[hot] orientation: Orientation,
         #[hot] linear_velocity: LinearVelocity,
+        #[hot] shape: Shape,
         #[cold] player_state: PlayerState,
         #[cold] full_player_state: FullPlayerState, // We will only have our own full player state 
-        #[cold] item_spawn: ItemSpawn,
 
         // Interpolation
         #[hot] interp_position: InterpolationState<Position>,
@@ -60,6 +64,7 @@ components! {
         // Display
         #[cold] draw_player: DrawPlayer,
         #[cold] draw_bouncy_enemy: DrawBouncyEnemy,
+        #[cold] draw_item: DrawItem,
     }
 }
 
@@ -107,6 +112,15 @@ impl HasLinearVelocity for Components {
     }
 }
 
+impl HasShape for Components {
+    fn shape(&self) -> &ComponentList<Components, Shape> {
+        &self.shape
+    }
+    fn shape_mut(&mut self) -> &mut ComponentList<Components, Shape> {
+        &mut self.shape
+    }
+}
+
 impl HasPlayerState for Components {
     fn player_state(&self) -> &ComponentList<Components, PlayerState> {
         &self.player_state
@@ -122,14 +136,5 @@ impl HasFullPlayerState for Components {
     }
     fn full_player_state_mut(&mut self) -> &mut ComponentList<Components, FullPlayerState> {
         &mut self.full_player_state
-    }
-}
-
-impl HasItemSpawn for Components {
-    fn item_spawn(&self) -> &ComponentList<Components, ItemSpawn> {
-        &self.item_spawn
-    }
-    fn item_spawn_mut(&mut self) -> &mut ComponentList<Components, ItemSpawn> {
-        &mut self.item_spawn
     }
 }

@@ -10,7 +10,7 @@ pub type ItemSlot = u32;
 pub const NEUTRAL_PLAYER_ID: PlayerId = 0;
 pub const NUM_ITEM_SLOTS: ItemSlot = 3;
 
-#[derive(CerealData, Clone)]
+#[derive(Clone, CerealData)]
 pub enum Item {
     Weapon {
         charges: usize,
@@ -92,24 +92,21 @@ pub enum InputKey {
     Forward,
     Back,
 
-    StrafeLeft,
-    StrafeRight,
+    Strafe,
 
     Flip,
     Dash,
 
-    EquipTo1,
-    EquipTo2,
-    EquipTo3,
+    Item1,
+    Item2,
+    Item3,
 
-    Use1,
-    Use2,
-    Use3,
+    Equip,
 
     //Max,
 }
 
-pub const NUM_INPUT_KEYS: usize = 14; //usize = InputKey::Max as usize;
+pub const NUM_INPUT_KEYS: usize = 11; //usize = InputKey::Max as usize;
 
 #[derive(Clone)]
 pub struct PlayerInput {
