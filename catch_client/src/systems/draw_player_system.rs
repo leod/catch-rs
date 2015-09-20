@@ -7,7 +7,7 @@ use opengl_graphics::GlGraphics;
 
 use shared::math;
 use shared::util::CachedAspect;
-use components::Components;
+use components::{Components, Shape};
 use services::Services;
 
 pub struct DrawPlayerSystem {
@@ -25,9 +25,10 @@ impl DrawPlayerSystem {
                 gl: &mut GlGraphics) {
         for entity in self.aspect.iter() {
             let p = data.position[entity].p;
-            // TODO: Store this somwehere
-            let w = 18.0;
-            let h = 18.0;
+            let r = match data.shape[entity] {
+                Shape::Circle { radius } => radius,
+                //_ => panic!("player should be circle"),
+            };
 
             let scale_x_target = if data.player_state[entity].dashing.is_some() {
                 math::square_len(data.linear_velocity[entity].v).sqrt() / 400.0 + 1.0
@@ -49,11 +50,11 @@ impl DrawPlayerSystem {
                 else { [0.0, 0.0, 1.0, 1.0] };
 
             graphics::ellipse(color,
-                              [-w/2.0, -h/2.0, w, h],
+                              [-r, -r, r*2.0, r*2.0],
                               transform,
                               gl);
             graphics::rectangle([0.0, 0.0, 0.0, 1.0],
-                                [0.0, -1.5, w/2.0, 3.0],
+                                [0.0, -1.5, r, 3.0],
                                 transform,
                                 gl);
         }

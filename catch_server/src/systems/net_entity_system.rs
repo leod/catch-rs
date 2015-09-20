@@ -9,8 +9,7 @@ use shared::components::StateComponent;
 use shared::{EntityId, EntityTypeId, EntityTypes, PlayerId, GameEvent, TickState};
 
 use components;
-use components::{Components, NetEntity, Shape, Interact, ServerNetEntity, LinearVelocity,
-                 BouncyEnemy};
+use components::{Components, NetEntity, ServerNetEntity};
 use entities;
 use services::Services;
 

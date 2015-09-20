@@ -3,13 +3,12 @@ use std::collections::HashMap;
 use ecs;
 use ecs::{System, DataHelper, BuildData, Process};
 
-use shared::net;
 use shared::net::ComponentType;
 use shared::components::StateComponent;
 use shared::{Tick, GameEvent, PlayerId, EntityId, EntityTypes, EntityTypeId};
 
 use components;
-use components::{Components, NetEntity, InterpolationState, DrawPlayer, DrawBouncyEnemy};
+use components::{Components, NetEntity, InterpolationState};
 use entities;
 use services::Services;
 
