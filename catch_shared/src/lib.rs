@@ -18,8 +18,8 @@ pub mod entities;
 
 pub use map::Map;
 pub use tick::{TickState, Tick};
-pub use net::{EntityTypes};
 pub use player::{Item, PlayerInputKey, PlayerInput, PlayerInfo};
+pub use entities::{EntityType, EntityTypes};
 
 pub type EntityId = u32;
 pub type EntityTypeId = u32;
@@ -35,7 +35,7 @@ pub type TickNumber = u32;
 #[derive(Debug, Clone, CerealData)]
 pub struct GameInfo {
     pub map_name: String,
-    pub entity_types: net::EntityTypes,
+    pub entity_types: EntityTypes,
     pub ticks_per_second: u32,
 }
 

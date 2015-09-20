@@ -4,6 +4,7 @@ use ecs;
 use ecs::{Process, System, BuildData, EntityData, EntityIter, DataHelper};
 
 use shared::net;
+use shared::entities;
 use shared::components::StateComponent;
 use shared::{EntityId, EntityTypeId, EntityTypes, PlayerId, GameEvent, TickState};
 
@@ -24,7 +25,7 @@ impl NetEntitySystem {
         NetEntitySystem {
             id_counter: 0,
             entities: HashMap::new(),
-            entity_types: net::all_entity_types(),
+            entity_types: entities::all_entity_types(),
             component_type_traits: components::component_type_traits(),
         }
     }

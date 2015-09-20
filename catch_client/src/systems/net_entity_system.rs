@@ -4,6 +4,7 @@ use ecs;
 use ecs::{System, DataHelper, BuildData, Process};
 
 use shared::net;
+use shared::entities;
 use shared::net::ComponentType;
 use shared::components::StateComponent;
 use shared::{Tick, GameEvent, PlayerId, EntityId, EntityTypes, EntityTypeId};
