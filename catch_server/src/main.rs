@@ -21,9 +21,8 @@ use time::{Duration, Timespec};
 use cereal::CerealData;
 
 use shared::net;
-use shared::tick::Tick;
-use shared::player::{PlayerId, PlayerInfo};
-use shared::net::{TickNumber, GameInfo, ClientMessage, ServerMessage};
+use shared::{PlayerId, PlayerInfo, TickNumber, GameInfo, Tick};
+use shared::net::{ClientMessage, ServerMessage};
 use shared::util::PeriodicTimer;
 use state::GameState;
 
@@ -268,8 +267,8 @@ impl Server {
                                           .clone();
 
                         self.game_state.world.systems.net_entity_system
-                            .store_in_net_state(*player_id,
-                                                &mut tick.net_state,
+                            .store_in_tick_state(*player_id,
+                                                &mut tick.state,
                                                 &mut self.game_state.world.data);
 
                         match tick.write(&mut data) {

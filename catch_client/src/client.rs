@@ -6,9 +6,8 @@ use cereal::CerealData;
 use enet;
 
 use shared::net;
-use shared::net::{GameInfo, ClientMessage, ServerMessage};
-use shared::player::PlayerId;
-use shared::tick::Tick;
+use shared::net::{ClientMessage, ServerMessage};
+use shared::{GameInfo, PlayerId, Tick};
 
 pub struct Client {
     host: enet::Host,

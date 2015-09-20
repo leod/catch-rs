@@ -2,12 +2,10 @@ use std::marker::PhantomData;
 
 use ecs::{ComponentManager, ComponentList, BuildData, EntityData};
 
-pub use player::{PlayerState, FullPlayerState};
-use net::{StateComponent, EntityId, EntityTypeId, COMPONENT_TYPES, ComponentType};
-use player::PlayerId;
-use player::Item;
-use tick::NetState;
+use net::{COMPONENT_TYPES, ComponentType};
+use super::{EntityId, EntityTypeId, PlayerId, Item, TickState};
 use math;
+pub use player::PlayerState;
 
 /// Every entity that wants its component state synchronized needs to have this component
 pub struct NetEntity {
@@ -44,6 +42,17 @@ impl Default for Shape {
     }
 }
 
+// Attached to players on the server and the clients controlling them
+// Item states, cooldowns etc.
+#[derive(Clone, Default, CerealData)]
+pub struct FullPlayerState {
+    pub dash_cooldown_s: Option<f64>,
+
+    // An item that the player picked up but hasn't equipped
+    pub hidden_item: Option<Item>,
+}
+
+
 #[derive(Clone, Default, CerealData)]
 pub struct ItemSpawn;
 
@@ -79,6 +88,17 @@ pub trait HasFullPlayerState {
     fn full_player_state_mut(&mut self) -> &mut ComponentList<Self, FullPlayerState>;
 }
 
+pub trait StateComponent<T: ComponentManager> {
+    // Add net component to the component manager for the given entity
+    fn add(&self, entity: BuildData<T>, c: &mut T);
+
+    // Stores current component state in a TickState
+    fn store(&self, entity: EntityData<T>, id: EntityId, write: &mut TickState, c: &T);
+
+    // Load component state from TickState
+    fn load(&self, entity: EntityData<T>, id: EntityId, net_state: &TickState, c: &mut T);
+}
+
 struct StateComponentImpl<C>(PhantomData<C>);
 
 macro_rules! state_component_impl {
@@ -88,11 +108,11 @@ macro_rules! state_component_impl {
             fn add(&self, entity: BuildData<T>, c: &mut T) {
                 c.$field_mut().add(&entity, $ty::default());
             }
-            fn store(&self, entity: EntityData<T>, id: EntityId, net_state: &mut NetState,
+            fn store(&self, entity: EntityData<T>, id: EntityId, net_state: &mut TickState,
                      c: &T) {
                 net_state.$field.insert(id, c.$field()[entity].clone());
             }
-            fn load(&self, entity: EntityData<T>, id: EntityId, net_state: &NetState, c: &mut T) {
+            fn load(&self, entity: EntityData<T>, id: EntityId, net_state: &TickState, c: &mut T) {
                 if let Some($field) = net_state.$field.get(&id) {
                     c.$field_mut()[entity] = $field.clone();
                 }

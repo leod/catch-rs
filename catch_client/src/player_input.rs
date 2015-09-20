@@ -1,32 +1,31 @@
 use std::collections::HashMap;
 
 use piston::input::{Button, Key, Input};
-use piston::input::keyboard::{ModifierKey, NO_MODIFIER, ALT};
 
-pub use shared::player::{PlayerInput, InputKey};
+pub use shared::player::{PlayerInput, PlayerInputKey};
 
 pub struct InputMap {
-    inputs: Vec<(Button, InputKey)>,
+    inputs: Vec<(Button, PlayerInputKey)>,
 }
 
 impl InputMap {
     pub fn new() -> InputMap {
         let inputs = vec![
-            (Button::Keyboard(Key::Left), InputKey::Left),
-            (Button::Keyboard(Key::Right), InputKey::Right),
-            (Button::Keyboard(Key::Up), InputKey::Forward),
-            (Button::Keyboard(Key::Down), InputKey::Back),
+            (Button::Keyboard(Key::Left), PlayerInputKey::Left),
+            (Button::Keyboard(Key::Right), PlayerInputKey::Right),
+            (Button::Keyboard(Key::Up), PlayerInputKey::Forward),
+            (Button::Keyboard(Key::Down), PlayerInputKey::Back),
 
-            (Button::Keyboard(Key::LAlt), InputKey::Strafe),
+            (Button::Keyboard(Key::LAlt), PlayerInputKey::Strafe),
 
-            (Button::Keyboard(Key::LShift), InputKey::Flip),
-            (Button::Keyboard(Key::Space), InputKey::Dash),
+            (Button::Keyboard(Key::LShift), PlayerInputKey::Flip),
+            (Button::Keyboard(Key::Space), PlayerInputKey::Dash),
 
-            (Button::Keyboard(Key::Q), InputKey::Item1),
-            (Button::Keyboard(Key::W), InputKey::Item2),
-            (Button::Keyboard(Key::E), InputKey::Item3),
+            (Button::Keyboard(Key::Q), PlayerInputKey::Item1),
+            (Button::Keyboard(Key::W), PlayerInputKey::Item2),
+            (Button::Keyboard(Key::E), PlayerInputKey::Item3),
 
-            (Button::Keyboard(Key::LCtrl), InputKey::Equip),
+            (Button::Keyboard(Key::LCtrl), PlayerInputKey::Equip),
         ];
 
         InputMap {

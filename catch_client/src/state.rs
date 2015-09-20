@@ -2,10 +2,7 @@ use std::collections::HashMap;
 
 use ecs;
 
-use shared::net::{GameInfo, TickNumber};
-use shared::tick::Tick;
-use shared::map::Map;
-use shared::player::{PlayerId, PlayerInfo, PlayerInput};
+use shared::{GameInfo, TickNumber, PlayerId, PlayerInfo, PlayerInput, Tick, Map};
 use systems::{Systems, NetEntitySystem};
 
 pub struct GameState {

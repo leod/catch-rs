@@ -1,16 +1,18 @@
 use std::collections::HashMap;
 
+use ecs::{ComponentManager, EntityData, BuildData};
+
 use components::{Position, Orientation,
                  LinearVelocity, Shape,
                  PlayerState, FullPlayerState};
-use event::GameEvent;
-use net;
+use net::ComponentType;
+use super::{EntityId, TickNumber, GameEvent};
 
 /// Stores the state of all net components in a tick
-pub type ComponentsNetState<T> = HashMap<net::EntityId, T>;
+pub type ComponentsNetState<T> = HashMap<EntityId, T>;
 
 #[derive(Default, CerealData)]
-pub struct NetState {
+pub struct TickState {
     // Same order as net::COMPONENT_TYPES
 
     pub position: ComponentsNetState<Position>, 
@@ -22,22 +24,22 @@ pub struct NetState {
 
     // List of components that should not be interpolated into this tick
     // (e.g. you wouldn't want to interpolate the position of a player that was just teleported)
-    pub forced_components: Vec<(net::EntityId, net::ComponentType)>,
+    pub forced_components: Vec<(EntityId, ComponentType)>,
 }
 
 #[derive(CerealData)]
 pub struct Tick {
-    pub tick_number: net::TickNumber,
+    pub tick_number: TickNumber,
     pub events: Vec<GameEvent>,
-    pub net_state: NetState,
+    pub state: TickState,
 }
 
 impl Tick {
-    pub fn new(tick_number: net::TickNumber) -> Tick {
+    pub fn new(tick_number: TickNumber) -> Tick {
         Tick {
             tick_number: tick_number,
             events: Vec::new(),
-            net_state: NetState::default(),
+            state: TickState::default(),
         }
     }
 }

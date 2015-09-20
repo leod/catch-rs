@@ -4,20 +4,18 @@ use ecs;
 use ecs::{Process, System, BuildData, EntityData, EntityIter, DataHelper};
 
 use shared::net;
-use shared::player::PlayerId;
-use shared::event::GameEvent;
-use shared::tick::NetState;
+use shared::components::StateComponent;
+use shared::{EntityId, EntityTypeId, EntityTypes, PlayerId, GameEvent, TickState};
+
 use components;
-use components::{Components, NetEntity,
-                 Shape, Interact,
-                 ServerNetEntity, LinearVelocity,
+use components::{Components, NetEntity, Shape, Interact, ServerNetEntity, LinearVelocity,
                  BouncyEnemy};
 use services::Services;
 
 pub struct NetEntitySystem {
-    id_counter: net::EntityId,
-    entities: HashMap<net::EntityId, ecs::Entity>,
-    entity_types: net::EntityTypes,
+    id_counter: EntityId,
+    entities: HashMap<EntityId, ecs::Entity>,
+    entity_types: EntityTypes,
     component_type_traits: components::ComponentTypeTraits<Components>,
 }
 
@@ -31,24 +29,24 @@ impl NetEntitySystem {
         }
     }
 
-    pub fn type_id(&self, type_name: String) -> net::EntityTypeId {
+    pub fn type_id(&self, type_name: String) -> EntityTypeId {
         self.entity_types.iter()
             .enumerate()
             .find(|&(_, &(ref name, _))| name == &type_name)
             .unwrap()
-            .0 as net::EntityTypeId
+            .0 as EntityTypeId
     }
 
     fn component_type_trait(&self, component_type: net::ComponentType)
-                            -> &Box<net::StateComponent<Components>> {
+                            -> &Box<StateComponent<Components>> {
         &self.component_type_traits[component_type as usize]
     }
 
     pub fn create_entity(&mut self,
-                         entity_type_id: net::EntityTypeId,
+                         entity_type_id: EntityTypeId,
                          player_id: PlayerId,
                          data: &mut DataHelper<Components, Services>)
-                         -> (net::EntityId, ecs::Entity) {
+                         -> (EntityId, ecs::Entity) {
         self.id_counter += 1;
 
         println!("Creating entity {} of type {} with owner {}",
@@ -102,7 +100,7 @@ impl NetEntitySystem {
     }
 
     pub fn remove_entity(&mut self,
-                         entity_id: net::EntityId,
+                         entity_id: EntityId,
                          data: &mut DataHelper<Components, Services>) {
         if self.entities.get(&entity_id).is_some() {
             data.remove_entity(self.entities[&entity_id]);
@@ -137,7 +135,7 @@ impl NetEntitySystem {
         }
     }
 
-    pub fn get_entity(&self, net_entity_id: net::EntityId) -> ecs::Entity {
+    pub fn get_entity(&self, net_entity_id: EntityId) -> ecs::Entity {
         self.entities[&net_entity_id]
     }
 
@@ -154,9 +152,9 @@ impl NetEntitySystem {
         }
     }
 
-    /// Write the current state into a NetState
-    pub fn store_in_net_state(&self, player_id: PlayerId, net_state: &mut NetState,
-                              data: &mut DataHelper<Components, Services>) {
+    /// Write the current state into a TickState
+    pub fn store_in_tick_state(&self, player_id: PlayerId, tick_state: &mut TickState,
+                               data: &mut DataHelper<Components, Services>) {
         let mut forced_components = Vec::new();
 
         for (net_id, entity) in self.entities.iter() {
@@ -165,14 +163,14 @@ impl NetEntitySystem {
 
                 for component_type in &entity_type.component_types {
                     self.component_type_trait(*component_type)
-                        .store(e, *net_id, net_state, c);
+                        .store(e, *net_id, tick_state, c);
                 }
 
                 // Some components only need to be sent to the owner of the net entity
                 if player_id == c.net_entity[e].owner {
                     for component_type in &entity_type.owner_component_types {
                         self.component_type_trait(*component_type)
-                            .store(e, *net_id, net_state, c);
+                            .store(e, *net_id, tick_state, c);
                     }
                 }
 
@@ -184,7 +182,7 @@ impl NetEntitySystem {
             });
         }
 
-        net_state.forced_components = forced_components;
+        tick_state.forced_components = forced_components;
     }
 }
 

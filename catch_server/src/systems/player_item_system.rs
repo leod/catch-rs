@@ -3,7 +3,7 @@ use ecs::{Process, System, EntityData, DataHelper};
 
 use shared::map::Map;
 use shared::net::TimedPlayerInput;
-use shared::player::{PlayerInput, InputKey};
+use shared::player::{PlayerInput, PlayerInputKey};
 use components::Components;
 use services::Services;
 

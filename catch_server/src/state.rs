@@ -6,10 +6,10 @@ use rand;
 
 use shared::net;
 use shared::math;
+use shared::{EntityId, TickNumber, GameInfo, GameEvent, PlayerId, PlayerInfo, PlayerInput};
 use shared::map::{LayerId, Map};
-use shared::net::{TickNumber, GameInfo, TimedPlayerInput};
-use shared::event::GameEvent;
-use shared::player::{PlayerId, PlayerInfo, PlayerInput};
+use shared::net::TimedPlayerInput;
+
 use systems::Systems;
 
 pub struct Player {
@@ -19,7 +19,7 @@ pub struct Player {
     pub info: PlayerInfo,
     pub next_input: Vec<TimedPlayerInput>,
 
-    pub controlled_entity: Option<net::EntityId>,
+    pub controlled_entity: Option<EntityId>,
     pub respawn_time: Option<f64>, 
 }
 
@@ -202,7 +202,7 @@ impl GameState {
 
     pub fn run_player_input(&mut self,
                             player_id: PlayerId,
-                            net_entity_id: net::EntityId,
+                            net_entity_id: EntityId,
                             input: &TimedPlayerInput) {
         let entity = self.world.systems.net_entity_system.get_entity(net_entity_id);
 

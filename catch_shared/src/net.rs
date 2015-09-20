@@ -1,20 +1,6 @@
 use std::fmt;
 
-use ecs::{ComponentManager, EntityData, BuildData};
-
-use player::{PlayerId, PlayerInput, PlayerInputNumber};
-use tick::NetState;
-
-pub type EntityId = u32;
-pub type EntityTypeId = u32;
-pub type TickNumber = u32;
-
-#[derive(Clone, CerealData)]
-pub struct GameInfo {
-    pub map_name: String,
-    pub entity_types: EntityTypes,
-    pub ticks_per_second: u32,
-}
+use super::{PlayerInput, TickNumber, PlayerId, GameInfo};
 
 #[derive(Debug, Clone)]
 pub enum Channel {
@@ -79,17 +65,6 @@ pub enum ComponentType {
     FullPlayerState,
 }
 
-pub trait StateComponent<T: ComponentManager> {
-    // Add net component to the component manager for the given entity
-    fn add(&self, entity: BuildData<T>, c: &mut T);
-
-    // Stores current component state in a NetState
-    fn store(&self, entity: EntityData<T>, id: EntityId, write: &mut NetState, c: &T);
-
-    // Load component state from NetState
-    fn load(&self, entity: EntityData<T>, id: EntityId, net_state: &NetState, c: &mut T);
-}
-
 pub const COMPONENT_TYPES: &'static [ComponentType] = &[
     ComponentType::Position,
     ComponentType::Orientation,
@@ -99,7 +74,7 @@ pub const COMPONENT_TYPES: &'static [ComponentType] = &[
     ComponentType::FullPlayerState,
 ];
 
-#[derive(Clone, CerealData)]
+#[derive(Debug, Clone, CerealData)]
 pub struct EntityType {
     // Net components of this entity type, i.e. components whose states are sent to clients in
     // ticks
@@ -132,10 +107,3 @@ pub fn all_entity_types() -> EntityTypes {
          }),
         ]
 }
-
-impl fmt::Debug for GameInfo {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "GameInfo {{ map_name: {}, ... }}", self.map_name)
-    }
-}
-

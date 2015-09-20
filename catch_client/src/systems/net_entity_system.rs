@@ -4,30 +4,29 @@ use ecs;
 use ecs::{System, DataHelper, BuildData, Process};
 
 use shared::net;
-use shared::tick::Tick;
-use shared::event::GameEvent;
-use shared::player::PlayerId;
+use shared::net::ComponentType;
+use shared::components::StateComponent;
+use shared::{Tick, GameEvent, PlayerId, EntityId, EntityTypes, EntityTypeId};
+
 use components;
-use components::{Components, NetEntity,
-                 InterpolationState, DrawPlayer,
-                 DrawBouncyEnemy};
+use components::{Components, NetEntity, InterpolationState, DrawPlayer, DrawBouncyEnemy};
 use services::Services;
 
 pub struct NetEntitySystem {
-    entity_types: net::EntityTypes,
+    entity_types: EntityTypes,
 
     // List of trait objects for each net component type for loading and storing the state
     component_type_traits: components::ComponentTypeTraits<Components>,
 
     // Map from network entity ids to the local component system's entity id
-    entities: HashMap<net::EntityId, ecs::Entity>,
+    entities: HashMap<EntityId, ecs::Entity>,
 
     my_id: PlayerId,
-    my_player_entity_id: Option<net::EntityId>,
+    my_player_entity_id: Option<EntityId>,
 }
 
 impl NetEntitySystem {
-    pub fn new(my_id: PlayerId, entity_types: &net::EntityTypes) -> NetEntitySystem {
+    pub fn new(my_id: PlayerId, entity_types: &EntityTypes) -> NetEntitySystem {
         NetEntitySystem {
             entity_types: entity_types.clone(),
             component_type_traits: components::component_type_traits(),
@@ -37,22 +36,22 @@ impl NetEntitySystem {
         }
     }
 
-    pub fn my_player_entity_id(&self) -> Option<net::EntityId> {
+    pub fn my_player_entity_id(&self) -> Option<EntityId> {
         self.my_player_entity_id
     }
 
-    pub fn get_entity(&self, id: net::EntityId) -> Option<ecs::Entity> {
+    pub fn get_entity(&self, id: EntityId) -> Option<ecs::Entity> {
         self.entities.get(&id).map(|entity| *entity)
     }
 
-    fn component_type_trait(&self, component_type: net::ComponentType)
-                            -> &Box<net::StateComponent<Components>> {
+    fn component_type_trait(&self, component_type: ComponentType)
+                            -> &Box<StateComponent<Components>> {
         &self.component_type_traits[component_type as usize]
     }
     
     fn create_entity(&mut self,
-                     entity_id: net::EntityId,
-                     entity_type_id: net::EntityTypeId,
+                     entity_id: EntityId,
+                     entity_type_id: EntityTypeId,
                      owner: PlayerId,
                      data: &mut DataHelper<Components, Services>) -> ecs::Entity {
         println!("Creating entity {} of type {} with owner {}",
@@ -76,10 +75,10 @@ impl NetEntitySystem {
 
                 // Add interpolation state components for certain net component types
                 match *net_component {
-                    net::ComponentType::Position => {
+                    ComponentType::Position => {
                         data.interp_position.add(&entity, InterpolationState::none());
                     }
-                    net::ComponentType::Orientation => {
+                    ComponentType::Orientation => {
                         data.interp_orientation.add(&entity, InterpolationState::none());
                     }
                     _ => ()
@@ -114,7 +113,7 @@ impl NetEntitySystem {
     }
 
     fn remove_entity(&mut self,
-                     entity_id: net::EntityId,
+                     entity_id: EntityId,
                      data: &mut DataHelper<Components, Services>) {
         if self.my_player_entity_id == Some(entity_id) {
             self.my_player_entity_id = None;
@@ -157,12 +156,12 @@ impl NetEntitySystem {
 
                 for component_type in &entity_type.component_types {
                     self.component_type_trait(*component_type)
-                        .load(e, *net_entity_id, &tick.net_state, c);
+                        .load(e, *net_entity_id, &tick.state, c);
                 }
                 if self.my_id == c.net_entity[e].owner {
                     for component_type in &entity_type.owner_component_types {
                         self.component_type_trait(*component_type)
-                            .load(e, *net_entity_id, &tick.net_state, c);
+                            .load(e, *net_entity_id, &tick.state, c);
                     }
                 }
             });
@@ -183,29 +182,29 @@ impl NetEntitySystem {
                 for component_type in &entity_type.component_types {
                     // Don't interpolate into forced components
                     let mut forced = false;
-                    for &(id, forced_component) in &tick_b.net_state.forced_components {
+                    for &(id, forced_component) in &tick_b.state.forced_components {
                         if *net_entity_id == id && *component_type == forced_component {
                             forced = true;
                         }
                     }
 
                     match *component_type { 
-                        net::ComponentType::Position => {
+                        ComponentType::Position => {
                             c.interp_position[e] = 
                                 match (forced,
-                                       tick_a.net_state.position.get(&net_entity_id),
-                                       tick_b.net_state.position.get(&net_entity_id)) {
+                                       tick_a.state.position.get(&net_entity_id),
+                                       tick_b.state.position.get(&net_entity_id)) {
                                     (false, Some(a), Some(b)) =>
                                         InterpolationState::some(a.clone(), b.clone()),
                                     _ =>
                                         InterpolationState::none() 
                                 };
                         }
-                        net::ComponentType::Orientation => {
+                        ComponentType::Orientation => {
                             c.interp_orientation[e] = 
                                 match (forced,
-                                       tick_a.net_state.orientation.get(&net_entity_id),
-                                       tick_b.net_state.orientation.get(&net_entity_id)) {
+                                       tick_a.state.orientation.get(&net_entity_id),
+                                       tick_b.state.orientation.get(&net_entity_id)) {
                                     (false, Some(a), Some(b)) =>
                                         InterpolationState::some(a.clone(), b.clone()),
                                     _ =>

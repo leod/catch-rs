@@ -3,12 +3,7 @@ use std::io::{Read, Write};
 
 use cereal::{CerealData, CerealResult};
 
-pub type PlayerId = u32;
-pub type PlayerInputNumber = u32;
-pub type ItemSlot = u32;
-
-pub const NEUTRAL_PLAYER_ID: PlayerId = 0;
-pub const NUM_ITEM_SLOTS: ItemSlot = 3;
+use super::{PlayerId, ItemSlot, NUM_ITEM_SLOTS};
 
 #[derive(Clone, CerealData)]
 pub enum Item {
@@ -75,18 +70,8 @@ impl PlayerState {
     }
 }
 
-// Attached to players on the server and the clients controlling them
-// Item states, cooldowns etc.
-#[derive(Clone, Default, CerealData)]
-pub struct FullPlayerState {
-    pub dash_cooldown_s: Option<f64>,
-
-    // An item that the player picked up but hasn't equipped
-    pub hidden_item: Option<Item>,
-}
-
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum InputKey {
+pub enum PlayerInputKey {
     Left,
     Right,
     Forward,
@@ -114,15 +99,15 @@ pub struct PlayerInput {
 }
 
 impl PlayerInput {
-    pub fn has(&self, key: InputKey) -> bool {
+    pub fn has(&self, key: PlayerInputKey) -> bool {
         self.pressed[key as usize]
     }
 
-    pub fn set(&mut self, key: InputKey) {
+    pub fn set(&mut self, key: PlayerInputKey) {
         self.pressed[key as usize] = true;
     }
 
-    pub fn unset(&mut self, key: InputKey) {
+    pub fn unset(&mut self, key: PlayerInputKey) {
         self.pressed[key as usize] = false;
     }
 }

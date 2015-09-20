@@ -3,15 +3,10 @@ use ecs::ComponentList;
 use shared::net;
 use shared::math;
 use shared::player::Item;
-use shared::components::{HasPosition, HasOrientation,
-                         HasLinearVelocity, HasShape,
-                         HasPlayerState, HasFullPlayerState};
-pub use shared::components::{NetEntity, Position,
-                             Orientation, LinearVelocity,
-                             Shape,
-                             PlayerState, FullPlayerState,
-                             ItemSpawn,
-                             ComponentTypeTraits,
+use shared::components::{HasPosition, HasOrientation, HasLinearVelocity, HasShape, HasPlayerState,
+                         HasFullPlayerState};
+pub use shared::components::{NetEntity, Position, Orientation, LinearVelocity, Shape, PlayerState,
+                             FullPlayerState, ItemSpawn, ComponentTypeTraits,
                              component_type_traits};
 
 #[derive(Default)]

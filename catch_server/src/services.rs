@@ -2,10 +2,7 @@ use std::collections::HashMap;
 
 use ecs::ServiceManager;
 
-use shared::net;
-use shared::tick::Tick;
-use shared::player::PlayerId;
-use shared::event::GameEvent;
+use shared::{Tick, TickNumber, PlayerId, GameEvent};
 
 pub struct Services {
     // Tick duration in seconds
@@ -25,7 +22,7 @@ pub struct Services {
 }
 
 impl Services {
-    pub fn prepare_for_tick<T: Iterator<Item=PlayerId>>(&mut self, number: net::TickNumber, player_ids: T) {
+    pub fn prepare_for_tick<T: Iterator<Item=PlayerId>>(&mut self, number: TickNumber, player_ids: T) {
         //self.next_tick = Some(Tick::new(number));     
         assert!(self.next_events.is_empty());
 

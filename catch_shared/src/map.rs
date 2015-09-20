@@ -95,9 +95,6 @@ pub struct TraceIter<'a> {
     tx: isize,
     ty: isize,
 
-    // Number of tiles left that we will hit
-    n: usize,
-
     // Progress
     t: f64,
 
@@ -154,7 +151,6 @@ impl<'a> TraceIter<'a> {
         TraceIter {
             map: map,
             tx: tx, ty: ty,
-            n: 0,
             t: 0.0,
             dt_dx: dt_dx, dt_dy: dt_dy,
             x_inc: x_inc, y_inc: y_inc,

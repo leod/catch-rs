@@ -2,8 +2,7 @@ use std::f64;
 use ecs::{EntityData, DataHelper};
 
 use shared::math;
-use shared::event::GameEvent;
-use shared::player::NEUTRAL_PLAYER_ID;
+use shared::{GameEvent, NEUTRAL_PLAYER_ID};
 use components::Components;
 use services::Services;
 use systems::interaction_system::Interaction;

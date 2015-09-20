@@ -3,7 +3,7 @@ use ecs::{System, Process, Aspect, EntityData, DataHelper};
 
 use shared::math;
 use shared::util::CachedAspect;
-use shared::event::GameEvent;
+use shared::GameEvent;
 use components::{Components, Shape, Position, Orientation};
 use services::Services;
 

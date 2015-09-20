@@ -6,7 +6,7 @@ use ecs::{Process, System, EntityData, DataHelper};
 use shared::math;
 use shared::map::Map;
 use shared::net::{ComponentType, TimedPlayerInput};
-use shared::player::{PlayerInput, InputKey};
+use shared::player::{PlayerInput, PlayerInputKey};
 use components::Components;
 use services::Services;
 
@@ -144,27 +144,27 @@ impl PlayerMovementSystem {
             } else {
                 let mut accel = math::scale(c.linear_velocity[e].v, -4.0);
 
-                if input.has(InputKey::Strafe) {
+                if input.has(PlayerInputKey::Strafe) {
                     let strafe_direction = [direction[1], -direction[0]];
-                    if input.has(InputKey::Left) {
+                    if input.has(PlayerInputKey::Left) {
                         accel = math::add(math::scale(strafe_direction, STRAFE_ACCEL), accel);
                     }
-                    if input.has(InputKey::Right) {
+                    if input.has(PlayerInputKey::Right) {
                         accel = math::add(math::scale(strafe_direction, -STRAFE_ACCEL), accel);
                     }
                 } else {
-                    if input.has(InputKey::Left) {
+                    if input.has(PlayerInputKey::Left) {
                         c.orientation[e].angle -= TURN_SPEED * dur_s;
                     }
-                    if input.has(InputKey::Right) {
+                    if input.has(PlayerInputKey::Right) {
                         c.orientation[e].angle += TURN_SPEED * dur_s;
                     }
                 }
 
-                if input.has(InputKey::Forward) {
+                if input.has(PlayerInputKey::Forward) {
                     accel = math::add(math::scale(direction, MOVE_ACCEL), accel);
                 }
-                if input.has(InputKey::Back) {
+                if input.has(PlayerInputKey::Back) {
                     accel = math::add(math::scale(direction, -BACK_ACCEL), accel);
                 }
 
@@ -178,13 +178,13 @@ impl PlayerMovementSystem {
                     c.linear_velocity[e].v[1] = 0.0;
                 }
 
-                if input.has(InputKey::Dash) && c.full_player_state[e].dash_cooldown_s.is_none() {
+                if input.has(PlayerInputKey::Dash) && c.full_player_state[e].dash_cooldown_s.is_none() {
                     c.player_state[e].dashing = Some(0.0);
                     c.full_player_state[e].dash_cooldown_s = Some(5.0);
                 }
             }
 
-            if !input.has(InputKey::Flip) {
+            if !input.has(PlayerInputKey::Flip) {
                 self.move_sliding(e, math::scale(c.linear_velocity[e].v, dur_s), map, c);
             } else {
                 self.move_flipping(e, math::scale(c.linear_velocity[e].v, dur_s), map, c);
