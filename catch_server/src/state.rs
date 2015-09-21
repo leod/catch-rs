@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use ecs;
 use rand;
 
+use shared;
 use shared::net;
 use shared::math;
 use shared::{EntityId, TickNumber, GameInfo, GameEvent, PlayerId, PlayerInfo, PlayerInput};
@@ -11,6 +12,8 @@ use shared::map::{LayerId, Map};
 use shared::net::TimedPlayerInput;
 
 use systems::Systems;
+use services::Services;
+use entities;
 
 pub struct Player {
     // Has this player been sent its first tick yet?
@@ -19,7 +22,7 @@ pub struct Player {
     pub info: PlayerInfo,
     pub next_input: Vec<TimedPlayerInput>,
 
-    pub controlled_entity: Option<EntityId>,
+    pub controlled_entity: Option<ecs::Entity>,
     pub respawn_time: Option<f64>, 
 }
 
@@ -66,11 +69,13 @@ impl GameState {
                     })
                .collect();
 
+        let services = Services::new(game_info.entity_types.clone());
+
         GameState {
             game_info: game_info.clone(),
             map: map,
             spawn_points: spawn_points,
-            world: ecs::World::new(),
+            world: ecs::World::with_services(services),
             tick_number: 0,
             time_s: 0.0,
             players: HashMap::new(),
@@ -79,6 +84,15 @@ impl GameState {
 
     fn create_map_objects(&mut self) {
         for object in self.map.objects.iter() {
+            if &object.type_str == "item_spawn" {
+                let entity = entities::build_net("item_spawn", 0, &mut self.world.data);
+                self.world.with_entity_data(&entity, |e, c| {
+                    c.position[e].p = [object.x, object.y];
+                });
+            } else if &object.type_str == "player_spawn" {
+            } else {
+                println!("Ignoring unknown entity type {} in map", object.type_str);
+            }
         }
     }
 
@@ -89,11 +103,7 @@ impl GameState {
         let num_bouncies = 20;
 
         for i in 0..num_bouncies {
-            let net_entity_type_id = self.world.systems.net_entity_system
-                                         .type_id("bouncy_enemy".to_string());
-            let (_, entity) = 
-                self.world.systems.net_entity_system
-                    .create_entity(net_entity_type_id, 0, &mut self.world.data);
+            let entity = entities::build_net("bouncy_enemy", 0, &mut self.world.data);
 
             // Pick a random non-blocked tile
             let mut rx = 0;
@@ -117,6 +127,8 @@ impl GameState {
                 c.orientation[e].angle = rand::random::<f64>() * f64::consts::PI * 2.0;
             });
         }
+
+        self.world.flush_queue();
     }
 
     pub fn tick_number(&self) -> TickNumber {
@@ -130,16 +142,15 @@ impl GameState {
         self.players.insert(id, Player::new(info));
     }
 
-    fn spawn_player(&mut self, id: PlayerId) {
+    fn spawn_player(&mut self, id: PlayerId) -> ecs::Entity {
         assert!(self.players[&id].controlled_entity.is_none(),
                 "Can't spawn a player that is already controlling an entity");
+        assert!(!self.players[&id].info.alive);
 
-        let net_entity_type_id = self.world.systems.net_entity_system
-                                     .type_id("player".to_string());
-        let (net_entity_id, entity) = 
-            self.world.systems.net_entity_system
-                .create_entity(net_entity_type_id, id, &mut self.world.data);
-        self.players.get_mut(&id).unwrap().controlled_entity = Some(net_entity_id);
+        let entity = entities::build_net("player", id, &mut self.world.data);
+
+        self.players.get_mut(&id).unwrap().controlled_entity = Some(entity);
+        self.players.get_mut(&id).unwrap().info.alive = true;
 
         let position = {
             let spawn_point = &self.spawn_points[rand::random::<usize>() %
@@ -152,26 +163,30 @@ impl GameState {
             c.position[e].p = position;
             c.player_state[e].invulnerable_s = Some(2.5);
         });
+        
+        entity
     }
 
     fn process_event(&mut self, event: GameEvent) {
         match event {
             GameEvent::PlayerDied(player_id, cause_player_id) => {
+                println!("Killing player {}", player_id);
+
                 if !self.get_player_info(player_id).alive {
                     println!("Killing a dead player! HAH!");
                 } else {
-                    let entity_id = {
+                    let entity = {
                         let player = self.players.get_mut(&player_id).unwrap();
-                        let entity_id = player.controlled_entity.unwrap();
+                        let entity = player.controlled_entity.unwrap();
+
                         player.info.alive = false;
                         player.controlled_entity = None;
                         player.respawn_time = Some(5.0);
-                        entity_id 
+
+                        entity
                     };
 
-                    // This also tells the clients about the removal:
-                    self.world.systems.net_entity_system
-                        .remove_entity(entity_id, &mut self.world.data);
+                    entities::remove_net(entity, &mut self.world.data);
                 }
             },
             _ => (),
@@ -202,10 +217,8 @@ impl GameState {
 
     pub fn run_player_input(&mut self,
                             player_id: PlayerId,
-                            net_entity_id: EntityId,
+                            entity: ecs::Entity,
                             input: &TimedPlayerInput) {
-        let entity = self.world.systems.net_entity_system.get_entity(net_entity_id);
-
         self.world.systems.player_movement_system
             .run_player_input(entity, input, &self.map, &mut self.world.data);
         self.world.systems.player_item_system
@@ -255,8 +268,6 @@ impl GameState {
 
                         player.respawn_time = if time <= 0.0 {
                             respawn.push(*player_id);
-                            player.info.alive = true;
-
                             None   
                         } else {
                             Some(time)
@@ -278,20 +289,16 @@ impl GameState {
             let mut input = Vec::new();
             for (player_id, player) in self.players.iter() {
                 match player.controlled_entity {
-                    Some(net_entity_id) => {
+                    Some(entity) => {
                         for player_input in &player.next_input {
-                            input.push((*player_id,
-                                        net_entity_id,
-                                        player_input.clone()));
+                            input.push((*player_id, entity, player_input.clone()));
                         }
                     }
                     _ => {}
                 }
             }
-            for (player_id, net_entity_id, player_input) in input {
-                self.run_player_input(player_id,
-                                      net_entity_id,
-                                      &player_input);
+            for (player_id, entity, player_input) in input {
+                self.run_player_input(player_id, entity, &player_input);
             }
         }
 
@@ -301,6 +308,9 @@ impl GameState {
 
         // Let server entities have their time
         self.world.systems.bouncy_enemy_system.tick(&self.map, &mut self.world.data);
+        self.world.systems.item_spawn_system.tick(&mut self.world.data);
+        self.world.systems.rotate_system.tick(&mut self.world.data);
+
         self.world.systems.interaction_system.tick(&mut self.world.data);
 
         // Process generated events

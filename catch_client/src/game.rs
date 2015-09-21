@@ -279,6 +279,9 @@ impl Game {
                 }*/
 
                 self.game_state.world.systems
+                    .draw_item_system
+                    .draw(&mut self.game_state.world.data, c, gl);
+                self.game_state.world.systems
                     .draw_player_system
                     .draw(&mut self.game_state.world.data, c, gl);
                 self.game_state.world.systems

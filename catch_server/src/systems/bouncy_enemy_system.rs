@@ -92,8 +92,7 @@ impl BouncyEnemySystem {
     }
 }
 
-impl_cached_system!(Components, Services, BouncyEnemySystem,
-                    aspect);
+impl_cached_system!(Components, Services, BouncyEnemySystem, aspect);
 
 impl Process for BouncyEnemySystem {
     fn process(&mut self, _: &mut DataHelper<Components, Services>) {

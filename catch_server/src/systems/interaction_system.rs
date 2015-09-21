@@ -1,4 +1,3 @@
-
 use ecs::{System, Process, Aspect, EntityData, DataHelper};
 
 use shared::math;
@@ -69,7 +68,8 @@ impl InteractionSystem {
 
                 d <= (*r_a + *r_b).abs()
             }
-            //_ => panic!("shape interaction not implemented: {:?}, {:?}", shape_a, shape_b),
+            (shape_a, shape_b) =>
+                panic!("shape interaction not implemented: {:?}, {:?}", shape_a, shape_b),
         }
     }
 }

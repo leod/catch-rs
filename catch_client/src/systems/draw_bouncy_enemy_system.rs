@@ -25,12 +25,10 @@ impl DrawBouncyEnemySystem {
                 gl: &mut GlGraphics) {
         for entity in self.aspect.iter() {
             let p = data.position[entity].p;
-            /*let w = 12.0;
-            let h = 12.0;*/
 
             let r = match data.shape[entity] {
                 Shape::Circle { radius } => radius,
-                //_ => panic!("enemy should be circle"),
+                _ => panic!("enemy should be circle"),
             };
 
             let transform = c.trans(p[0], p[1]).transform;

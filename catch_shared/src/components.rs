@@ -1,3 +1,4 @@
+use std::ops::Index;
 use std::marker::PhantomData;
 
 use ecs::{ComponentManager, ComponentList, BuildData, EntityData};
@@ -14,25 +15,33 @@ pub struct NetEntity {
     pub owner: PlayerId,
 }
 
-#[derive(Clone, Default, CerealData)]
+#[derive(Debug, Clone, Default, CerealData)]
 pub struct Position {
     pub p: math::Vec2,
 }
 
-#[derive(Clone, Default, CerealData)]
+#[derive(Debug, Clone, Default, CerealData)]
 pub struct Orientation {
     pub angle: f64,
 }
 
-#[derive(Clone, Default, CerealData)]
+#[derive(Debug, Clone, Default, CerealData)]
 pub struct LinearVelocity {
     pub v: math::Vec2,
 }
 
-#[derive(Clone, CerealData)]
+#[derive(Debug, Clone, Default, CerealData)]
+pub struct AngularVelocity {
+    pub v: f64,
+}
+
+#[derive(Debug, Clone, CerealData)]
 pub enum Shape { 
     Circle {
-        radius: f64
+        radius: f64,
+    },
+    Square {
+        size: f64,
     }
 }
 
@@ -51,10 +60,6 @@ pub struct FullPlayerState {
     // An item that the player picked up but hasn't equipped
     pub hidden_item: Option<Item>,
 }
-
-
-#[derive(Clone, Default, CerealData)]
-pub struct ItemSpawn;
 
 // Some boilerplate code for each net component type follows...
 
@@ -128,7 +133,7 @@ state_component_impl!(HasShape, Shape, shape, shape_mut);
 state_component_impl!(HasPlayerState, PlayerState, player_state, player_state_mut);
 state_component_impl!(HasFullPlayerState, FullPlayerState, full_player_state, full_player_state_mut);
 
-pub type ComponentTypeTraits<T> = Vec<Box<StateComponent<T>>>;
+pub struct ComponentTypeTraits<T>(Vec<Box<StateComponent<T>>>);
 
 pub fn component_type_traits<T: ComponentManager +
                                 HasPosition +
@@ -138,7 +143,7 @@ pub fn component_type_traits<T: ComponentManager +
                                 HasPlayerState +
                                 HasFullPlayerState>()
                              -> ComponentTypeTraits<T> {
-    let mut traits = ComponentTypeTraits::<T>::new();
+    let mut traits = Vec::<Box<StateComponent<T>>>::new();
 
     for component_type in COMPONENT_TYPES.iter() {
         match *component_type {
@@ -157,5 +162,13 @@ pub fn component_type_traits<T: ComponentManager +
         };
     }
 
-    traits
+    ComponentTypeTraits::<T>(traits)
+}
+
+impl<T> Index<ComponentType> for ComponentTypeTraits<T> {
+    type Output = Box<StateComponent<T>>;
+
+    fn index<'a>(&'a self, index: ComponentType) -> &'a Box<StateComponent<T>> {
+        &(self.0)[index as usize]
+    }
 }

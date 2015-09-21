@@ -15,15 +15,18 @@ pub struct EntityType {
 }
 
 /// Adds shared components that are not synchronized over the net to an entity
-pub fn build<T: ComponentManager +
-                HasShape>
-            (type_name: &str,
-             entity: BuildData<T>,
-             data: &mut T) {
+pub fn build_shared<T: ComponentManager +
+                       HasShape>
+                   (type_name: &str,
+                    entity: BuildData<T>,
+                    data: &mut T) {
     if type_name == "player" {
         data.shape_mut().add(&entity, Shape::Circle { radius: 9.0 });
     } else if type_name == "bouncy_enemy" {
         data.shape_mut().add(&entity, Shape::Circle { radius: 6.0 });
+    } else if type_name == "item" {
+        data.shape_mut().add(&entity, Shape::Square { size: 5.5 });
+    } else if type_name == "item_spawn" {
     } else {
         panic!("Unknown entity type: {}", type_name);
     }
@@ -42,6 +45,10 @@ pub fn all_entity_types() -> EntityTypes {
          ("bouncy_enemy".to_string(), EntityType {
               component_types: vec![ComponentType::Position,
                                     ComponentType::Orientation],
+              owner_component_types: vec![],
+         }),
+         ("item_spawn".to_string(), EntityType {
+              component_types: vec![ComponentType::Position],
               owner_component_types: vec![],
          }),
          ("item".to_string(), EntityType {

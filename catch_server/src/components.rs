@@ -1,3 +1,4 @@
+use ecs;
 use ecs::ComponentList;
 
 use shared::net;
@@ -6,12 +7,12 @@ use shared::player::Item;
 use shared::components::{HasPosition, HasOrientation, HasLinearVelocity, HasShape, HasPlayerState,
                          HasFullPlayerState};
 pub use shared::components::{NetEntity, Position, Orientation, LinearVelocity, Shape, PlayerState,
-                             FullPlayerState, ItemSpawn, ComponentTypeTraits,
+                             FullPlayerState, AngularVelocity, ComponentTypeTraits,
                              component_type_traits};
 
 #[derive(Default)]
 pub struct ServerNetEntity {
-    // Components that should not be interpolated into the current tick
+    // Components that should not be interpolated by clients into the current tick
     pub forced_components: Vec<net::ComponentType>,
 }
 
@@ -25,6 +26,13 @@ impl ServerNetEntity {
 pub struct BouncyEnemy; 
 
 pub struct Interact;
+pub struct Rotate;
+
+#[derive(Default)]
+pub struct ItemSpawn {
+    pub spawned_entity: Option<ecs::Entity>,
+    pub cooldown_s: Option<f64>,
+}
 
 components! {
     struct Components {
@@ -38,10 +46,13 @@ components! {
         #[hot] shape: Shape,
         #[cold] player_state: PlayerState,
         #[cold] full_player_state: FullPlayerState,
-        #[cold] item_spawn: ItemSpawn,
-        #[cold] bouncy_enemy: BouncyEnemy,
 
+        #[cold] angular_velocity: AngularVelocity,
+
+        #[cold] bouncy_enemy: BouncyEnemy,
         #[cold] item: Item,
+        #[cold] item_spawn: ItemSpawn,
+        #[cold] rotate: Rotate,
     }
 }
 

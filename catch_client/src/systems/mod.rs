@@ -2,6 +2,7 @@ mod net_entity_system;
 mod interpolation_system;
 mod draw_player_system;
 mod draw_bouncy_enemy_system;
+mod draw_item_system;
 
 use ecs::system::LazySystem;
 
@@ -11,6 +12,7 @@ pub use self::net_entity_system::NetEntitySystem;
 pub use self::interpolation_system::InterpolationSystem;
 pub use self::draw_player_system::DrawPlayerSystem;
 pub use self::draw_bouncy_enemy_system::DrawBouncyEnemySystem;
+pub use self::draw_item_system::DrawItemSystem;
 
 systems! {
     struct Systems<Components, Services> {
@@ -22,5 +24,7 @@ systems! {
             aspect!(<Components> all: [draw_player])),
         draw_bouncy_enemy_system: DrawBouncyEnemySystem = DrawBouncyEnemySystem::new(
             aspect!(<Components> all: [draw_bouncy_enemy])),
+        draw_item_system: DrawItemSystem = DrawItemSystem::new(
+            aspect!(<Components> all: [draw_item])),
     }
 }

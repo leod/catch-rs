@@ -27,7 +27,7 @@ impl DrawPlayerSystem {
             let p = data.position[entity].p;
             let r = match data.shape[entity] {
                 Shape::Circle { radius } => radius,
-                //_ => panic!("player should be circle"),
+                _ => panic!("player should be circle"),
             };
 
             let scale_x_target = if data.player_state[entity].dashing.is_some() {

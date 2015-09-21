@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" width="32" height="32" tilewidth="32" tileheight="32">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="32" height="32" tilewidth="32" tileheight="32">
  <tileset firstgid="1" name="ground" tilewidth="32" tileheight="32">
   <image source="../tilesets/ground.png" width="64" height="64"/>
  </tileset>
@@ -16,10 +16,14 @@
    eJzVV8tOwzAQ3EtFLy1cSrlQeunj0pIbXOj/f1YTwUrDal9OHBJGWtmO7B3PxI6dBREtJo51GzuID9GuETLnI/C/0m8sqT5kzjeH/wz1Y1Bm+5Twa/O2ytI+Gv+tjQeIE/RjL/rwo49cP/xwfFFOv8XxDvO9OHOzkPWfYfmgPUPdJfzszckalOTXIHOX6mdIH7Ce0c3w9GvrUMJb2wgrZ1/9pfwWMvo9H7S9hYhyDdU/FJH+K8VebNp4gbal+aqMj/RH77TjXrXxJOagQcs1lH9L32dod3Y/V+JH/xqK/d8Kbsv/Rhk/9/UX7T/t/EeMvf/+4vszx+8ve63xa+/Bwn87f6Vujz/jQyn/mPcvvn+yN9re6nP/xDxyHXr3z753a6+PhOc/jjsHZbaPXBNZ/lrw/j+6M3QP8SnaNULmXAH/lHEH/CoiiQ==
   </data>
  </layer>
- <objectgroup name="Objektebene 1" width="0" height="0">
+ <objectgroup name="Objektebene 1">
   <object type="player_spawn" x="70" y="927" width="24" height="26"/>
   <object type="player_spawn" x="68" y="67" width="24" height="26"/>
   <object type="player_spawn" x="924" y="69" width="24" height="26"/>
   <object type="player_spawn" x="930" y="928" width="24" height="26"/>
+  <object type="item_spawn" x="510" y="771"/>
+  <object type="item_spawn" x="513" y="253"/>
+  <object type="item_spawn" x="254" y="510"/>
+  <object type="item_spawn" x="774" y="508"/>
  </objectgroup>
 </map>

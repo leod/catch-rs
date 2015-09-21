@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use ecs;
 use ecs::{System, DataHelper, BuildData, Process};
 
+use shared;
 use shared::net::ComponentType;
 use shared::components::StateComponent;
 use shared::{Tick, GameEvent, PlayerId, EntityId, EntityTypes, EntityTypeId};
@@ -44,11 +45,7 @@ impl NetEntitySystem {
         self.entities.get(&id).map(|entity| *entity)
     }
 
-    fn component_type_trait(&self, component_type: ComponentType)
-                            -> &Box<StateComponent<Components>> {
-        &self.component_type_traits[component_type as usize]
-    }
-    
+    /// Replicates entities created on the server side via `catch_server::entities::build_net`
     fn create_entity(&mut self,
                      entity_id: EntityId,
                      entity_type_id: EntityTypeId,
@@ -72,7 +69,7 @@ impl NetEntitySystem {
             // Create net components of the entity type locally
             for net_component in &self.entity_types[entity_type_id as usize].1
                                       .component_types {
-                self.component_type_trait(*net_component).add(entity, data);
+                self.component_type_traits[*net_component].add(entity, data);
 
                 // Add interpolation state components for certain net component types
                 match *net_component {
@@ -90,14 +87,16 @@ impl NetEntitySystem {
             if self.my_id == owner {
                 for net_component in &self.entity_types[entity_type_id as usize].1
                                           .owner_component_types {
-                    self.component_type_trait(*net_component).add(entity, data);
+                    self.component_type_traits[*net_component].add(entity, data);
                 }
             }
 
-            // Add client-side components to the entity (e.g. for drawing)
+            // Add other shared components
             let type_name = &self.entity_types[entity_type_id as usize].0;
+            shared::entities::build_shared(type_name, entity, data);
 
-            entities::build(type_name, entity, data);
+            // Add client-side components to the entity (e.g. for drawing)
+            entities::build_client(type_name, entity, data);
         });
 
         // TODO: detection of player entities
@@ -152,12 +151,12 @@ impl NetEntitySystem {
                 let entity_type = &self.entity_types[c.net_entity[e].type_id as usize].1;
 
                 for component_type in &entity_type.component_types {
-                    self.component_type_trait(*component_type)
+                    self.component_type_traits[*component_type]
                         .load(e, *net_entity_id, &tick.state, c);
                 }
                 if self.my_id == c.net_entity[e].owner {
                     for component_type in &entity_type.owner_component_types {
-                        self.component_type_trait(*component_type)
+                        self.component_type_traits[*component_type]
                             .load(e, *net_entity_id, &tick.state, c);
                     }
                 }

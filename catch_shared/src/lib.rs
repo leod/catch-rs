@@ -32,6 +32,7 @@ pub const NUM_ITEM_SLOTS: ItemSlot = 3;
 
 pub type TickNumber = u32;
 
+/// Sent to the clients by the server after connecting
 #[derive(Debug, Clone, CerealData)]
 pub struct GameInfo {
     pub map_name: String,
