@@ -3,26 +3,27 @@ use ecs::{EntityData, DataHelper};
 
 use shared::math;
 use shared::{GameEvent, NEUTRAL_PLAYER_ID};
+
+use entities;
 use components::Components;
 use services::Services;
 use systems::interaction_system::Interaction;
 
+/// Kill player on hitting enemy
 pub struct PlayerBouncyEnemyInteraction;
-pub struct BouncyEnemyInteraction;
-pub struct PlayerItemInteraction;
-
 impl Interaction for PlayerBouncyEnemyInteraction {
     fn apply(&self,
              player_e: EntityData<Components>, enemy_e: EntityData<Components>,
              data: &mut DataHelper<Components, Services>) {
         if data.player_state[player_e].vulnerable() {
-            // Kill player
             let owner = data.net_entity[player_e].owner;
             data.services.add_event_to_run(&GameEvent::PlayerDied(owner, NEUTRAL_PLAYER_ID));
         }
     }
 }
 
+/// Bouncy enemies bounce off each other
+pub struct BouncyEnemyInteraction;
 impl Interaction for BouncyEnemyInteraction {
     fn apply(&self,
              a_e: EntityData<Components>, b_e: EntityData<Components>,
@@ -43,10 +44,13 @@ impl Interaction for BouncyEnemyInteraction {
     }
 }
 
+/// Picking up items
+pub struct PlayerItemInteraction;
 impl Interaction for PlayerItemInteraction {
     fn apply(&self,
              player_e: EntityData<Components>, item_e: EntityData<Components>,
              data: &mut DataHelper<Components, Services>) {
         data.full_player_state[player_e].hidden_item = Some(data.item[item_e].clone());
+        entities::remove_net(**item_e, data);
     }
 }

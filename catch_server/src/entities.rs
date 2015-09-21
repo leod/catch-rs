@@ -1,7 +1,7 @@
 use std::f64;
 
 use ecs;
-use ecs::{BuildData, DataHelper};
+use ecs::{BuildData, DataHelper, EntityBuilder};
 
 use shared;
 use shared::{PlayerId, GameEvent};
@@ -15,9 +15,20 @@ pub fn build_net(type_name: &str,
                  owner: PlayerId,
                  data: &mut DataHelper<Components, Services>) 
                  -> ecs::Entity {
+    build_net_custom(type_name, owner, data, ())
+}
+
+/// Create a net entity and add some custom components to it using `builder`
+pub fn build_net_custom<B: EntityBuilder<Components>>
+                       (type_name: &str,
+                        owner: PlayerId,
+                        data: &mut DataHelper<Components, Services>,
+                        builder: B) -> ecs::Entity {
     let entity_type_id = data.services.entity_type_id(type_name);
     let entity_type = data.services.entity_types[entity_type_id as usize].1.clone();
     let entity_id = data.services.next_entity_id();
+
+    info!("Building {} net entity {} for {}", type_name, entity_id, owner);
 
     // Tell the clients about the new entity
     data.services.add_event(
@@ -48,6 +59,9 @@ pub fn build_net(type_name: &str,
 
         // Add server-side only components
         build_server(type_name, entity, data);
+
+        // Possibly add some custom components
+        builder.build(entity, data);
     })
 }
 
@@ -57,6 +71,8 @@ pub fn build_server(type_name: &str,
                     data: &mut Components) {
     if type_name == "player" {
         //data.interact.add(&entity, Interact);
+        //data.rotate.add(&entity, Rotate);
+        data.angular_velocity.add(&entity, AngularVelocity::default());
     } else if type_name == "bouncy_enemy" {
         //data.interact.add(&entity, Interact);
         data.linear_velocity.add(&entity, LinearVelocity::default());

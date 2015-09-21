@@ -10,6 +10,17 @@ use shared::player::{PlayerInput, PlayerInputKey};
 use components::Components;
 use services::Services;
 
+const TURN_SPEED: f64 = 2.0*f64::consts::PI;
+const MOVE_ACCEL: f64 = 500.0;
+const BACK_ACCEL: f64 = 200.0;
+const STRAFE_ACCEL: f64 = 300.0;
+const MIN_SPEED: f64 = 0.001;
+const DASH_SPEED: f64 = 600.0;
+const DASH_DURATION_S: f64 = 0.3;
+
+/// System for interpreting player input.
+/// When we implement client-side prediction, this module will have to move to catch_shared in
+/// some way.
 pub struct PlayerMovementSystem;
 
 impl PlayerMovementSystem {
@@ -101,25 +112,17 @@ impl PlayerMovementSystem {
                             timed_input: &TimedPlayerInput,
                             map: &Map,
                             data: &mut DataHelper<Components, Services>) {
-        const TURN_SPEED: f64 = 2.0*f64::consts::PI;
-        const MOVE_ACCEL: f64 = 500.0;
-        const BACK_ACCEL: f64 = 200.0;
-        const STRAFE_ACCEL: f64 = 300.0;
-        const MIN_SPEED: f64 = 0.001;
-        const DASH_SPEED: f64 = 600.0;
-        const DASH_DURATION_S: f64 = 0.3;
-
         let dur_s = timed_input.duration_s;
         let input = &timed_input.input;
 
         data.with_entity_data(&entity, |e, c| {
+            // Cooldowns
             if let Some(dash_cooldown_s) = c.full_player_state[e].dash_cooldown_s {
                 let dash_cooldown_s = dash_cooldown_s - dur_s;
                 c.full_player_state[e].dash_cooldown_s =
                     if dash_cooldown_s <= 0.0 { None }
                     else { Some(dash_cooldown_s) };
             }
-
             if let Some(inv_s) = c.player_state[e].invulnerable_s {
                 let inv_s = inv_s - dur_s;
                 c.player_state[e].invulnerable_s =
@@ -130,7 +133,15 @@ impl PlayerMovementSystem {
             let angle = c.orientation[e].angle;
             let direction = [angle.cos(), angle.sin()];
 
+            if !input.has(PlayerInputKey::Flip) {
+                self.move_sliding(e, math::scale(c.linear_velocity[e].v, dur_s), map, c);
+            } else {
+                self.move_flipping(e, math::scale(c.linear_velocity[e].v, dur_s), map, c);
+            }
+
             if let Some(dashing) = c.player_state[e].dashing {
+                // While dashing, movement input is ignored
+
                 let t = dashing / DASH_DURATION_S;
                 let scale = (t*f64::consts::PI/2.0).cos()*(1.0-(1.0-t).powi(10));
                 c.linear_velocity[e].v = math::scale(direction, DASH_SPEED);
@@ -142,9 +153,14 @@ impl PlayerMovementSystem {
                         None
                     };
             } else {
+                c.orientation[e].angle += c.angular_velocity[e].v;
+
                 let mut accel = math::scale(c.linear_velocity[e].v, -4.0);
 
                 if input.has(PlayerInputKey::Strafe) {
+                    // Strafe left/right
+                    c.angular_velocity[e].v = 0.0;
+
                     let strafe_direction = [direction[1], -direction[0]];
                     if input.has(PlayerInputKey::Left) {
                         accel = math::add(math::scale(strafe_direction, STRAFE_ACCEL), accel);
@@ -153,14 +169,22 @@ impl PlayerMovementSystem {
                         accel = math::add(math::scale(strafe_direction, -STRAFE_ACCEL), accel);
                     }
                 } else {
+                    // Turn left/right
+                    let mut ang_accel = c.angular_velocity[e].v * -0.3;
+
                     if input.has(PlayerInputKey::Left) {
-                        c.orientation[e].angle -= TURN_SPEED * dur_s;
+                        ang_accel -= 3.0 * dur_s;
+                        //c.orientation[e].angle -= TURN_SPEED * dur_s;
                     }
                     if input.has(PlayerInputKey::Right) {
-                        c.orientation[e].angle += TURN_SPEED * dur_s;
+                        ang_accel += 3.0 * dur_s;
+                        //c.orientation[e].angle += TURN_SPEED * dur_s;
                     }
+
+                    c.angular_velocity[e].v += ang_accel;
                 }
 
+                // Move forward/backward
                 if input.has(PlayerInputKey::Forward) {
                     accel = math::add(math::scale(direction, MOVE_ACCEL), accel);
                 }
@@ -171,6 +195,7 @@ impl PlayerMovementSystem {
                 c.linear_velocity[e].v = math::add(c.linear_velocity[e].v,
                                                    math::scale(accel, dur_s));
 
+                // If velocity is below some limit, set to zero
                 if c.linear_velocity[e].v[0].abs() <= MIN_SPEED {
                     c.linear_velocity[e].v[0] = 0.0;
                 }
@@ -178,16 +203,13 @@ impl PlayerMovementSystem {
                     c.linear_velocity[e].v[1] = 0.0;
                 }
 
-                if input.has(PlayerInputKey::Dash) && c.full_player_state[e].dash_cooldown_s.is_none() {
+                // Start dash if the cooldown is ready
+                if input.has(PlayerInputKey::Dash) && 
+                   c.full_player_state[e].dash_cooldown_s.is_none() {
                     c.player_state[e].dashing = Some(0.0);
                     c.full_player_state[e].dash_cooldown_s = Some(5.0);
+                    c.angular_velocity[e].v = 0.0;
                 }
-            }
-
-            if !input.has(PlayerInputKey::Flip) {
-                self.move_sliding(e, math::scale(c.linear_velocity[e].v, dur_s), map, c);
-            } else {
-                self.move_flipping(e, math::scale(c.linear_velocity[e].v, dur_s), map, c);
             }
         });
     }

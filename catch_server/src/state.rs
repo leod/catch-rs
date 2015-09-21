@@ -91,7 +91,7 @@ impl GameState {
                 });
             } else if &object.type_str == "player_spawn" {
             } else {
-                println!("Ignoring unknown entity type {} in map", object.type_str);
+                warn!("Ignoring unknown entity type {} in map", object.type_str);
             }
         }
     }
@@ -170,10 +170,10 @@ impl GameState {
     fn process_event(&mut self, event: GameEvent) {
         match event {
             GameEvent::PlayerDied(player_id, cause_player_id) => {
-                println!("Killing player {}", player_id);
+                info!("Killing player {}", player_id);
 
                 if !self.get_player_info(player_id).alive {
-                    println!("Killing a dead player! HAH!");
+                    info!("Killing a dead player! HAH!");
                 } else {
                     let entity = {
                         let player = self.players.get_mut(&player_id).unwrap();
@@ -312,9 +312,13 @@ impl GameState {
         self.world.systems.rotate_system.tick(&mut self.world.data);
 
         self.world.systems.interaction_system.tick(&mut self.world.data);
+        
 
         // Process generated events
+        self.world.flush_queue();
+
         // TODO: There might be a subtle problem with orderings here
+        // (events might be processed in a different order on some clients)
         for i in 0..self.world.services.next_events.len() {
             let event = self.world.services.next_events[i].clone();
             self.process_event(event);

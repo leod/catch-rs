@@ -1,3 +1,5 @@
+#[macro_use] extern crate log;
+extern crate env_logger;
 extern crate renet as enet;
 extern crate cereal;
 #[macro_use] extern crate ecs;
@@ -35,6 +37,8 @@ use player_input::InputMap;
 use game::Game;
 
 fn main() {
+    env_logger::init().unwrap();
+
     let args: Vec<String> = env::args().collect();
     //let program = args[0].clone();
 
@@ -60,15 +64,15 @@ fn main() {
 
     // Connect
     enet::initialize().unwrap();
-    println!("Connecting to {}", address);
+    info!("Connecting to {}", address);
     let mut client = Client::connect(5000,
                                      address,
                                      2338,
                                      "leo".to_string()).unwrap();
     client.finish_connecting(5000).unwrap();
 
-    println!("Connected to server! My id: {}", client.get_my_id());
-
+    info!("Connected to server! My id: {}", client.my_id());
+    info!("Game info: {:?}", client.game_info());
 
     let mut game = Game::new(client,
                              InputMap::new(),

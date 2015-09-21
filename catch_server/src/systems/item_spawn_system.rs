@@ -1,9 +1,10 @@
 use std::f64;
 
 use ecs;
-use ecs::{Aspect, Process, System, EntityData, DataHelper};
+use ecs::{Aspect, Process, System, EntityData, BuildData, DataHelper};
 
 use shared::math;
+use shared::Item;
 use shared::util::CachedAspect;
 
 use components::{Components};
@@ -30,7 +31,7 @@ impl ItemSpawnSystem {
             let spawned_entity_died =
                 match data.item_spawn[e].spawned_entity {
                     Some(entity) => 
-                        data.with_entity_data(&entity, |_, _| ()).is_some(),
+                        data.with_entity_data(&entity, |_, _| ()).is_none(),
                     None =>
                         false
                 };
@@ -57,11 +58,16 @@ impl ItemSpawnSystem {
             
             // Should we spawn a new item?
             if data.item_spawn[e].spawned_entity.is_none() && !have_cooldown {
-                let item_entity = entities::build_net("item", 0, data);
+                let item_entity = entities::build_net_custom("item", 0, data,
+                    |item_e: BuildData<Components>, c: &mut Components| {
+                        c.item.add(&item_e, Item::Weapon { charges: 10 });
+                    });
+
                 data.with_entity_data(&item_entity, |item_e, c| {
                     // Spawn at our position
                     c.position[item_e].p = c.position[e].p;
                 });
+
                 data.item_spawn[e].spawned_entity = Some(item_entity);
             }
         }

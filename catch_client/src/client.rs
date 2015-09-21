@@ -50,7 +50,7 @@ impl Client {
         let mut data = Vec::new();
         match message.write(&mut data) {
             Err(_) => {
-                println!("Error encoding message {:?}", message);
+                warn!("Error encoding message {:?}", message);
                 return;
             },
             Ok(_) => ()
@@ -59,11 +59,11 @@ impl Client {
         self.server_peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE, 0);
     }
 
-    pub fn get_my_id(&self) -> PlayerId {
+    pub fn my_id(&self) -> PlayerId {
         self.my_id.unwrap()
     }
 
-    pub fn get_game_info(&self) -> &GameInfo {
+    pub fn game_info(&self) -> &GameInfo {
         self.game_info.as_ref().unwrap()
     }
 

@@ -118,8 +118,8 @@ impl System for NetEntitySystem {
         if self.aspect.check(entity, components) {
             let net_entity = &components.net_entity[*entity];
 
-            println!("Registering net entity {} of type {} with owner {}",
-                     net_entity.id, net_entity.type_id, net_entity.owner);
+            debug!("Registering net entity {} of type {} with owner {}",
+                   net_entity.id, net_entity.type_id, net_entity.owner);
 
             assert!(self.entities.get(&net_entity.id).is_none(),
                     "Already have a net entity with that id");
@@ -140,7 +140,7 @@ impl System for NetEntitySystem {
             if self.entities.get(&net_entity.id).is_some() {
                 self.entities.remove(&net_entity.id);
 
-                println!("Unregistering entity with id {}", net_entity.id);
+                debug!("Unregistering entity with id {}", net_entity.id);
             } else {
                 panic!("Unkown net entity id: {}", net_entity.id)
             }

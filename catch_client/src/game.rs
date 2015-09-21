@@ -56,8 +56,8 @@ impl Game {
     pub fn new(connected_client: Client,
                player_input_map: InputMap,
                window: GlutinWindow) -> Game {
-        let game_state = GameState::new(connected_client.get_my_id(),
-                                        connected_client.get_game_info());
+        let game_state = GameState::new(connected_client.my_id(),
+                                        connected_client.game_info());
         let draw_map = DrawMap::load(&game_state.map).unwrap();
         let window = GameWindow::new(Rc::new(RefCell::new(window)),
                                      Rc::new(RefCell::new(())));
@@ -108,20 +108,20 @@ impl Game {
     }
 
     fn wait_first_ticks(&mut self) {
-        print!("Waiting to receive first ticks from server... ");
+        info!("Waiting to receive first ticks from server... ");
 
         while self.client.num_ticks() < self.interpolation_ticks {
             self.client_service();
         }
 
-        println!("done! Have {} ticks", self.client.num_ticks());
+        info!("Done! Have {} ticks", self.client.num_ticks());
 
         let tick = self.client.pop_next_tick().1;
-        println!("Starting tick {}", tick.tick_number);
+        info!("Starting our first tick, {}", tick.tick_number);
         self.game_state.run_tick(&tick);
 
         let next_tick = &self.client.get_next_tick().1;
-        println!("Interpolating to tick {}", next_tick.tick_number);
+        info!("Interpolating to tick {}", next_tick.tick_number);
         self.game_state.load_interp_tick_state(&tick, next_tick);
 
         assert!(self.current_tick.is_none());
@@ -173,9 +173,13 @@ impl Game {
         if self.tick_progress < 1.0 {
             self.time_factor = {
                 if self.client.num_ticks() > 2 {
+                    debug!("Speeding up playback (num queued ticks: {}, progress: {})",
+                           self.client.num_ticks(), self.tick_progress);
+
                     1.25 
                 } else if self.client.num_ticks() < 2 && self.tick_progress > 0.5 {
-                    println!("Slowing down");
+                    debug!("Slowing down tick playback (num queued ticks: {}, progress: {}",
+                           self.client.num_ticks(), self.tick_progress);
                     0.75 // Is this a stupid idea?
                 } else {
                     1.0
@@ -184,7 +188,7 @@ impl Game {
 
             self.tick_progress += self.time_factor * 
                                   simulation_time_s *
-                                  self.client.get_game_info().ticks_per_second as f64;
+                                  self.client.game_info().ticks_per_second as f64;
         }
 
         if self.tick_progress >= 1.0 {
@@ -199,7 +203,8 @@ impl Game {
 
                 self.tick_progress -= 1.0;
             } else {
-                println!("Waiting for new tick");
+                debug!("Waiting to receive next tick (num queued ticks: {})",
+                       self.client.num_ticks());
             }
         }
     }

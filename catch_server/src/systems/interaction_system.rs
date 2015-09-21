@@ -66,8 +66,19 @@ impl InteractionSystem {
             (&Shape::Circle { radius: ref r_a }, &Shape::Circle { radius: ref r_b }) => {
                 let d = math::square_len(math::sub(c.position[e_a].p, c.position[e_b].p)).sqrt();
 
-                d <= (*r_a + *r_b).abs()
+                d <= *r_a + *r_b
             }
+
+            (&Shape::Circle { radius: ref r }, &Shape::Square { size: ref s }) => {
+                // TODO
+                let d = math::square_len(math::sub(c.position[e_a].p, c.position[e_b].p)).sqrt();
+
+                d <= *r + *s * 2.0
+            }
+
+            (&Shape::Square { size: _ }, &Shape::Circle { radius: _ }) =>
+                self.overlap(e_b, e_a, c),
+
             (shape_a, shape_b) =>
                 panic!("shape interaction not implemented: {:?}, {:?}", shape_a, shape_b),
         }

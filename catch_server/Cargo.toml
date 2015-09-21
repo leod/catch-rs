@@ -7,6 +7,8 @@ authors = [
 
 [dependencies]
 #ecs = "*"
+log = "*"
+env_logger = "*"
 time = "0.1.32"
 rand = "0.3.11"
 
