@@ -68,25 +68,7 @@ impl ItemSpawnSystem {
     }
 }
 
-impl System for ItemSpawnSystem {
-    type Components = Components;
-    type Services = Services;
-
-    fn activated(&mut self, entity: &EntityData<Components>, components: &Components,
-                 _: &mut Services) {
-        self.aspect.activated(entity, components);
-    }
-
-    fn reactivated(&mut self, entity: &EntityData<Components>, components: &Components,
-                   _: &mut Services) {
-        self.aspect.activated(entity, components);
-    }
-
-    fn deactivated(&mut self, entity: &EntityData<Components>, components: &Components,
-                   _: &mut Services) {
-        self.aspect.deactivated(entity, components);
-    }
-}
+impl_cached_system!(Components, Services, ItemSpawnSystem, aspect);
 
 impl Process for ItemSpawnSystem {
     fn process(&mut self, _: &mut DataHelper<Components, Services>) {
