@@ -13,7 +13,7 @@ use systems::interaction_system::Interaction;
 pub struct PlayerBouncyEnemyInteraction;
 impl Interaction for PlayerBouncyEnemyInteraction {
     fn apply(&self,
-             player_e: EntityData<Components>, enemy_e: EntityData<Components>,
+             player_e: EntityData<Components>, _enemy_e: EntityData<Components>,
              data: &mut DataHelper<Components, Services>) {
         if data.player_state[player_e].vulnerable() {
             let owner = data.net_entity[player_e].owner;

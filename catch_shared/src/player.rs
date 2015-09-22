@@ -18,8 +18,19 @@ pub enum Item {
     }
 }
 
+// Attached to players on the server and the clients controlling them
+// Item states, cooldowns etc.
+#[derive(Clone, Default, CerealData)]
+pub struct FullPlayerState {
+    pub dash_cooldown_s: Option<f64>,
+
+    // An item that the player picked up but hasn't equipped
+    pub hidden_item: Option<Item>,
+}
+
+
 // Component attached to any player for both client and server
-#[derive(CerealData, Clone, Default)]
+#[derive(Clone, Default, CerealData)]
 pub struct PlayerState { 
     pub color: u32,
     pub dashing: Option<f64>,
@@ -59,7 +70,7 @@ impl PlayerState {
     pub fn equip(&mut self, slot: ItemSlot, item: Item) {
         if slot as usize >= self.items.len() {
             //self.items.resize(slot as usize+1, None);
-            for i in self.items.len()..slot as usize +1 {
+            for _ in self.items.len()..slot as usize +1 {
                 self.items.push(None);
             }
 

@@ -1,16 +1,14 @@
 use std::collections::HashMap;
 
 use ecs;
-use ecs::{Aspect, Process, System, BuildData, EntityData, EntityIter, DataHelper};
+use ecs::{Aspect, Process, System, EntityData, DataHelper};
 
 use shared;
-use shared::net::{ComponentType};
 use shared::components::StateComponent;
-use shared::{EntityId, EntityTypeId, EntityTypes, PlayerId, GameEvent, TickState};
+use shared::{EntityId, EntityTypes, PlayerId, GameEvent, TickState};
 
 use components;
-use components::{Components, NetEntity, ServerNetEntity, ComponentTypeTraits};
-use entities;
+use components::{Components, ComponentTypeTraits};
 use services::Services;
 
 pub struct NetEntitySystem {
@@ -36,7 +34,7 @@ impl NetEntitySystem {
     pub fn remove_player_entities(&mut self,
                                   player_id: PlayerId,
                                   data: &mut DataHelper<Components, Services>) {
-        for (net_id, entity) in self.entities.iter() {
+        for (_, entity) in self.entities.iter() {
             let owner = data.with_entity_data(entity, |e, c| {
                 c.net_entity[e].owner
             }).unwrap();
@@ -69,8 +67,6 @@ impl NetEntitySystem {
                                data: &mut DataHelper<Components, Services>) {
         let mut forced_components = Vec::new();
 
-        let entity_types = data.services.entity_types.clone();
-
         for (net_id, entity) in self.entities.iter() {
             data.with_entity_data(entity, |e, c| {
                 let &(_, ref entity_type) =
@@ -99,14 +95,6 @@ impl NetEntitySystem {
 
         tick_state.forced_components = forced_components;
     }
-
-    fn entity_type_id(&self, type_name: &str) -> EntityTypeId {
-        self.entity_types.iter()
-            .enumerate()
-            .find(|&(_, &(ref name, _))| name == &type_name)
-            .unwrap()
-            .0 as EntityTypeId
-    }
 }
 
 impl System for NetEntitySystem {
@@ -128,8 +116,7 @@ impl System for NetEntitySystem {
         }
     }
 
-    fn reactivated(&mut self, entity: &EntityData<Components>, components: &Components,
-                   _: &mut Services) {
+    fn reactivated(&mut self, _: &EntityData<Components>, _: &Components, _: &mut Services) {
     }
 
     fn deactivated(&mut self, entity: &EntityData<Components>, components: &Components,

@@ -4,9 +4,9 @@ use std::marker::PhantomData;
 use ecs::{ComponentManager, ComponentList, BuildData, EntityData};
 
 use net::{COMPONENT_TYPES, ComponentType};
-use super::{EntityId, EntityTypeId, PlayerId, Item, TickState};
+use super::{EntityId, EntityTypeId, PlayerId, TickState};
 use math;
-pub use player::PlayerState;
+pub use player::{PlayerState, FullPlayerState};
 
 /// Every entity that wants its component state synchronized needs to have this component
 pub struct NetEntity {
@@ -49,16 +49,6 @@ impl Default for Shape {
     fn default() -> Shape {
         Shape::Circle { radius: 1.0 } // meh
     }
-}
-
-// Attached to players on the server and the clients controlling them
-// Item states, cooldowns etc.
-#[derive(Clone, Default, CerealData)]
-pub struct FullPlayerState {
-    pub dash_cooldown_s: Option<f64>,
-
-    // An item that the player picked up but hasn't equipped
-    pub hidden_item: Option<Item>,
 }
 
 // Some boilerplate code for each net component type follows...

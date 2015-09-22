@@ -17,6 +17,7 @@ use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
 
 use shared::math;
+use shared::Item;
 use shared::net::{ClientMessage, TimedPlayerInput};
 use shared::tick::Tick;
 
@@ -294,14 +295,14 @@ impl Game {
                     .draw(&mut self.game_state.world.data, c, gl);
             }
 
-            self.cooldown_text(c, gl);
-            self.debug_text(c, gl);
+            self.draw_player_text(c, gl);
+            self.draw_debug_text(c, gl);
         });
 
         self.window.swap_buffers();
     }
 
-    fn debug_text(&mut self, c: graphics::Context, gl: &mut GlGraphics) {
+    fn draw_debug_text(&mut self, c: graphics::Context, gl: &mut GlGraphics) {
         let color = [1.0, 0.0, 1.0, 1.0];
 
         let s = &format!("fps: {:.1}", self.fps);
@@ -317,11 +318,13 @@ impl Game {
         self.draw_text(color, 10.0, 135.0, s, c, gl);
     }
 
-    fn cooldown_text(&mut self, context: graphics::Context, gl: &mut GlGraphics) {
+    fn draw_player_text(&mut self, context: graphics::Context, gl: &mut GlGraphics) {
         if let Some(entity) = self.my_player_entity() {
-            let dash_cooldown_s = self.game_state.world.with_entity_data(&entity, |e, c| {
-                c.full_player_state[e].dash_cooldown_s
-            }).unwrap();
+            let (dash_cooldown_s, hidden_item) =
+                self.game_state.world.with_entity_data(&entity, |e, c| {
+                    (c.full_player_state[e].dash_cooldown_s,
+                     c.full_player_state[e].hidden_item.clone())
+                }).unwrap();
 
             let y1 = self.window.draw_size().height as f64 - 80.0;
             let y2 = y1 + 35.0; 
@@ -332,6 +335,12 @@ impl Game {
                            20.0, y1, "dash", context, gl);
             if let Some(t) = dash_cooldown_s {
                 self.draw_text(color2, 25.0, y2, &format!("{:.1}", t), context, gl);
+            }
+
+            if let Some(item) = hidden_item {
+                let text = self.item_text(item);
+                self.draw_text(color1, 200.0, y1, "hidden item", context, gl);
+                self.draw_text(color1, 200.0, y2, &text, context, gl);
             }
         }
     }
@@ -344,6 +353,17 @@ impl Game {
             &c.draw_state,
             c.transform.trans(x, y),
             gl);
+    }
+
+    fn item_text(&self, item: Item) -> String {
+        match item {
+            Item::Weapon { charges } =>
+                format!("weapon {}", charges),
+            Item::SpeedBoost { duration_s: _ } =>
+                format!("speed boost"),
+            Item::BlockPlacer { charges: _ } =>
+                format!("block player"),
+        }
     }
     
     fn my_player_entity(&mut self) -> Option<ecs::Entity> {

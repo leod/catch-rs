@@ -2,7 +2,6 @@ use ecs;
 use ecs::ComponentList;
 
 use shared::net;
-use shared::math;
 use shared::player::Item;
 use shared::components::{HasPosition, HasOrientation, HasLinearVelocity, HasShape, HasPlayerState,
                          HasFullPlayerState};

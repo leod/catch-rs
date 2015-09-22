@@ -1,6 +1,5 @@
 use std::f64;
 
-use ecs;
 use ecs::{Aspect, Process, System, EntityData, DataHelper};
 
 use shared::math;
@@ -9,6 +8,9 @@ use shared::net::ComponentType;
 use shared::util::CachedAspect;
 use components::{Components};
 use services::Services;
+
+const MOVE_ACCEL: f64 = 150.0;
+
 
 pub struct BouncyEnemySystem {
     aspect: CachedAspect<Components>,
@@ -22,25 +24,6 @@ impl BouncyEnemySystem {
     }
 
     // TODO: Code duplication with PlayerMovementSystem...
-
-    fn move_straight(&self,
-                     e: EntityData<Components>,
-                     delta: math::Vec2,
-                     map: &Map,
-                     data: &mut Components) {
-        let p = data.position[e].p;
-        let q = math::add(p, delta);
-
-        data.position[e].p = match map.line_segment_intersection(p, q) {
-            Some(intersection) => { // Walk as far as we can
-                let s = (intersection.t - 0.0001).max(0.0);
-                math::add(p, math::scale(delta, s))
-            }
-            None =>
-                q
-        };
-    }
-
     pub fn move_flipping(&self,
                          e: EntityData<Components>,
                          delta: math::Vec2,
@@ -74,8 +57,6 @@ impl BouncyEnemySystem {
     }
 
     pub fn tick(&self, map: &Map, data: &mut DataHelper<Components, Services>) {
-        const MOVE_ACCEL: f64 = 400.0;
-
         let dur_s = data.services.tick_dur_s;
 
         for e in self.aspect.iter() {

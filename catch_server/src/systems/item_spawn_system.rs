@@ -1,9 +1,5 @@
-use std::f64;
+use ecs::{Aspect, Process, System, BuildData, DataHelper};
 
-use ecs;
-use ecs::{Aspect, Process, System, EntityData, BuildData, DataHelper};
-
-use shared::math;
 use shared::Item;
 use shared::util::CachedAspect;
 

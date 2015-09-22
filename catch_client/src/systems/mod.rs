@@ -1,8 +1,8 @@
-mod net_entity_system;
-mod interpolation_system;
-mod draw_player_system;
-mod draw_bouncy_enemy_system;
-mod draw_item_system;
+pub mod net_entity_system;
+pub mod interpolation_system;
+pub mod draw_player_system;
+pub mod draw_bouncy_enemy_system;
+pub mod draw_item_system;
 
 use ecs::system::LazySystem;
 

@@ -18,7 +18,7 @@ pub fn build_net(type_name: &str,
     build_net_custom(type_name, owner, data, ())
 }
 
-/// Create a net entity and add some custom components to it using `builder`
+/// Create a net entity and add some custom components to it using an EntityBuilder
 pub fn build_net_custom<B: EntityBuilder<Components>>
                        (type_name: &str,
                         owner: PlayerId,

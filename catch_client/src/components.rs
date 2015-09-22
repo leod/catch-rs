@@ -1,4 +1,5 @@
 use ecs::ComponentList;
+use graphics;
 
 use shared::math;
 use shared::components::{HasPosition, HasOrientation, HasLinearVelocity, HasShape, HasPlayerState,
@@ -8,7 +9,8 @@ pub use shared::components::{NetEntity, Position, Orientation, LinearVelocity, S
 
 #[derive(Default)]
 pub struct DrawPlayer {
-    pub scale_x: f64
+    pub scale_x: f64,
+    pub color: graphics::types::Color,
 }
 
 #[derive(Default)]

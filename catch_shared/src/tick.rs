@@ -1,10 +1,6 @@
 use std::collections::HashMap;
 
-use ecs::{ComponentManager, EntityData, BuildData};
-
-use components::{Position, Orientation,
-                 LinearVelocity, Shape,
-                 PlayerState, FullPlayerState};
+use components::{Position, Orientation, LinearVelocity, Shape, PlayerState, FullPlayerState};
 use net::ComponentType;
 use super::{EntityId, TickNumber, GameEvent};
 

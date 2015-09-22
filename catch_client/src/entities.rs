@@ -1,7 +1,5 @@
 use ecs::{BuildData};
 
-use shared;
-
 use components::{Components, DrawPlayer, DrawBouncyEnemy, DrawItem};
 
 /// Adds client-side components that are not synchronized over the net to an entity

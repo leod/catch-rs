@@ -1,6 +1,4 @@
-use std::fmt;
-
-use super::{PlayerInput, TickNumber, PlayerId, GameInfo, EntityType, EntityTypes};
+use super::{PlayerInput, TickNumber, PlayerId, GameInfo};
 
 #[derive(Debug, Clone)]
 pub enum Channel {

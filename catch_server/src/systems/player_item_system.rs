@@ -1,9 +1,9 @@
 use ecs;
-use ecs::{Process, System, EntityData, DataHelper};
+use ecs::{Process, System, DataHelper};
 
 use shared::map::Map;
 use shared::net::TimedPlayerInput;
-use shared::player::{PlayerInput, PlayerInputKey};
+use shared::player::PlayerInputKey;
 use components::Components;
 use services::Services;
 

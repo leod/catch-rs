@@ -6,17 +6,19 @@ use ecs::{Process, System, EntityData, DataHelper};
 use shared::math;
 use shared::map::Map;
 use shared::net::{ComponentType, TimedPlayerInput};
-use shared::player::{PlayerInput, PlayerInputKey};
+use shared::player::PlayerInputKey;
 use components::Components;
 use services::Services;
 
-const TURN_SPEED: f64 = 2.0*f64::consts::PI;
+const TURN_ACCEL: f64 = 3.3;
+const TURN_FRICTION: f64 = 0.4;
 const MOVE_ACCEL: f64 = 500.0;
+const MOVE_FRICTION: f64 = 4.0;
 const BACK_ACCEL: f64 = 200.0;
 const STRAFE_ACCEL: f64 = 300.0;
-const MIN_SPEED: f64 = 0.001;
+const MIN_SPEED: f64 = 0.1;
 const DASH_SPEED: f64 = 600.0;
-const DASH_DURATION_S: f64 = 0.3;
+pub const DASH_DURATION_S: f64 = 0.3;
 
 /// System for interpreting player input.
 /// When we implement client-side prediction, this module will have to move to catch_shared in
@@ -143,8 +145,8 @@ impl PlayerMovementSystem {
                 // While dashing, movement input is ignored
 
                 let t = dashing / DASH_DURATION_S;
-                let scale = (t*f64::consts::PI/2.0).cos()*(1.0-(1.0-t).powi(10));
-                c.linear_velocity[e].v = math::scale(direction, DASH_SPEED);
+                let scale = 1.0; //(t*f64::consts::PI/2.0).cos()*(1.0-(1.0-t).powi(10));
+                c.linear_velocity[e].v = math::scale(direction, scale*DASH_SPEED);
 
                 c.player_state[e].dashing =
                     if dashing + dur_s <= DASH_DURATION_S {
@@ -155,7 +157,7 @@ impl PlayerMovementSystem {
             } else {
                 c.orientation[e].angle += c.angular_velocity[e].v;
 
-                let mut accel = math::scale(c.linear_velocity[e].v, -4.0);
+                let mut accel = math::scale(c.linear_velocity[e].v, -MOVE_FRICTION);
 
                 if input.has(PlayerInputKey::Strafe) {
                     // Strafe left/right
@@ -170,14 +172,14 @@ impl PlayerMovementSystem {
                     }
                 } else {
                     // Turn left/right
-                    let mut ang_accel = c.angular_velocity[e].v * -0.3;
+                    let mut ang_accel = c.angular_velocity[e].v * -TURN_FRICTION;
 
                     if input.has(PlayerInputKey::Left) {
-                        ang_accel -= 3.0 * dur_s;
+                        ang_accel -= TURN_ACCEL * dur_s;
                         //c.orientation[e].angle -= TURN_SPEED * dur_s;
                     }
                     if input.has(PlayerInputKey::Right) {
-                        ang_accel += 3.0 * dur_s;
+                        ang_accel += TURN_ACCEL * dur_s;
                         //c.orientation[e].angle += TURN_SPEED * dur_s;
                     }
 

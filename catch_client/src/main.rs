@@ -12,6 +12,7 @@ extern crate image;
 extern crate time;
 extern crate gl;
 extern crate getopts;
+extern crate color;
 
 #[macro_use] extern crate catch_shared as shared;
 

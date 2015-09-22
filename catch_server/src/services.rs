@@ -1,15 +1,13 @@
 use std::collections::HashMap;
 
-use ecs;
-use ecs::{ServiceManager, DataHelper, BuildData};
+use ecs::ServiceManager;
 
 use shared::net::ComponentType;
 use shared::components::StateComponent;
-use shared::{EntityId, EntityTypeId, EntityTypes, Tick, TickNumber, PlayerId, GameEvent};
+use shared::{EntityId, EntityTypeId, EntityTypes, TickNumber, PlayerId, GameEvent};
 
 use components;
-use entities;
-use components::{Components, NetEntity, ServerNetEntity, ComponentTypeTraits};
+use components::{Components, ComponentTypeTraits};
 
 // State that can be accessed mutably by systems
 pub struct Services {
@@ -49,7 +47,7 @@ impl Services {
 
     pub fn prepare_for_tick<T: Iterator<Item=PlayerId>>
                            (&mut self,
-                            number: TickNumber,
+                            _number: TickNumber,
                             player_ids: T) {
         assert!(self.next_events.is_empty());
 
@@ -58,7 +56,8 @@ impl Services {
             next_player_events.insert(player_id, Vec::new()); 
         }
 
-        for (id, events) in self.next_player_events.iter() {
+        // Keep events that weren't sent yet
+        for (id, _) in self.next_player_events.iter() {
             if next_player_events.get(id).is_some() {
                 next_player_events.insert(*id, self.next_player_events[id].clone());
             }

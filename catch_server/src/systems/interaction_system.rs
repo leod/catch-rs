@@ -2,15 +2,14 @@ use ecs::{System, Process, Aspect, EntityData, DataHelper};
 
 use shared::math;
 use shared::util::CachedAspect;
-use shared::GameEvent;
-use components::{Components, Shape, Position, Orientation};
+use components::{Components, Shape}; 
 use services::Services;
 
 /// Defines a conditional interaction between two entities
 pub trait Interaction {
     fn condition(&self,
-                 a: EntityData<Components>, b: EntityData<Components>,
-                 data: &mut DataHelper<Components, Services>) -> bool {
+                 _a: EntityData<Components>, _b: EntityData<Components>,
+                 _data: &mut DataHelper<Components, Services>) -> bool {
         true
     }
 

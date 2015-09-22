@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use piston::input::{Button, Key, Input};
 
 pub use shared::player::{PlayerInput, PlayerInputKey};

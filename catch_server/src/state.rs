@@ -4,10 +4,8 @@ use std::collections::HashMap;
 use ecs;
 use rand;
 
-use shared;
-use shared::net;
 use shared::math;
-use shared::{EntityId, TickNumber, GameInfo, GameEvent, PlayerId, PlayerInfo, PlayerInput};
+use shared::{TickNumber, GameInfo, GameEvent, PlayerId, PlayerInfo};
 use shared::map::{LayerId, Map};
 use shared::net::TimedPlayerInput;
 
@@ -102,12 +100,12 @@ impl GameState {
 
         let num_bouncies = 20;
 
-        for i in 0..num_bouncies {
+        for _ in 0..num_bouncies {
             let entity = entities::build_net("bouncy_enemy", 0, &mut self.world.data);
 
             // Pick a random non-blocked tile
-            let mut rx = 0;
-            let mut ry = 0;
+            let mut rx;
+            let mut ry;
             loop {
                 rx = rand::random::<usize>() % self.map.width();
                 ry = rand::random::<usize>() % self.map.height();
@@ -169,7 +167,7 @@ impl GameState {
 
     fn process_event(&mut self, event: GameEvent) {
         match event {
-            GameEvent::PlayerDied(player_id, cause_player_id) => {
+            GameEvent::PlayerDied(player_id, _cause_player_id) => {
                 info!("Killing player {}", player_id);
 
                 if !self.get_player_info(player_id).alive {
