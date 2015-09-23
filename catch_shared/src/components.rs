@@ -22,7 +22,7 @@ pub struct Position {
 
 #[derive(Debug, Clone, Default, CerealData)]
 pub struct Orientation {
-    pub angle: f64,
+    pub angle: f64, // radians
 }
 
 #[derive(Debug, Clone, Default, CerealData)]

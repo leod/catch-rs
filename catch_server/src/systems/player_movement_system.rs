@@ -4,21 +4,22 @@ use ecs;
 use ecs::{Process, System, EntityData, DataHelper};
 
 use shared::math;
-use shared::map::Map;
+use shared::{Map, GameEvent};
 use shared::net::{ComponentType, TimedPlayerInput};
 use shared::player::PlayerInputKey;
+
 use components::Components;
 use services::Services;
 
-const TURN_ACCEL: f64 = 3.3;
-const TURN_FRICTION: f64 = 0.4;
-const MOVE_ACCEL: f64 = 500.0;
-const MOVE_FRICTION: f64 = 4.0;
-const BACK_ACCEL: f64 = 200.0;
-const STRAFE_ACCEL: f64 = 300.0;
+const TURN_ACCEL: f64 = 1.5;
+const TURN_FRICTION: f64 = 0.25;
+const MOVE_ACCEL: f64 = 1000.0;
+const MOVE_FRICTION: f64 = 10.0;
+const BACK_ACCEL: f64 = 500.0;
+const STRAFE_ACCEL: f64 = 900.0;
 const MIN_SPEED: f64 = 0.1;
 const DASH_SPEED: f64 = 600.0;
-pub const DASH_DURATION_S: f64 = 0.3;
+const DASH_DURATION_S: f64 = 0.3;
 
 /// System for interpreting player input.
 /// When we implement client-side prediction, this module will have to move to catch_shared in
@@ -117,7 +118,7 @@ impl PlayerMovementSystem {
         let dur_s = timed_input.duration_s;
         let input = &timed_input.input;
 
-        data.with_entity_data(&entity, |e, c| {
+        let events = data.with_entity_data(&entity, |e, c| {
             // Cooldowns
             if let Some(dash_cooldown_s) = c.full_player_state[e].dash_cooldown_s {
                 let dash_cooldown_s = dash_cooldown_s - dur_s;
@@ -132,14 +133,14 @@ impl PlayerMovementSystem {
                     else { Some(inv_s) };
             }
 
-            let angle = c.orientation[e].angle;
-            let direction = [angle.cos(), angle.sin()];
-
             if !input.has(PlayerInputKey::Flip) {
                 self.move_sliding(e, math::scale(c.linear_velocity[e].v, dur_s), map, c);
             } else {
                 self.move_flipping(e, math::scale(c.linear_velocity[e].v, dur_s), map, c);
             }
+
+            let angle = c.orientation[e].angle;
+            let direction = [angle.cos(), angle.sin()];
 
             if let Some(dashing) = c.player_state[e].dashing {
                 // While dashing, movement input is ignored
@@ -211,9 +212,20 @@ impl PlayerMovementSystem {
                     c.player_state[e].dashing = Some(0.0);
                     c.full_player_state[e].dash_cooldown_s = Some(5.0);
                     c.angular_velocity[e].v = 0.0;
+
+                    return vec![GameEvent::PlayerDash {
+                                    player_id: c.net_entity[e].owner,
+                                    position: c.position[e].p,
+                                    orientation: c.orientation[e].angle,
+                                }];
                 }
             }
-        });
+            vec![]
+        }).unwrap();
+
+        for event in events.iter() {
+            data.services.add_event(&event.clone());
+        }
     }
 }
 

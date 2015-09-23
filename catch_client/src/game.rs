@@ -1,9 +1,11 @@
+use std::f64;
 use std::thread;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::path::Path;
 
 use ecs;
+use rand;
 use time;
 use graphics;
 use graphics::Transformed;
@@ -17,7 +19,8 @@ use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
 
 use shared::math;
-use shared::Item;
+use shared::{Item, GameEvent};
+use shared::map::LayerId;
 use shared::net::{ClientMessage, TimedPlayerInput};
 use shared::tick::Tick;
 
@@ -25,6 +28,7 @@ use client::Client;
 use state::GameState;
 use player_input::{PlayerInput, InputMap};
 use draw_map::DrawMap;
+use particles::Particles;
 
 type GameWindow = PistonWindow;
 
@@ -46,6 +50,7 @@ pub struct Game {
 
     window: GameWindow,
     draw_map: DrawMap,
+    particles: Particles,
 
     cam_pos: math::Vec2,
     glyphs: GlyphCache<'static>,
@@ -67,17 +72,24 @@ impl Game {
 
         Game {
             quit: false,
+
             client: connected_client,
+
+            game_state: game_state,
+
             player_input_map: player_input_map,
             player_input: PlayerInput::new(),
             modifier_key: ModifierKey::default(),
+
             interpolation_ticks: 2,
             current_tick: None,
             tick_progress: 0.0,
             time_factor: 0.0,
-            game_state: game_state,
+
             window: window,
             draw_map: draw_map,
+            particles: Particles::new(),
+
             cam_pos: [0.0, 0.0],
             glyphs: glyphs,
             fps: 0.0,
@@ -109,20 +121,20 @@ impl Game {
     }
 
     fn wait_first_ticks(&mut self) {
-        info!("Waiting to receive first ticks from server... ");
+        info!("waiting to receive first ticks from server... ");
 
         while self.client.num_ticks() < self.interpolation_ticks {
             self.client_service();
         }
 
-        info!("Done! Have {} ticks", self.client.num_ticks());
+        info!("done! Have {} ticks", self.client.num_ticks());
 
         let tick = self.client.pop_next_tick().1;
-        info!("Starting our first tick, {}", tick.tick_number);
+        info!("starting our first tick, {}", tick.tick_number);
         self.game_state.run_tick(&tick);
 
         let next_tick = &self.client.get_next_tick().1;
-        info!("Interpolating to tick {}", next_tick.tick_number);
+        info!("interpolating to tick {}", next_tick.tick_number);
         self.game_state.load_interp_tick_state(&tick, next_tick);
 
         assert!(self.current_tick.is_none());
@@ -174,12 +186,12 @@ impl Game {
         if self.tick_progress < 1.0 {
             self.time_factor = {
                 if self.client.num_ticks() > 2 {
-                    debug!("Speeding up playback (num queued ticks: {}, progress: {})",
+                    debug!("speeding up playback (num queued ticks: {}, progress: {})",
                            self.client.num_ticks(), self.tick_progress);
 
                     1.25 
                 } else if self.client.num_ticks() < 2 && self.tick_progress > 0.5 {
-                    debug!("Slowing down tick playback (num queued ticks: {}, progress: {}",
+                    debug!("slowing down tick playback (num queued ticks: {}, progress: {}",
                            self.client.num_ticks(), self.tick_progress);
                     0.75 // Is this a stupid idea?
                 } else {
@@ -195,12 +207,25 @@ impl Game {
         if self.tick_progress >= 1.0 {
             // Load the next ticks if we have them
             if self.client.num_ticks() >= 2 {
-                let tick = self.client.pop_next_tick().1;
-                let next_tick = &self.client.get_next_tick().1;
+                let (tick_number, events) = {
+                    let tick = self.client.pop_next_tick().1;
+                    let next_tick = &self.client.get_next_tick().1;
 
-                self.game_state.run_tick(&tick);
-                self.game_state.load_interp_tick_state(&tick, next_tick);
-                self.current_tick = Some(tick);
+                    self.game_state.run_tick(&tick);
+                    self.game_state.load_interp_tick_state(&tick, next_tick);
+
+                    let (tick_number, events) = (tick.tick_number, tick.events.clone());
+
+                    self.current_tick = Some(tick);
+
+                    (tick_number, events)
+                };
+
+                // Go through events of the tick
+                for event in events.iter() {
+                    debug!("tick {}: {:?}", tick_number, event);
+                    self.process_game_event(event);
+                }
 
                 self.tick_progress -= 1.0;
             } else {
@@ -210,12 +235,34 @@ impl Game {
         }
     }
 
+    fn process_game_event(&mut self, event: &GameEvent) {
+        match event {
+            &GameEvent::PlayerDash {
+                player_id: _,
+                ref position,
+                ref orientation
+            } => {
+                /*for i in 0..200 {
+                    self.particles.spawn_cone(1.0,
+                                              [0.2, 0.77, 0.95],
+                                              2.0,
+                                              *position,
+                                              500.0 + rand::random::<f64>() * 50.0,
+                                              f64::consts::PI * 8.0,
+                                              *orientation - f64::consts::PI,
+                                              f64::consts::PI / 8.0);
+                }*/
+            }
+            _ => ()
+        };
+    }
+
     fn interpolate(&mut self) {
         self.game_state.world.systems.interpolation_system
             .interpolate(self.tick_progress, &mut self.game_state.world.data);
     }
 
-    fn draw(&mut self, _simulation_time_s: f64, gl: &mut GlGraphics) {
+    fn draw(&mut self, simulation_time_s: f64, gl: &mut GlGraphics) {
         let draw_width = self.window.draw_size().width;
         let draw_height = self.window.draw_size().height;
 
@@ -258,41 +305,21 @@ impl Game {
                          .trans(-self.cam_pos[0], -self.cam_pos[1]);
 
                 self.draw_map.draw(&self.game_state.map, c, gl);
-
-                // Debugging code to display velocities of entities
-                /*if let Some(entity) = self.my_player_entity() {
-                    let (p, angle, vel) = self.game_state.world.with_entity_data(&entity, |e, c| {
-                        (c.position[e].p, c.orientation[e].angle, c.linear_velocity[e].v)
-                    }).unwrap();
-
-                    let dir = [angle.cos(), angle.sin()];
-                    let b = math::add(p, math::scale(dir, simulation_time_s));
-
-                    let b = math::add(p, math::scale(vel, simulation_time_s));
-
-                    for (i, (tx, ty)) in self.game_state.map.trace_line(p, b).enumerate() {
-                        graphics::rectangle([0.0, 0.3 * i as f32 / 5.0, 0.2, 1.0],
-                                            [0.0, 0.0, self.game_state.map.width() as f64, self.game_state.map.height() as f64],
-                                            c.trans((tx * self.game_state.map.width()) as f64, ((ty * self.game_state.map.height()) as f64)).transform,
-                                            gl);
-                    }
-
-                    graphics::rectangle([1.0, 0.0, 0.0, 1.0],
-                                        [1.0, -0.5, math::square_len(vel).sqrt() * simulation_time_s, 1.0],
-                                        c.trans(p[0], p[1])
-                                         .rot_rad(angle).transform,
-                                        gl);
-                }*/
-
+                /*self.draw_map.draw_layer(&self.game_state.map, LayerId::Floor, c, gl);
                 self.game_state.world.systems
-                    .draw_item_system
+                    .draw_shadow_system
                     .draw(&mut self.game_state.world.data, c, gl);
-                self.game_state.world.systems
-                    .draw_player_system
+                self.draw_map.draw_layer(&self.game_state.map, LayerId::Block, c, gl);*/
+                self.game_state.world.systems.draw_item_system
+                    .draw(&mut self.game_state.world.data, simulation_time_s,
+                          &mut self.particles, c, gl);
+                self.game_state.world.systems.draw_player_system
+                    .draw(&mut self.game_state.world.data, &mut self.particles, c, gl);
+                self.game_state.world.systems.draw_bouncy_enemy_system
                     .draw(&mut self.game_state.world.data, c, gl);
-                self.game_state.world.systems
-                    .draw_bouncy_enemy_system
-                    .draw(&mut self.game_state.world.data, c, gl);
+
+                self.particles.update(simulation_time_s, &self.game_state.map);
+                self.particles.draw(c, gl);
             }
 
             self.draw_player_text(c, gl);

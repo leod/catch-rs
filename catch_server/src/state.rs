@@ -168,10 +168,10 @@ impl GameState {
     fn process_event(&mut self, event: GameEvent) {
         match event {
             GameEvent::PlayerDied(player_id, _cause_player_id) => {
-                info!("Killing player {}", player_id);
+                info!("killing player {}", player_id);
 
                 if !self.get_player_info(player_id).alive {
-                    info!("Killing a dead player! HAH!");
+                    info!("killing a dead player! HAH!");
                 } else {
                     let entity = {
                         let player = self.players.get_mut(&player_id).unwrap();

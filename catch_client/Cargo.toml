@@ -17,6 +17,7 @@ gl = "0.0.12"
 #ecs = "*"
 time = "0.1.32"
 getopts = "0.2.14"
+rand = "0.3.11"
 
 [dependencies.ecs]
 git = "https://github.com/HeroesGrave/ecs-rs.git"

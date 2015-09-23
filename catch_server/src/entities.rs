@@ -28,7 +28,7 @@ pub fn build_net_custom<B: EntityBuilder<Components>>
     let entity_type = data.services.entity_types[entity_type_id as usize].1.clone();
     let entity_id = data.services.next_entity_id();
 
-    info!("Building {} net entity {} for {}", type_name, entity_id, owner);
+    info!("building {} net entity {} for {}", type_name, entity_id, owner);
 
     // Tell the clients about the new entity
     data.services.add_event(

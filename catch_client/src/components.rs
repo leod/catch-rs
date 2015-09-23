@@ -2,22 +2,45 @@ use ecs::ComponentList;
 use graphics;
 
 use shared::math;
+use shared::util::PeriodicTimer;
 use shared::components::{HasPosition, HasOrientation, HasLinearVelocity, HasShape, HasPlayerState,
                          HasFullPlayerState};
 pub use shared::components::{NetEntity, Position, Orientation, LinearVelocity, Shape, PlayerState,
                              FullPlayerState, ComponentTypeTraits, component_type_traits};
 
-#[derive(Default)]
 pub struct DrawPlayer {
     pub scale_x: f64,
     pub color: graphics::types::Color,
+    pub dash_particle_timer: PeriodicTimer,
+}
+
+impl Default for DrawPlayer {
+    fn default() -> DrawPlayer {
+        DrawPlayer {
+            scale_x: 1.0,
+            color: [0.0, 0.0, 0.0, 1.0],
+            dash_particle_timer: PeriodicTimer::new(0.01),
+        }
+    }
 }
 
 #[derive(Default)]
 pub struct DrawBouncyEnemy;
 
+pub struct DrawItem {
+    pub particle_timer: PeriodicTimer,
+}
+
+impl Default for DrawItem {
+    fn default() -> DrawItem {
+        DrawItem {
+            particle_timer: PeriodicTimer::new(0.25),
+        }
+    }
+}
+
 #[derive(Default)]
-pub struct DrawItem;
+pub struct DrawShadow;
 
 pub trait Interpolatable {
     fn interpolate(&Self, &Self, t: f64) -> Self; 
@@ -61,6 +84,7 @@ components! {
         #[cold] draw_player: DrawPlayer,
         #[cold] draw_bouncy_enemy: DrawBouncyEnemy,
         #[cold] draw_item: DrawItem,
+        #[cold] draw_shadow: DrawShadow,
     }
 }
 

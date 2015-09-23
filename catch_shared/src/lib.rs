@@ -40,7 +40,7 @@ pub struct GameInfo {
     pub ticks_per_second: u32,
 }
 
-#[derive(Debug, Clone, CerealData)]
+#[derive(Debug, Clone, PartialEq, CerealData)]
 pub enum GameEvent {
     PlayerJoin(PlayerId, String),
     PlayerLeave(PlayerId),
@@ -56,6 +56,12 @@ pub enum GameEvent {
     // after some input by the player was processed on the server
     // Not yet used, since we haven't implemented client-side prediction so far
     CorrectState(TickNumber),
+
+    PlayerDash {
+        player_id: PlayerId,
+        position: math::Vec2,
+        orientation: f64,
+    },
 
     TakeItem(PlayerId, EntityId),
     //UseItem(PlayerId, ItemType),

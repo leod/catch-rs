@@ -51,9 +51,9 @@ impl NetEntitySystem {
                      entity_type_id: EntityTypeId,
                      owner: PlayerId,
                      data: &mut DataHelper<Components, Services>) -> ecs::Entity {
-        info!("Creating entity {} of type {} with owner {}", entity_id, entity_type_id, owner);
+        info!("creating entity {} of type {} with owner {}", entity_id, entity_type_id, owner);
 
-        assert!(self.entities.get(&entity_id).is_none(), "Already have a net entity with that id");
+        assert!(self.entities.get(&entity_id).is_none(), "already have a net entity with that id");
         assert!(self.entity_types.get(entity_type_id as usize).is_some(),
                 "Unknown net entity type id");
 
@@ -114,11 +114,11 @@ impl NetEntitySystem {
         }
 
         if self.entities.get(&entity_id).is_some() {
-            info!("Removing entity with id {}", entity_id);
+            info!("removing entity with id {}", entity_id);
             data.remove_entity(self.entities[&entity_id]);
             self.entities.remove(&entity_id);
         } else {
-            panic!("Unkown net entity id: {}", entity_id);
+            panic!("unkown net entity id: {}", entity_id);
         }
     }
 

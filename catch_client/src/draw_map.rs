@@ -52,7 +52,7 @@ impl DrawMap {
         self.draw_layer(map, LayerId::Block, c, gl);
     }
 
-    fn draw_layer(&self, map: &Map, id: LayerId, c: Context, gl: &mut GlGraphics) {
+    pub fn draw_layer(&self, map: &Map, id: LayerId, c: Context, gl: &mut GlGraphics) {
         let width = map.tile_width();
         let height = map.tile_height();
 

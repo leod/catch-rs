@@ -6,25 +6,25 @@ use ecs::entity::IndexedEntity;
 use ecs::{Aspect, EntityData, EntityIter, ComponentManager};
 
 pub struct PeriodicTimer {
-    period: Duration,
-    accum: Duration
+    period_s: f64,
+    accum_s: f64
 }
 
 impl PeriodicTimer {
-    pub fn new(period: Duration) -> PeriodicTimer {
+    pub fn new(period_s: f64) -> PeriodicTimer {
         PeriodicTimer {
-            period: period,
-            accum: Duration::zero()
+            period_s: period_s,
+            accum_s: 0.0,
         }
     }
 
-    pub fn add(&mut self, a: Duration) {
-        self.accum = self.accum + a;
+    pub fn add(&mut self, s: f64) {
+        self.accum_s = self.accum_s + s;
     }
 
     pub fn next(&mut self) -> bool {
-        if self.accum >= self.period {
-            self.accum = self.accum - self.period;
+        if self.accum_s >= self.period_s {
+            self.accum_s = self.accum_s - self.period_s;
             true
         } else {
             false
@@ -33,10 +33,7 @@ impl PeriodicTimer {
 
     // Percentual progress until next period
     pub fn progress(&self) -> f64 {
-        // NOTE: Apparently this fails when either num_nanoseconds() exceeds 2^63 = ~292 years
-
-        self.accum.num_nanoseconds().unwrap() as f64 /
-        self.period.num_nanoseconds().unwrap() as f64
+        self.accum_s / self.period_s
     }
 }
 

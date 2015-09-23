@@ -13,6 +13,7 @@ extern crate time;
 extern crate gl;
 extern crate getopts;
 extern crate color;
+extern crate rand;
 
 #[macro_use] extern crate catch_shared as shared;
 
@@ -25,6 +26,7 @@ mod services;
 mod systems;
 mod state;
 mod game;
+mod particles;
 
 use std::env;
 
@@ -65,15 +67,15 @@ fn main() {
 
     // Connect
     enet::initialize().unwrap();
-    info!("Connecting to {}", address);
+    info!("connecting to {}", address);
     let mut client = Client::connect(5000,
                                      address,
                                      2338,
                                      "leo".to_string()).unwrap();
     client.finish_connecting(5000).unwrap();
 
-    info!("Connected to server! My id: {}", client.my_id());
-    info!("Game info: {:?}", client.game_info());
+    info!("connected to server! My id: {}", client.my_id());
+    info!("game info: {:?}", client.game_info());
 
     let mut game = Game::new(client,
                              InputMap::new(),

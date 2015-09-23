@@ -67,11 +67,10 @@ impl Server {
                                                net::NUM_CHANNELS as u32,
                                                0, 0));
 
-        info!("Server started on port {}", port);
-        info!("Game info: {:?}", game_info);
+        info!("server started on port {}", port);
+        info!("game info: {:?}", game_info);
 
-        let tick_duration_ns = (1.0 / (game_info.ticks_per_second as f64)) * 10E8;
-        let tick_duration = Duration::nanoseconds(tick_duration_ns as i64);
+        let tick_duration_s = 1.0 / (game_info.ticks_per_second as f64);
 
         Ok(Server {
             game_info: game_info.clone(),
@@ -79,7 +78,7 @@ impl Server {
             player_id_counter: 0,
             clients: HashMap::new(),
             game_state: GameState::new(game_info),
-            tick_timer: PeriodicTimer::new(tick_duration),
+            tick_timer: PeriodicTimer::new(tick_duration_s),
         })
     }
 
@@ -93,7 +92,7 @@ impl Server {
             Ok(enet::Event::Connect(peer)) => {
                 self.player_id_counter += 1;
 
-                info!("Client {} is connecting", self.player_id_counter);
+                info!("client {} is connecting", self.player_id_counter);
 
                 assert!(self.clients.get(&self.player_id_counter).is_none());
                 peer.set_user_data(self.player_id_counter as *mut libc::c_void);
@@ -112,7 +111,7 @@ impl Server {
                 let player_id = peer.get_user_data() as u32; 
                 let client_state = self.clients[&player_id].state;
 
-                info!("Client {} disconnected", player_id);
+                info!("client {} disconnected", player_id);
 
                 if client_state == ClientState::Normal {
                     // The client was already fully connected, so tell the other
@@ -132,7 +131,7 @@ impl Server {
                 assert!(self.clients.get(&player_id).is_some());
 
                 if channel_id != net::Channel::Messages as u8 {
-                    warn!("Received packet on non-message channel from client {}", player_id);
+                    warn!("received packet on non-message channel from client {}", player_id);
                 }
                 
                 let mut data = packet.data().clone();
@@ -140,14 +139,14 @@ impl Server {
                     Ok(message) => 
                         self.process_client_message(player_id, &message),
                     Err(_) => 
-                        warn!("Received invalid message from client {}", player_id),
+                        warn!("received invalid message from client {}", player_id),
                 };
 
                 return true;
             }
             Ok(enet::Event::None) => return false,
             Err(error) => {
-                warn!("Error servicing: {}", error);
+                warn!("error servicing: {}", error);
                 return false;
             }
         }
@@ -159,7 +158,7 @@ impl Server {
                 let mut data = Vec::new();
                 match message.write(&mut data) {
                     Err(_) => {
-                        warn!("Error encoding message {:?}", message);
+                        warn!("error encoding message {:?}", message);
                         return;
                     }
                     Ok(_) => ()
@@ -178,7 +177,7 @@ impl Server {
         let mut data = Vec::new();
         match message.write(&mut data) {
             Err(_) => {
-                warn!("Error encoding message {:?}", message);
+                warn!("error encoding message {:?}", message);
                 return;
             }
             Ok(_) => ()
@@ -191,14 +190,14 @@ impl Server {
     fn process_client_message(&mut self, player_id: PlayerId, message: &ClientMessage) {
         match message {
             &ClientMessage::Pong => {
-                debug!("Got pong from {}", player_id);
+                debug!("got pong from {}", player_id);
                 let client = self.clients.get_mut(&player_id).unwrap();
                 
                 match client.ping_sent_time {
                     Some(ping_sent_time) =>
                         client.ping = Some(time::get_time() - ping_sent_time),
                     None =>
-                        warn!("Received unwarranted pong from {}",
+                        warn!("received unwarranted pong from {}",
                                  player_id)
                 };
 
@@ -208,12 +207,12 @@ impl Server {
                 let client_state = self.clients[&player_id].state;
 
                 if client_state != ClientState::Connecting {
-                    warn!("Connected player {} is trying to connect again, ignoring",
+                    warn!("connected player {} is trying to connect again, ignoring",
                           player_id);
                     return;
                 }
 
-                info!("Player {} connected with name {}", player_id, name);
+                info!("player {} connected with name {}", player_id, name);
 
                 self.broadcast(&ServerMessage::PlayerConnect {
                     id: player_id,
@@ -246,7 +245,7 @@ impl Server {
     }
 
     fn run(&mut self) {
-        let mut loop_time = time::get_time();
+        let mut loop_time = time::precise_time_s();
 
         loop {
             // Is this how DDOS happens?
@@ -276,7 +275,7 @@ impl Server {
 
                         match tick.write(&mut data) {
                             Err(_) => {
-                                warn!("Error encoding tick");
+                                warn!("error encoding tick");
                                 continue;
                             }
                             Ok(_) => ()
@@ -291,7 +290,7 @@ impl Server {
                 }
             }
 
-            let new_time = time::get_time();
+            let new_time = time::precise_time_s();
             self.tick_timer.add(new_time - loop_time);
 
             //println!("Delta: {:?}", new_time - loop_time);

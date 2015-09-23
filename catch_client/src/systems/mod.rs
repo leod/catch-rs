@@ -3,6 +3,7 @@ pub mod interpolation_system;
 pub mod draw_player_system;
 pub mod draw_bouncy_enemy_system;
 pub mod draw_item_system;
+//pub mod draw_shadow_system;
 
 use ecs::system::LazySystem;
 
@@ -13,6 +14,7 @@ pub use self::interpolation_system::InterpolationSystem;
 pub use self::draw_player_system::DrawPlayerSystem;
 pub use self::draw_bouncy_enemy_system::DrawBouncyEnemySystem;
 pub use self::draw_item_system::DrawItemSystem;
+//pub use self::draw_shadow_system::DrawShadowSystem;
 
 systems! {
     struct Systems<Components, Services> {
@@ -26,5 +28,7 @@ systems! {
             aspect!(<Components> all: [draw_bouncy_enemy])),
         draw_item_system: DrawItemSystem = DrawItemSystem::new(
             aspect!(<Components> all: [draw_item])),
+        //draw_shadow_system: DrawShadowSystem = DrawShadowSystem::new(
+            //aspect!(<Components> all: [draw_shadow, shape])),
     }
 }
