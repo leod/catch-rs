@@ -27,8 +27,8 @@ impl DrawPlayerSystem {
         }
     }
 
-    pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, particles: &mut Particles,
-                c: graphics::Context, gl: &mut GlGraphics) {
+    pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, time_s: f64,
+                particles: &mut Particles, c: graphics::Context, gl: &mut GlGraphics) {
         for entity in self.aspect.iter() {
             let p = data.position[entity].p;
             let r = match data.shape[entity] {
@@ -37,28 +37,33 @@ impl DrawPlayerSystem {
             };
 
             if data.player_state[entity].dashing.is_some() {
-                for i in 0..10 { // TODO: particle spawn rate
-                    let color = if rand::random::<bool>() {
-                        //[0.9, 0.5, 0.0]
-                        [0.2, 0.77, 0.95]
-                    } else {
-                        [0.2, 0.77, 0.95]
-                    };
-                    let color = [color[0] + (-0.5 + rand::random::<f32>()) * 0.2,
-                                 color[1] + (-0.5 + rand::random::<f32>()) * 0.2,
-                                 color[2] + (-0.5 + rand::random::<f32>()) * 0.2];
+                let color = if rand::random::<bool>() {
+                    //[0.9, 0.5, 0.0]
+                    [0.2, 0.77, 0.95]
+                } else {
+                    [0.2, 0.77, 0.95]
+                };
 
-                    particles.spawn_cone(1.0, // duration in seconds
-                                         //[0.9, 0.5, 0.0], // color a
-                                         //[0.2, 0.77, 0.95], // color b
-                                         //[0.2, 0.77, 0.95], // color b
-                                         color, color,
-                                         2.5, // size
-                                         p, // position
-                                         100.0 + rand::random::<f64>() * 50.0, // speed
-                                         f64::consts::PI * 2.0,
-                                         data.orientation[entity].angle - f64::consts::PI,
-                                         f64::consts::PI / 8.0);
+                data.draw_player[entity].dash_particle_timer.add(time_s);
+                while data.draw_player[entity].dash_particle_timer.next() {
+                    for i in 0..5 {
+                        let color = [color[0] + (-0.5 + rand::random::<f32>()) * 0.2,
+                                     color[1] + (-0.5 + rand::random::<f32>()) * 0.2,
+                                     color[2] + (-0.5 + rand::random::<f32>()) * 0.2];
+                        particles.spawn_cone(1.0, // duration in seconds
+                                             //[0.9, 0.5, 0.0], // color a
+                                             //[0.2, 0.77, 0.95], // color b
+                                             //[0.2, 0.77, 0.95], // color b
+                                             color, color,
+                                             2.5, // size
+                                             p, // position
+                                             data.orientation[entity].angle - f64::consts::PI,
+                                             f64::consts::PI / 8.0,
+                                             100.0 + rand::random::<f64>() * 50.0, // speed
+                                             f64::consts::PI * 2.0,
+                                             1.0,
+                                             );
+                    }
                 }
             }
 

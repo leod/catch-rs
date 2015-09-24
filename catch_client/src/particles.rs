@@ -20,6 +20,8 @@ struct Particle {
     orientation: f64,
     velocity: math::Vec2,
     ang_velocity: f64,
+
+    friction: f64,
 }
 
 pub struct Particles {
@@ -38,6 +40,8 @@ impl Particles {
     pub fn update(&mut self, time_s: f64, map: &Map) {
         for i in 0..self.particles.len() {
             let remove = if let Some(p) = self.particles[i].as_mut() {
+                p.velocity = math::sub(p.velocity, math::scale(p.velocity,
+                                                               p.friction * time_s));
                 p.position = math::add(p.position, math::scale(p.velocity, time_s));
                 p.orientation += p.ang_velocity * time_s;
 
@@ -83,10 +87,11 @@ impl Particles {
                       color_b: [f32; 3],
                       size: f64,
                       position: math::Vec2,
+                      orientation: f64,
+                      spread: f64,
                       speed: f64,
                       ang_velocity: f64,
-                      orientation: f64,
-                      spread: f64) {
+                      friction: f64) {
         let orientation = orientation + spread * (rand::random::<f64>() - 0.5);
         let velocity = [speed * orientation.cos(), speed * orientation.sin()];
 
@@ -102,7 +107,9 @@ impl Particles {
                 position: position,
                 orientation: orientation,
                 velocity: velocity,
-                ang_velocity: ang_velocity
+                ang_velocity: ang_velocity,
+
+                friction: friction,
             });
     }
 

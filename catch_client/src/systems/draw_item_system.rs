@@ -41,10 +41,12 @@ impl DrawItemSystem {
                                      color, color,
                                      1.5, // size
                                      p, // position
+                                     data.orientation[entity].angle - f64::consts::PI,
+                                     f64::consts::PI * 2.0,
                                      20.0 + rand::random::<f64>() * 10.0, // speed
                                      f64::consts::PI,
-                                     data.orientation[entity].angle - f64::consts::PI,
-                                     f64::consts::PI * 2.0);
+                                     0.0 // friction
+                                     );
             }
 
             let transform = c.trans(p[0], p[1])

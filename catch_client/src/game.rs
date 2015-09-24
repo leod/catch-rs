@@ -127,9 +127,14 @@ impl Game {
             self.client_service();
         }
 
-        info!("done! Have {} ticks", self.client.num_ticks());
+        info!("done! have {} ticks", self.client.num_ticks());
 
-        let tick = self.client.pop_next_tick().1;
+        while self.client.num_ticks() >=2 {
+            println!("starting initial tick {}", self.client.get_next_tick().1.tick_number);
+            self.start_tick();
+        }
+
+        /*let tick = self.client.pop_next_tick().1;
         info!("starting our first tick, {}", tick.tick_number);
         self.game_state.run_tick(&tick);
 
@@ -138,7 +143,32 @@ impl Game {
         self.game_state.load_interp_tick_state(&tick, next_tick);
 
         assert!(self.current_tick.is_none());
-        self.current_tick = Some(tick);
+        self.current_tick = Some(tick);*/
+    }
+
+    /// Starts the next tick in the queue, loading its state and running its events.
+    /// The function assumes that we have at least 2 ticks queued, so that we can interpolate..
+    fn start_tick(&mut self) {
+        assert!(self.client.num_ticks() >= 2);
+
+        let (tick_number, events) = {
+            let tick = self.client.pop_next_tick().1;
+            let next_tick = &self.client.get_next_tick().1;
+
+            self.game_state.run_tick(&tick);
+            self.game_state.load_interp_tick_state(&tick, next_tick);
+
+            let (tick_number, events) = (tick.tick_number, tick.events.clone());
+
+            self.current_tick = Some(tick);
+
+            (tick_number, events)
+        };
+
+        for event in events.iter() {
+            debug!("tick {}: {:?}", tick_number, event);
+            self.process_game_event(event);
+        }
     }
 
     fn client_service(&mut self) {
@@ -205,31 +235,12 @@ impl Game {
         }
 
         if self.tick_progress >= 1.0 {
-            // Load the next ticks if we have them
+            // Load the next tick state if we can interpolate into the following tick
             if self.client.num_ticks() >= 2 {
-                let (tick_number, events) = {
-                    let tick = self.client.pop_next_tick().1;
-                    let next_tick = &self.client.get_next_tick().1;
-
-                    self.game_state.run_tick(&tick);
-                    self.game_state.load_interp_tick_state(&tick, next_tick);
-
-                    let (tick_number, events) = (tick.tick_number, tick.events.clone());
-
-                    self.current_tick = Some(tick);
-
-                    (tick_number, events)
-                };
-
-                // Go through events of the tick
-                for event in events.iter() {
-                    debug!("tick {}: {:?}", tick_number, event);
-                    self.process_game_event(event);
-                }
-
+                self.start_tick();
                 self.tick_progress -= 1.0;
             } else {
-                debug!("Waiting to receive next tick (num queued ticks: {})",
+                debug!("waiting to receive next tick (num queued ticks: {})",
                        self.client.num_ticks());
             }
         }
@@ -258,8 +269,10 @@ impl Game {
     }
 
     fn interpolate(&mut self) {
+        let t = if self.tick_progress >= 1.0 { 1.0 } else { self.tick_progress };
+
         self.game_state.world.systems.interpolation_system
-            .interpolate(self.tick_progress, &mut self.game_state.world.data);
+            .interpolate(t, &mut self.game_state.world.data);
     }
 
     fn draw(&mut self, simulation_time_s: f64, gl: &mut GlGraphics) {
@@ -283,7 +296,7 @@ impl Game {
 
             let half_width = draw_width as f64 / 2.0;
             let half_height = draw_height as f64 / 2.0;
-            let zoom = 2.0;
+            let zoom = 3.0;
 
             // Clip camera position to map size in pixels
             if self.cam_pos[0] < half_width / zoom {
@@ -314,7 +327,8 @@ impl Game {
                     .draw(&mut self.game_state.world.data, simulation_time_s,
                           &mut self.particles, c, gl);
                 self.game_state.world.systems.draw_player_system
-                    .draw(&mut self.game_state.world.data, &mut self.particles, c, gl);
+                    .draw(&mut self.game_state.world.data, simulation_time_s,
+                          &mut self.particles, c, gl);
                 self.game_state.world.systems.draw_bouncy_enemy_system
                     .draw(&mut self.game_state.world.data, c, gl);
 
