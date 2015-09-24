@@ -8,6 +8,7 @@ use shared::components::StateComponent;
 use shared::{EntityId, EntityTypes, PlayerId, GameEvent, TickState};
 
 use components;
+use entities;
 use components::{Components, ComponentTypeTraits};
 use services::Services;
 
@@ -40,7 +41,7 @@ impl NetEntitySystem {
             }).unwrap();
 
             if owner == player_id {
-                data.remove_entity(entity.clone());
+                entities::remove_net(*entity, data);
             }
         }
     }

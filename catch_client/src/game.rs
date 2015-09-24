@@ -147,7 +147,7 @@ impl Game {
     }
 
     /// Starts the next tick in the queue, loading its state and running its events.
-    /// The function assumes that we have at least 2 ticks queued, so that we can interpolate..
+    /// The function assumes that we have at least 2 ticks queued, so that we can interpolate.
     fn start_tick(&mut self) {
         assert!(self.client.num_ticks() >= 2);
 
