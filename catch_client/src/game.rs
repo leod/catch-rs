@@ -129,21 +129,10 @@ impl Game {
 
         info!("done! have {} ticks", self.client.num_ticks());
 
-        while self.client.num_ticks() >=2 {
-            println!("starting initial tick {}", self.client.get_next_tick().1.tick_number);
+        while self.client.num_ticks() >=2 { // catch up
+            debug!("starting initial tick {}", self.client.get_next_tick().1.tick_number);
             self.start_tick();
         }
-
-        /*let tick = self.client.pop_next_tick().1;
-        info!("starting our first tick, {}", tick.tick_number);
-        self.game_state.run_tick(&tick);
-
-        let next_tick = &self.client.get_next_tick().1;
-        info!("interpolating to tick {}", next_tick.tick_number);
-        self.game_state.load_interp_tick_state(&tick, next_tick);
-
-        assert!(self.current_tick.is_none());
-        self.current_tick = Some(tick);*/
     }
 
     /// Starts the next tick in the queue, loading its state and running its events.
@@ -221,7 +210,7 @@ impl Game {
 
                     1.25 
                 } else if self.client.num_ticks() < 2 && self.tick_progress > 0.5 {
-                    debug!("slowing down tick playback (num queued ticks: {}, progress: {}",
+                    debug!("slowing down tick playback (num queued ticks: {}, progress: {})",
                            self.client.num_ticks(), self.tick_progress);
                     0.75 // Is this a stupid idea?
                 } else {
@@ -250,18 +239,19 @@ impl Game {
         match event {
             &GameEvent::PlayerFlip {
                 player_id: _,
-                ref position,
-                ref orientation,
-                ref velocity,
+                position,
+                orientation: _,
+                speed,
+                orientation_wall,
             } => {
-                let num = (3.0 * velocity.sqrt()) as usize;
+                let num = (3.0 * speed.sqrt()) as usize;
                 for i in 0..num {
                     self.particles.spawn_cone(0.5,
                                               [0.0, 0.0, 0.0],
                                               [0.0, 0.0, 0.0],
                                               1.5,
-                                              *position,
-                                              *orientation - f64::consts::PI,
+                                              position,
+                                              orientation_wall,
                                               f64::consts::PI,
                                               20.0 + rand::random::<f64>() * 20.0,
                                               0.0,
@@ -305,14 +295,14 @@ impl Game {
             // Clip camera position to map size in pixels
             if self.cam_pos[0] < half_width / zoom {
                 self.cam_pos[0] = half_width / zoom; 
-            }
-            if self.cam_pos[0] + half_width / zoom > self.game_state.map.width_pixels() as f64 {
+            } else if self.cam_pos[0] + half_width / zoom >
+                      self.game_state.map.width_pixels() as f64 {
                 self.cam_pos[0] = self.game_state.map.width_pixels() as f64 - half_width / zoom;
             }
             if self.cam_pos[1] < half_height / zoom {
                 self.cam_pos[1] = half_height / zoom; 
-            }
-            if self.cam_pos[1] + half_height / zoom > self.game_state.map.height_pixels() as f64{
+            } else if self.cam_pos[1] + half_height / zoom >
+                      self.game_state.map.height_pixels() as f64 {
                 self.cam_pos[1] = self.game_state.map.height_pixels() as f64 - half_height / zoom;
             }
 
@@ -321,7 +311,22 @@ impl Game {
                          .zoom(zoom)
                          .trans(-self.cam_pos[0], -self.cam_pos[1]);
 
-                self.draw_map.draw(&self.game_state.map, c, gl);
+                // What part of the map is visible?
+                let cam_tx_min = ((self.cam_pos[0]*zoom - half_width) /
+                                   (zoom * self.game_state.map.tile_width() as f64))
+                                 .floor() as isize;
+                let cam_ty_min = ((self.cam_pos[1]*zoom - half_height) /
+                                   (zoom * self.game_state.map.tile_height() as f64))
+                                 .floor() as isize;
+                let cam_tx_size = (draw_width as f64 /
+                                   (zoom * self.game_state.map.tile_width() as f64))
+                                  .ceil() as isize;
+                let cam_ty_size = (draw_height as f64 /
+                                   (zoom * self.game_state.map.tile_height() as f64))
+                                  .ceil() as isize;
+                let cam_t_rect = [cam_tx_min, cam_ty_min, cam_tx_size+1, cam_ty_size+1];
+
+                self.draw_map.draw(&self.game_state.map, cam_t_rect, c, gl);
                 /*self.draw_map.draw_layer(&self.game_state.map, LayerId::Floor, c, gl);
                 self.game_state.world.systems
                     .draw_shadow_system
@@ -368,7 +373,7 @@ impl Game {
                     math::square_len(c.linear_velocity[e].v).sqrt()
                 }).unwrap();
 
-            let s = &format!("player speed: {}", speed);
+            let s = &format!("player speed: {:.1}", speed);
             self.draw_text(color, 10.0, 170.0, s, c, gl);
         }
     }
@@ -417,7 +422,7 @@ impl Game {
             Item::SpeedBoost { duration_s: _ } =>
                 format!("speed boost"),
             Item::BlockPlacer { charges: _ } =>
-                format!("block player"),
+                format!("block placer"),
         }
     }
     

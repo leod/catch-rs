@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use time::Duration;
 
 use ecs;
 use ecs::entity::IndexedEntity;

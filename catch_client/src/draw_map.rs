@@ -47,29 +47,32 @@ impl DrawMap {
         })
     }
 
-    pub fn draw(&self, map: &Map, c: Context, gl: &mut GlGraphics) {
-        self.draw_layer(map, LayerId::Floor, c, gl);
-        self.draw_layer(map, LayerId::Block, c, gl);
+    pub fn draw(&self, map: &Map, tile_rect: [isize; 4],
+                c: Context, gl: &mut GlGraphics) {
+        self.draw_layer(map, LayerId::Floor, tile_rect, c, gl);
+        self.draw_layer(map, LayerId::Block, tile_rect, c, gl);
     }
 
-    pub fn draw_layer(&self, map: &Map, id: LayerId, c: Context, gl: &mut GlGraphics) {
+    pub fn draw_layer(&self, map: &Map, id: LayerId, tile_rect: [isize; 4],
+                      c: Context, gl: &mut GlGraphics) {
         let width = map.tile_width();
         let height = map.tile_height();
 
-        for (tile_x, tile_y, tile) in map.iter_layer(id) {
+        for (tile_x, tile_y, tile) in map.iter_layer(id, tile_rect) {
             match tile {
                 Some(Tile { tileset: _, x: tileset_x, y: tileset_y }) => {
-                    let image = Image::new().rect([0.0, 0.0,
-                                                   (width as f64),
-                                                   (height as f64)])
+                    let image = Image::new().rect([(tile_x * width) as f64,
+                                                   (tile_y * height) as f64,
+                                                   width as f64,
+                                                   height as f64])
                                             .src_rect([(tileset_x * width) as i32,
                                                        (tileset_y * height) as i32,
-                                                       (width as i32),
-                                                       (height as i32)]);
+                                                       width as i32,
+                                                       height as i32]);
                     let texture = &self.tileset_textures[id.to_index()];
-                    let transform = c.trans((tile_x * width) as f64, (tile_y * height) as f64)
-                                     .transform;
-                    image.draw(texture, &c.draw_state, transform, gl);
+                    /*let transform = c.trans((tile_x * width) as f64, (tile_y * height) as f64)
+                                     .transform;*/
+                    image.draw(texture, &c.draw_state, c.transform, gl);
                 }
                 None => continue
             }

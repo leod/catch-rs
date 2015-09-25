@@ -1,6 +1,7 @@
 #![plugin(cereal_macros)]
 #![feature(custom_derive, plugin)]
 
+#[macro_use] extern crate log;
 extern crate time;
 extern crate cereal;
 #[macro_use] extern crate ecs;
@@ -66,7 +67,8 @@ pub enum GameEvent {
         player_id: PlayerId,
         position: math::Vec2,
         orientation: f64,
-        velocity: f64,
+        speed: f64,
+        orientation_wall: f64,
     },
 
     TakeItem(PlayerId, EntityId),

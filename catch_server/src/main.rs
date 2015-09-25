@@ -245,9 +245,10 @@ impl Server {
     }
 
     fn run(&mut self) {
-        let mut loop_time = time::precise_time_s();
 
         loop {
+            let start_time_s = time::precise_time_s();
+
             // Is this how DDOS happens?
             while self.service() {};
 
@@ -290,14 +291,10 @@ impl Server {
                 }
             }
 
-            let new_time = time::precise_time_s();
-            self.tick_timer.add(new_time - loop_time);
-
-            //println!("Delta: {:?}", new_time - loop_time);
-
-            loop_time = new_time;
-
             thread::sleep_ms(1);
+
+            let end_time_s = time::precise_time_s();
+            self.tick_timer.add(end_time_s - start_time_s);
         }
     }
 }
@@ -310,7 +307,7 @@ fn main() {
     let game_info = GameInfo {
         map_name: "../data/maps/lars2.tmx".to_string(),
         entity_types: entity_types,
-        ticks_per_second: 20,
+        ticks_per_second: 30,
     };
 
     match Server::start(&game_info, 2338, 32).as_mut() {

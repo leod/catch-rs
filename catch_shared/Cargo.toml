@@ -6,6 +6,7 @@ authors = [
 ]
 
 [dependencies]
+log = "*"
 #ecs = "*"
 time = "0.1.32"
 vecmath = "*"

@@ -50,19 +50,38 @@ impl LayerId {
 pub struct TileIter<'a> {
     map: &'a Map,
     layer: usize,
+    tile_rect: [usize; 4],
 
-    x: u32,
-    y: u32
+    x: usize,
+    y: usize,
 }
 
 impl<'a> TileIter<'a> {
-    fn new(map: &'a Map, layer: usize) -> TileIter<'a> {
+    fn new(map: &'a Map, layer: usize, tile_rect: [isize; 4]) -> TileIter<'a> {
+        let tile_rect = TileIter::clip_rect(map, tile_rect);
         TileIter {
             map: map,
             layer: layer,
-            x: 0,
-            y: 0
+            tile_rect: tile_rect,
+            x: tile_rect[0],
+            y: tile_rect[1],
         }
+    }
+
+    fn clip_rect(map: &'a Map, tile_rect: [isize; 4]) -> [usize; 4] {
+        let min_x = if tile_rect[0] >= 0 { tile_rect[0] as usize } else { 0 };
+        let min_y = if tile_rect[1] >= 0 { tile_rect[1] as usize } else { 0 };
+        let max_x = if min_x + tile_rect[2] as usize <= map.width() {
+                        min_x + tile_rect[2] as usize
+                    } else {
+                        map.width() 
+                    };
+        let max_y = if min_y + tile_rect[3] as usize <= map.height() {
+                        min_y + tile_rect[3] as usize
+                    } else {
+                        map.height()
+                    };
+        [min_x, min_y, max_x, max_y]
     }
 }
 
@@ -70,21 +89,21 @@ impl<'a> Iterator for TileIter<'a> {
     type Item = (usize, usize, Option<Tile>);
 
     fn next(&mut self) -> Option<(usize, usize, Option<Tile>)> {
-        if self.y == self.map.height() as u32 {
+        if self.y == self.tile_rect[3] {
             return None;
         }
 
-        let (x, y) = (self.x as usize, self.y as usize);
+        let (x, y) = (self.x, self.y);
         let tile = self.map.layers[self.layer].tiles[y][x];
 
         self.x += 1;
 
-        if self.x == self.map.width() as u32 {
-            self.x = 0;
+        if self.x == self.tile_rect[2] {
+            self.x = self.tile_rect[0];
             self.y += 1;
         }
 
-        Some((x as usize, y as usize, tile))
+        Some((x, y, tile))
     }
 }
 
@@ -242,7 +261,11 @@ impl Map {
             .collect()
     }
 
+    /// Loads a tiled map from the given path. If the file is not found or has an invalid format,
+    /// Err is returned.
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Map, String> {
+        info!("loading map {}", path.as_ref().to_str().unwrap());
+
         let file = match File::open(path) {
             Ok(file) => file,
             Err(_) => return Err("Failed to open file".to_string())
@@ -254,7 +277,7 @@ impl Map {
         }
     }
 
-    pub fn from_tiled(map: tiled::Map) -> Result<Map, String> {
+    fn from_tiled(map: tiled::Map) -> Result<Map, String> {
         if map.layers.len() != 2 {
             return Err("Too many layers in the map".to_string());
         }
@@ -273,8 +296,8 @@ impl Map {
     }
 
     /// Returns an iterator for all tiles contained in the given layer `id`
-    pub fn iter_layer<'a>(&'a self, id: LayerId) -> TileIter<'a> {
-        TileIter::new(self, id.to_index())
+    pub fn iter_layer<'a>(&'a self, id: LayerId, tile_rect: [isize; 4]) -> TileIter<'a> {
+        TileIter::new(self, id.to_index(), tile_rect)
     }
 
     /// Returns an iterator for the tiles hit by the line (in pixels) from `p` to `q`
@@ -364,7 +387,7 @@ impl Map {
         }
     }
 
-    /// Converts from tiled's MapObject to our's
+    /// Converts from tiled's MapObject to ours
     fn convert_objects(object_groups: &Vec<tiled::ObjectGroup>) 
                        -> Result<Vec<MapObject>, String> {
         let mut objects = Vec::new();

@@ -112,7 +112,8 @@ impl PlayerMovementSystem {
                          player_id: data.net_entity[e].owner,
                          position: data.position[e].p,
                          orientation: angle,
-                         velocity: speed,
+                         speed: speed,
+                         orientation_wall: n_angle,
                      }]
             }
             None => {
