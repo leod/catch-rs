@@ -42,8 +42,15 @@ pub enum Shape {
     },
     Square {
         size: f64,
+    },
+    Rect {
+        width: f64,
+        height: f64
     }
 }
+
+#[derive(Debug, Clone, Default)]
+pub struct Projectile;
 
 impl Default for Shape {
     fn default() -> Shape {

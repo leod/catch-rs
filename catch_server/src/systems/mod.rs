@@ -4,6 +4,7 @@ pub mod player_item_system;
 pub mod bouncy_enemy_system;
 pub mod item_spawn_system;
 pub mod rotate_system;
+pub mod projectile_system;
 pub mod interaction_system;
 pub mod interactions;
 
@@ -15,6 +16,7 @@ pub use self::player_item_system::PlayerItemSystem;
 pub use self::bouncy_enemy_system::BouncyEnemySystem;
 pub use self::item_spawn_system::ItemSpawnSystem;
 pub use self::rotate_system::RotateSystem;
+pub use self::projectile_system::ProjectileSystem;
 pub use self::interaction_system::InteractionSystem;
 
 systems! {
@@ -28,7 +30,9 @@ systems! {
         item_spawn_system: ItemSpawnSystem = ItemSpawnSystem::new(
             aspect!(<Components> all: [item_spawn])),
         rotate_system: RotateSystem = RotateSystem::new(
-            aspect!(<Components> all: [orientation, angular_velocity, rotate])),
+            aspect!(<Components> all: [rotate])),
+        projectile_system: ProjectileSystem = ProjectileSystem::new(
+            aspect!(<Components> all: [projectile])),
         interaction_system: InteractionSystem = InteractionSystem::new(
             vec![(aspect!(<Components> all: [player_state]),
                   aspect!(<Components> all: [bouncy_enemy]),
@@ -39,6 +43,9 @@ systems! {
                  (aspect!(<Components> all: [player_state]),
                   aspect!(<Components> all: [item]),
                   Box::new(interactions::PlayerItemInteraction)),
+                 (aspect!(<Components> all: [projectile]),
+                  aspect!(<Components> all: [bouncy_enemy]),
+                  Box::new(interactions::ProjectileBouncyEnemyInteraction)),
                 ])
     }
 }

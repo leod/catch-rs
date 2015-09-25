@@ -28,6 +28,7 @@ pub type EntityTypeId = u32;
 pub type PlayerId = u32;
 pub type PlayerInputNumber = u32;
 pub type ItemSlot = u32;
+
 pub const NEUTRAL_PLAYER_ID: PlayerId = 0;
 pub const NUM_ITEM_SLOTS: ItemSlot = 3;
 
@@ -73,6 +74,9 @@ pub enum GameEvent {
     },
     PlayerTakeItem {
         player_id: PlayerId,
+        position: math::Vec2,
+    },
+    EnemyDied { // This one might not be necessary
         position: math::Vec2,
     },
 

@@ -5,7 +5,7 @@ use cereal::{CerealData, CerealResult};
 
 use super::{PlayerId, ItemSlot, NUM_ITEM_SLOTS};
 
-#[derive(Clone, CerealData)]
+#[derive(Clone, Debug, CerealData)]
 pub enum Item {
     Weapon {
         charges: usize,
@@ -15,6 +15,16 @@ pub enum Item {
     },
     BlockPlacer {
         charges: usize,
+    }
+}
+
+impl Item {
+    pub fn cooldown_s(&self) -> Option<f64> {
+        match *self {
+            Item::Weapon { charges: _ } => Some(0.3),
+            Item::SpeedBoost { duration_s: _ } => None,
+            Item::BlockPlacer { charges: _ } => Some(5.0),
+        }
     }
 }
 
@@ -28,6 +38,20 @@ pub struct FullPlayerState {
     pub hidden_item: Option<Item>,
 }
 
+#[derive(Clone, CerealData)]
+pub struct EquippedItem {
+    pub item: Item,
+    pub cooldown_s: Option<f64>, // Some items have a cooldown
+}
+
+impl EquippedItem {
+    pub fn new(item: Item) -> EquippedItem {
+        EquippedItem {
+            item: item,
+            cooldown_s: None,
+        }
+    }
+}
 
 // Component attached to any player for both client and server
 #[derive(Clone, Default, CerealData)]
@@ -37,7 +61,7 @@ pub struct PlayerState {
     pub invulnerable_s: Option<f64>,
 
     // Equipped items
-    pub items: Vec<Option<Item>>,
+    pub items: Vec<Option<EquippedItem>>,
 
     // States like stunned etc.
 }
@@ -47,7 +71,7 @@ impl PlayerState {
         self.dashing.is_none() && self.invulnerable_s.is_none()
     }
 
-    pub fn get_item(&self, slot: ItemSlot) -> Option<&Item> {
+    pub fn get_item(&self, slot: ItemSlot) -> Option<&EquippedItem> {
         assert!(slot < NUM_ITEM_SLOTS);
 
         if (slot as usize) < self.items.len() {
@@ -57,7 +81,7 @@ impl PlayerState {
         }
     }
 
-    pub fn get_item_mut(&mut self, slot: ItemSlot) -> Option<&mut Item> {
+    pub fn get_item_mut(&mut self, slot: ItemSlot) -> Option<&mut EquippedItem> {
         assert!(slot < NUM_ITEM_SLOTS);
 
         if (slot as usize) < self.items.len() {
@@ -68,16 +92,22 @@ impl PlayerState {
     }
 
     pub fn equip(&mut self, slot: ItemSlot, item: Item) {
+        assert!(slot < NUM_ITEM_SLOTS);
+
         if slot as usize >= self.items.len() {
             //self.items.resize(slot as usize+1, None);
-            for _ in self.items.len()..slot as usize +1 {
+            for _ in self.items.len()..slot as usize + 1 {
                 self.items.push(None);
             }
 
             assert!(self.items.len() == (slot as usize) + 1);
         }
 
-        self.items[slot as usize] = Some(item);
+        self.items[slot as usize] = Some(EquippedItem::new(item));
+    }
+
+    pub fn unequip(&mut self, slot: ItemSlot) {
+        self.items[slot as usize] = None;
     }
 }
 

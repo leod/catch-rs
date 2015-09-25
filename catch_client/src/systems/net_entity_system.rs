@@ -97,8 +97,8 @@ impl NetEntitySystem {
             entities::build_client(type_name, entity, data);
         });
 
-        // TODO: detection of player entities
-        if owner == self.my_id {
+        // HACK: detection of player entities
+        if owner == self.my_id && self.entity_types[entity_type_id as usize].0 == "player" {
             self.my_player_entity_id = Some(entity_id);
         }
 

@@ -18,9 +18,9 @@ use piston::input::keyboard::ModifierKey;
 use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
 
+use shared::NUM_ITEM_SLOTS;
 use shared::math;
 use shared::{Item, GameEvent};
-use shared::map::LayerId;
 use shared::net::{ClientMessage, TimedPlayerInput};
 use shared::tick::Tick;
 
@@ -277,6 +277,24 @@ impl Game {
                                               1.0);
                 }
             }
+            &GameEvent::EnemyDied {
+                position,
+            } => {
+                let num = 100;
+                let color = [1.0, 0.0, 0.0];
+                for i in 0..num {
+                    self.particles.spawn_cone(0.5,
+                                              color,
+                                              color,
+                                              2.5 * rand::random::<f64>() + 1.0,
+                                              position,
+                                              0.0,
+                                              f64::consts::PI * 2.0,
+                                              100.0 + rand::random::<f64>() * 20.0,
+                                              rand::random::<f64>() * 5.0,
+                                              1.0);
+                }
+            }
             _ => ()
         };
     }
@@ -346,12 +364,10 @@ impl Game {
                 let cam_t_rect = [cam_tx_min, cam_ty_min, cam_tx_size+1, cam_ty_size+1];
 
                 self.draw_map.draw(&self.game_state.map, cam_t_rect, c, gl);
-                /*self.draw_map.draw_layer(&self.game_state.map, LayerId::Floor, c, gl);
-                self.game_state.world.systems
-                    .draw_shadow_system
-                    .draw(&mut self.game_state.world.data, c, gl);
-                self.draw_map.draw_layer(&self.game_state.map, LayerId::Block, c, gl);*/
                 self.game_state.world.systems.draw_item_system
+                    .draw(&mut self.game_state.world.data, simulation_time_s,
+                          &mut self.particles, c, gl);
+                self.game_state.world.systems.draw_projectile_system
                     .draw(&mut self.game_state.world.data, simulation_time_s,
                           &mut self.particles, c, gl);
                 self.game_state.world.systems.draw_player_system
@@ -399,27 +415,54 @@ impl Game {
 
     fn draw_player_text(&mut self, context: graphics::Context, gl: &mut GlGraphics) {
         if let Some(entity) = self.my_player_entity() {
-            let (dash_cooldown_s, hidden_item) =
+            let (dash_cooldown_s, hidden_item, player_state) =
                 self.game_state.world.with_entity_data(&entity, |e, c| {
                     (c.full_player_state[e].dash_cooldown_s,
-                     c.full_player_state[e].hidden_item.clone())
+                     c.full_player_state[e].hidden_item.clone(),
+                     c.player_state[e].clone())
                 }).unwrap();
 
-            let y1 = self.window.draw_size().height as f64 - 80.0;
+            let y1 = self.window.draw_size().height as f64 - 100.0;
             let y2 = y1 + 35.0; 
+            let y3 = y2 + 35.0;
             let color1 = [0.0, 0.0, 1.0, 1.0];
-            let color2 = [0.4, 0.4, 0.4, 1.0];
+            let color2 = [0.3, 0.3, 0.3, 1.0];
 
             self.draw_text(if dash_cooldown_s.is_none() { color1 } else { color2 },
                            20.0, y1, "dash", context, gl);
             if let Some(t) = dash_cooldown_s {
-                self.draw_text(color2, 25.0, y2, &format!("{:.1}", t), context, gl);
+                self.draw_text(color1, 25.0, y2, &format!("{:.1}", t), context, gl);
+            }
+
+            let slot_names = vec!["Q", "W", "E"]; //TODO
+            let mut cursor_x = 200.0;
+
+            for (item_slot, slot_name) in (0..NUM_ITEM_SLOTS).zip(slot_names.iter()) {
+                cursor_x += 180.0;
+
+                if let Some(equipped_item) = player_state.get_item(item_slot) {
+                    let color = if equipped_item.cooldown_s.is_none() { color1 } else { color2 };
+
+                    self.draw_text(color, cursor_x, y1, slot_name, context, gl);
+
+                    let text = &self.item_text(&equipped_item.item);
+                    self.draw_text(color, cursor_x, y2, &text, context, gl);
+
+                    if let Some(t) = equipped_item.cooldown_s {
+                        self.draw_text(color1, cursor_x + 5.0, y3, &format!("{:.1}", t),
+                                       context, gl);
+                    }
+                } else {
+                    self.draw_text(color2, cursor_x, y1, slot_name, context, gl);
+                }
             }
 
             if let Some(item) = hidden_item {
-                let text = self.item_text(item);
-                self.draw_text(color1, 200.0, y1, "hidden item", context, gl);
+                let text = self.item_text(&item);
+                self.draw_text(color1, 200.0, y1, "item", context, gl);
                 self.draw_text(color1, 200.0, y2, &text, context, gl);
+            } else {
+                self.draw_text(color2, 200.0, y1, "item", context, gl);
             }
         }
     }
@@ -434,13 +477,13 @@ impl Game {
             gl);
     }
 
-    fn item_text(&self, item: Item) -> String {
+    fn item_text(&self, item: &Item) -> String {
         match item {
-            Item::Weapon { charges } =>
+            &Item::Weapon { charges } =>
                 format!("weapon {}", charges),
-            Item::SpeedBoost { duration_s: _ } =>
+            &Item::SpeedBoost { duration_s: _ } =>
                 format!("speed boost"),
-            Item::BlockPlacer { charges: _ } =>
+            &Item::BlockPlacer { charges: _ } =>
                 format!("block placer"),
         }
     }

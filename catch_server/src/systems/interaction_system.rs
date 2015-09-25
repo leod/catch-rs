@@ -62,20 +62,29 @@ impl InteractionSystem {
                c: &Components)
                -> bool {
         match (&c.shape[e_a], &c.shape[e_b]) {
-            (&Shape::Circle { radius: ref r_a }, &Shape::Circle { radius: ref r_b }) => {
+            (&Shape::Circle { radius: r_a }, &Shape::Circle { radius: r_b }) => {
                 let d = math::square_len(math::sub(c.position[e_a].p, c.position[e_b].p)).sqrt();
 
-                d <= *r_a + *r_b
+                d <= r_a + r_b
             }
 
-            (&Shape::Circle { radius: ref r }, &Shape::Square { size: ref s }) => {
+            (&Shape::Circle { radius: r }, &Shape::Square { size: s }) => {
                 // TODO
                 let d = math::square_len(math::sub(c.position[e_a].p, c.position[e_b].p)).sqrt();
 
-                d <= *r + *s * 2.0
+                d <= r + s * 2.0
+            }
+
+            (&Shape::Circle { radius: r }, &Shape::Rect { width: w, height: h }) => {
+                // TODO
+                let d = math::square_len(math::sub(c.position[e_a].p, c.position[e_b].p)).sqrt();
+
+                d <= r + w.max(h) * 2.0
             }
 
             (&Shape::Square { size: _ }, &Shape::Circle { radius: _ }) =>
+                self.overlap(e_b, e_a, c),
+            (&Shape::Rect { width: _, height: _ }, &Shape::Circle { radius: _ }) =>
                 self.overlap(e_b, e_a, c),
 
             (shape_a, shape_b) =>

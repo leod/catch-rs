@@ -6,7 +6,8 @@ use shared::util::PeriodicTimer;
 use shared::components::{HasPosition, HasOrientation, HasLinearVelocity, HasShape, HasPlayerState,
                          HasFullPlayerState};
 pub use shared::components::{NetEntity, Position, Orientation, LinearVelocity, Shape, PlayerState,
-                             FullPlayerState, ComponentTypeTraits, component_type_traits};
+                             Projectile, FullPlayerState,
+                             ComponentTypeTraits, component_type_traits};
 
 pub struct DrawPlayer {
     pub scale_x: f64,
@@ -24,8 +25,8 @@ impl Default for DrawPlayer {
     }
 }
 
-#[derive(Default)]
-pub struct DrawBouncyEnemy;
+#[derive(Default)] pub struct DrawBouncyEnemy;
+#[derive(Default)] pub struct DrawProjectile;
 
 pub struct DrawItem {
     pub particle_timer: PeriodicTimer,
@@ -84,6 +85,7 @@ components! {
         #[cold] draw_player: DrawPlayer,
         #[cold] draw_bouncy_enemy: DrawBouncyEnemy,
         #[cold] draw_item: DrawItem,
+        #[cold] draw_projectile: DrawProjectile,
         #[cold] draw_shadow: DrawShadow,
     }
 }

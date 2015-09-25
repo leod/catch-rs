@@ -306,12 +306,12 @@ impl GameState {
 
         // Let server entities have their time
         self.world.systems.bouncy_enemy_system.tick(&self.map, &mut self.world.data);
+        self.world.systems.projectile_system.tick(&self.map, &mut self.world.data);
         self.world.systems.item_spawn_system.tick(&mut self.world.data);
         self.world.systems.rotate_system.tick(&mut self.world.data);
 
         self.world.systems.interaction_system.tick(&mut self.world.data);
         
-
         // Process generated events
         self.world.flush_queue();
 

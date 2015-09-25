@@ -68,8 +68,6 @@ impl GameState {
             // Load net state
             net_entity_system.load_tick_state(tick, &mut self.world.data);
         }
-
-        // TODO: Process other events, interpolation
     }
 
     pub fn load_interp_tick_state(&mut self, tick_a: &Tick, tick_b: &Tick) {

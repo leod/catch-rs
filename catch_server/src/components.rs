@@ -6,8 +6,8 @@ use shared::player::Item;
 use shared::components::{HasPosition, HasOrientation, HasLinearVelocity, HasShape, HasPlayerState,
                          HasFullPlayerState};
 pub use shared::components::{NetEntity, Position, Orientation, LinearVelocity, Shape, PlayerState,
-                             FullPlayerState, AngularVelocity, ComponentTypeTraits,
-                             component_type_traits};
+                             Projectile, FullPlayerState, AngularVelocity,
+                             ComponentTypeTraits, component_type_traits};
 
 #[derive(Default)]
 pub struct ServerNetEntity {
@@ -52,6 +52,7 @@ components! {
         #[cold] item: Item,
         #[cold] item_spawn: ItemSpawn,
         #[cold] rotate: Rotate,
+        #[cold] projectile: Projectile,
     }
 }
 

@@ -7,7 +7,7 @@ use shared;
 use shared::{PlayerId, GameEvent};
 
 use components::{Components, NetEntity, ServerNetEntity, LinearVelocity, BouncyEnemy, ItemSpawn,
-                 AngularVelocity, Rotate};
+                 AngularVelocity, Rotate, Projectile};
 use services::Services;
 
 /// Create a new networked entity, replicating it to the clients
@@ -82,6 +82,9 @@ pub fn build_server(type_name: &str,
     } else if type_name == "item" {
         data.angular_velocity.add(&entity, AngularVelocity { v: f64::consts::PI });
         data.rotate.add(&entity, Rotate);
+    } else if type_name == "bullet" {
+        data.linear_velocity.add(&entity, LinearVelocity::default());
+        data.projectile.add(&entity, Projectile::default());
     } else {
         panic!("Unknown net entity type: {}", type_name);
     }

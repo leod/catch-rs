@@ -61,3 +61,25 @@ impl Interaction for PlayerItemInteraction {
         });
     }
 }
+
+/// Projectiles kill enemies
+pub struct ProjectileBouncyEnemyInteraction;
+impl Interaction for ProjectileBouncyEnemyInteraction {
+    fn condition(&self,
+                 projectile_e: EntityData<Components>, enemy_e: EntityData<Components>,
+                 data:  &mut DataHelper<Components, Services>) -> bool {
+        data.net_entity[projectile_e].owner != data.net_entity[enemy_e].owner
+    }
+
+    fn apply(&self,
+             projectile_e: EntityData<Components>, enemy_e: EntityData<Components>,
+             data:  &mut DataHelper<Components, Services>) {
+        entities::remove_net(**projectile_e, data);
+        entities::remove_net(**enemy_e, data);
+
+        let position = data.position[enemy_e].p;
+        data.services.add_event(&GameEvent::EnemyDied {
+            position: position,
+        });
+    }
+}
