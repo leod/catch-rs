@@ -56,10 +56,11 @@ impl Services {
             next_player_events.insert(player_id, Vec::new()); 
         }
 
-        // Keep events that weren't sent yet
+        // Right now, we don't want to allow queueing events for a player before the tick starts
         for (id, _) in self.next_player_events.iter() {
             if next_player_events.get(id).is_some() {
-                next_player_events.insert(*id, self.next_player_events[id].clone());
+                assert!(self.next_player_events[id].is_empty());
+                //next_player_events.insert(*id, self.next_player_events[id].clone());
             }
         }
         self.next_player_events = next_player_events;

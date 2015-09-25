@@ -173,6 +173,7 @@ impl Game {
         while let Some(input) = (&mut self.window as &mut Window<Event=Input>).poll_event() {
             match input {
                 Input::Press(Button::Keyboard(Key::Escape)) => {
+                    info!("got escape input, quitting game");
                     self.quit = true;
                     return;
                 }

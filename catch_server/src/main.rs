@@ -264,8 +264,8 @@ impl Server {
 
                         self.game_state.world.systems.net_entity_system
                             .store_in_tick_state(*player_id,
-                                                &mut tick.state,
-                                                &mut self.game_state.world.data);
+                                                 &mut tick.state,
+                                                 &mut self.game_state.world.data);
 
                         match tick.write(&mut data) {
                             Err(_) => {

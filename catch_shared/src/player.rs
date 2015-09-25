@@ -63,7 +63,7 @@ pub struct PlayerState {
     // Equipped items
     pub items: Vec<Option<EquippedItem>>,
 
-    // States like stunned etc.
+    pub is_catcher: bool,
 }
 
 impl PlayerState {

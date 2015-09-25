@@ -15,13 +15,16 @@ use entities;
 
 pub struct Player {
     // Has this player been sent its first tick yet?
-    pub is_new: bool,
+    is_new: bool,
 
-    pub info: PlayerInfo,
-    pub next_input: Vec<TimedPlayerInput>,
+    // If true, player (and owned entities) will be removed next tick
+    remove: bool,
 
-    pub controlled_entity: Option<ecs::Entity>,
-    pub respawn_time: Option<f64>, 
+    info: PlayerInfo,
+    next_input: Vec<TimedPlayerInput>,
+
+    controlled_entity: Option<ecs::Entity>,
+    respawn_time: Option<f64>, 
 }
 
 pub struct SpawnPoint {
@@ -35,6 +38,7 @@ impl Player {
         assert!(!info.alive);
         Player {
             is_new: true,
+            remove: false,
             info: info,
             next_input: Vec::new(),
             controlled_entity: None,
@@ -44,13 +48,12 @@ impl Player {
 }
 
 pub struct GameState {
-    pub game_info: GameInfo,
-    pub map: Map,
-    pub spawn_points: Vec<SpawnPoint>,
+    game_info: GameInfo,
+    map: Map,
+    spawn_points: Vec<SpawnPoint>,
     pub world: ecs::World<Systems>, 
     pub tick_number: TickNumber,
-    pub time_s: f64,
-
+    time_s: f64,
     players: HashMap<PlayerId, Player>,
 }
 
@@ -192,10 +195,7 @@ impl GameState {
     }
 
     pub fn remove_player(&mut self, id: PlayerId) {
-        assert!(self.players.get(&id).is_some());
-        self.world.systems.net_entity_system
-            .remove_player_entities(id, &mut self.world.data);
-        self.players.remove(&id);
+        self.players.get_mut(&id).unwrap().remove = true;
     }
 
     pub fn get_player_info(&self, id: PlayerId) -> &PlayerInfo {
@@ -235,81 +235,20 @@ impl GameState {
         self.world.services.tick_dur_s = 1.0 / (self.game_info.ticks_per_second as f64); 
         self.world.services.prepare_for_tick(self.tick_number, self.players.keys().map(|i| *i));
 
-        if self.tick_number == 1 {
-            self.init_first_tick();
-        }
+        self.tick_replicate_entities_to_new_players();
+        if self.tick_number == 1 { self.init_first_tick(); }
+        self.tick_spawn_player_entities_if_needed();
+        self.tick_remove_disconnected_players();
+        self.tick_run_player_input();
 
-        // Replicate entities to new players
-        {
-            let mut new_players = Vec::new();
-            for (player_id, player) in self.players.iter_mut() {
-                if player.is_new {
-                    new_players.push(*player_id);
-                    player.is_new = false;
-                }
-            }
-            for player_id in new_players {
-                self.world.systems.net_entity_system
-                    .replicate_entities(player_id, &mut self.world.data);
-            }
-        }
-
-        // Spawn player entities if needed
-        {
-            let mut respawn = Vec::new();
-            for (player_id, player) in self.players.iter_mut() {
-                if !player.info.alive {
-                    assert!(player.controlled_entity.is_none());
-
-                    if let Some(time) = player.respawn_time {
-                        let time = time - self.world.services.tick_dur_s;
-
-                        player.respawn_time = if time <= 0.0 {
-                            respawn.push(*player_id);
-                            None   
-                        } else {
-                            Some(time)
-                        };
-                    }
-
-                }
-            }
-            for player_id in respawn {
-                self.spawn_player(player_id); 
-            }
-        }
-
-        // Flush ecs queue: let all the systems know about any new entities
+        // Let all the systems know about any new/removed ecs entities
         self.world.flush_queue();
-
-        // Run input of players
-        {
-            let mut input = Vec::new();
-            for (player_id, player) in self.players.iter() {
-                match player.controlled_entity {
-                    Some(entity) => {
-                        for player_input in &player.next_input {
-                            input.push((*player_id, entity, player_input.clone()));
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            for (player_id, entity, player_input) in input {
-                self.run_player_input(player_id, entity, &player_input);
-            }
-        }
-
-        for (_, player) in self.players.iter_mut() {
-            player.next_input.clear();
-        }
 
         // Let server entities have their time
         self.world.systems.bouncy_enemy_system.tick(&self.map, &mut self.world.data);
         self.world.systems.projectile_system.tick(&self.map, &mut self.world.data);
         self.world.systems.item_spawn_system.tick(&mut self.world.data);
         self.world.systems.rotate_system.tick(&mut self.world.data);
-
         self.world.systems.interaction_system.tick(&mut self.world.data);
         
         // Process generated events
@@ -325,5 +264,83 @@ impl GameState {
         self.world.services.next_events.clear();
 
         self.time_s += self.world.services.tick_dur_s;
+    }
+
+    fn tick_replicate_entities_to_new_players(&mut self) {
+        let mut new_players = Vec::new();
+        for (player_id, player) in self.players.iter_mut() {
+            if player.is_new {
+                info!("replicating net state to player {}", player_id);
+                new_players.push(*player_id);
+                player.is_new = false;
+            }
+        }
+        for player_id in new_players {
+            self.world.systems.net_entity_system
+                .replicate_entities(player_id, &mut self.world.data);
+        }
+    }
+
+    fn tick_spawn_player_entities_if_needed(&mut self) {
+        let mut respawn = Vec::new();
+        for (player_id, player) in self.players.iter_mut() {
+            if !player.info.alive {
+                assert!(player.controlled_entity.is_none());
+
+                if let Some(time) = player.respawn_time {
+                    let time = time - self.world.services.tick_dur_s;
+
+                    player.respawn_time = if time <= 0.0 {
+                        respawn.push(*player_id);
+                        None   
+                    } else {
+                        Some(time)
+                    };
+                }
+
+            }
+        }
+
+        for player_id in respawn {
+            self.spawn_player(player_id); 
+        }
+    }
+
+    fn tick_remove_disconnected_players(&mut self) {
+        let mut remove = Vec::new();
+        for (player_id, player) in self.players.iter_mut() {
+            if player.remove {
+                info!("removing player {}", player_id);
+                remove.push(*player_id);
+            }
+        }
+
+        for &id in remove.iter() {
+            self.world.systems.net_entity_system
+                .remove_player_entities(id, &mut self.world.data);
+            self.players.remove(&id); 
+        }
+    }
+
+    fn tick_run_player_input(&mut self) {
+        let mut input = Vec::new();
+        for (player_id, player) in self.players.iter() {
+            match player.controlled_entity {
+                Some(entity) => {
+                    for player_input in &player.next_input {
+                        input.push((*player_id, entity, player_input.clone()));
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        for (player_id, entity, player_input) in input {
+            self.run_player_input(player_id, entity, &player_input);
+        }
+
+        for (_, player) in self.players.iter_mut() {
+            player.next_input.clear();
+        }
     }
 }
