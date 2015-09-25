@@ -51,16 +51,14 @@ impl DrawPlayerSystem {
                                      color[1] + (-0.5 + rand::random::<f32>()) * 0.2,
                                      color[2] + (-0.5 + rand::random::<f32>()) * 0.2];
                         particles.spawn_cone(1.0, // duration in seconds
-                                             //[0.9, 0.5, 0.0], // color a
-                                             //[0.2, 0.77, 0.95], // color b
-                                             //[0.2, 0.77, 0.95], // color b
                                              color, color,
                                              2.5, // size
                                              p, // position
                                              data.orientation[entity].angle - f64::consts::PI,
                                              f64::consts::PI / 8.0,
                                              100.0 + rand::random::<f64>() * 50.0, // speed
-                                             f64::consts::PI * 2.0,
+                                             //f64::consts::PI * 2.0,
+                                             0.0,
                                              1.0,
                                              );
                     }

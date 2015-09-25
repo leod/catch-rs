@@ -62,6 +62,12 @@ pub enum GameEvent {
         position: math::Vec2,
         orientation: f64,
     },
+    PlayerFlip {
+        player_id: PlayerId,
+        position: math::Vec2,
+        orientation: f64,
+        velocity: f64,
+    },
 
     TakeItem(PlayerId, EntityId),
     //UseItem(PlayerId, ItemType),

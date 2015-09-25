@@ -248,21 +248,25 @@ impl Game {
 
     fn process_game_event(&mut self, event: &GameEvent) {
         match event {
-            &GameEvent::PlayerDash {
+            &GameEvent::PlayerFlip {
                 player_id: _,
                 ref position,
-                ref orientation
+                ref orientation,
+                ref velocity,
             } => {
-                /*for i in 0..200 {
-                    self.particles.spawn_cone(1.0,
-                                              [0.2, 0.77, 0.95],
-                                              2.0,
+                let num = (3.0 * velocity.sqrt()) as usize;
+                for i in 0..num {
+                    self.particles.spawn_cone(0.5,
+                                              [0.0, 0.0, 0.0],
+                                              [0.0, 0.0, 0.0],
+                                              1.5,
                                               *position,
-                                              500.0 + rand::random::<f64>() * 50.0,
-                                              f64::consts::PI * 8.0,
                                               *orientation - f64::consts::PI,
-                                              f64::consts::PI / 8.0);
-                }*/
+                                              f64::consts::PI,
+                                              20.0 + rand::random::<f64>() * 20.0,
+                                              0.0,
+                                              1.0);
+                }
             }
             _ => ()
         };
@@ -357,6 +361,16 @@ impl Game {
 
         let s = &format!("time factor: {:.1}", self.time_factor);
         self.draw_text(color, 10.0, 135.0, s, c, gl);
+
+        if let Some(entity) = self.my_player_entity() {
+            let speed =
+                self.game_state.world.with_entity_data(&entity, |e, c| {
+                    math::square_len(c.linear_velocity[e].v).sqrt()
+                }).unwrap();
+
+            let s = &format!("player speed: {}", speed);
+            self.draw_text(color, 10.0, 170.0, s, c, gl);
+        }
     }
 
     fn draw_player_text(&mut self, context: graphics::Context, gl: &mut GlGraphics) {

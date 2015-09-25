@@ -58,7 +58,7 @@ impl PlayerMovementSystem {
                     e: EntityData<Components>,
                     delta: math::Vec2,
                     map: &Map,
-                    data: &mut Components) {
+                    data: &mut Components) -> Vec<GameEvent> {
         let p = data.position[e].p;
         let q = math::add(p, delta);
 
@@ -76,13 +76,15 @@ impl PlayerMovementSystem {
                 data.position[e].p = q;
             }
         };
+
+        Vec::new()
     }
 
     pub fn move_flipping(&self,
                          e: EntityData<Components>,
                          delta: math::Vec2,
                          map: &Map,
-                         data: &mut Components) {
+                         data: &mut Components) -> Vec<GameEvent> {
         let p = data.position[e].p;
         let q = math::add(p, delta);
 
@@ -103,11 +105,22 @@ impl PlayerMovementSystem {
 
                 let s = (intersection.t - 0.0001).max(0.0);
                 data.position[e].p = math::add(p, math::scale(delta, s));
+
+                // TODO: Actually at this point we still might have some 't' left to walk
+
+                vec![GameEvent::PlayerFlip {
+                         player_id: data.net_entity[e].owner,
+                         position: data.position[e].p,
+                         orientation: angle,
+                         velocity: speed,
+                     }]
             }
             None => {
                 data.position[e].p = q;
+
+                vec![]
             }
-        };
+        }
     }
 
     pub fn run_player_input(&self,
@@ -133,11 +146,11 @@ impl PlayerMovementSystem {
                     else { Some(inv_s) };
             }
 
-            if !input.has(PlayerInputKey::Flip) {
-                self.move_sliding(e, math::scale(c.linear_velocity[e].v, dur_s), map, c);
+            let mut events = if !input.has(PlayerInputKey::Flip) {
+                self.move_sliding(e, math::scale(c.linear_velocity[e].v, dur_s), map, c)
             } else {
-                self.move_flipping(e, math::scale(c.linear_velocity[e].v, dur_s), map, c);
-            }
+                self.move_flipping(e, math::scale(c.linear_velocity[e].v, dur_s), map, c)
+            };
 
             let angle = c.orientation[e].angle;
             let direction = [angle.cos(), angle.sin()];
@@ -213,14 +226,16 @@ impl PlayerMovementSystem {
                     c.full_player_state[e].dash_cooldown_s = Some(5.0);
                     c.angular_velocity[e].v = 0.0;
 
-                    return vec![GameEvent::PlayerDash {
-                                    player_id: c.net_entity[e].owner,
-                                    position: c.position[e].p,
-                                    orientation: c.orientation[e].angle,
-                                }];
+                    events.push(
+                        GameEvent::PlayerDash {
+                            player_id: c.net_entity[e].owner,
+                            position: c.position[e].p,
+                            orientation: c.orientation[e].angle,
+                        });
                 }
             }
-            vec![]
+
+            events
         }).unwrap();
 
         for event in events.iter() {
