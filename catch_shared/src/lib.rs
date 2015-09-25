@@ -58,6 +58,7 @@ pub enum GameEvent {
     // Not yet used, since we haven't implemented client-side prediction so far
     CorrectState(TickNumber),
 
+    // The following events are sent to the clients so that they can do some graphical display
     PlayerDash {
         player_id: PlayerId,
         position: math::Vec2,
@@ -69,6 +70,10 @@ pub enum GameEvent {
         orientation: f64,
         speed: f64,
         orientation_wall: f64,
+    },
+    PlayerTakeItem {
+        player_id: PlayerId,
+        position: math::Vec2,
     },
 
     TakeItem(PlayerId, EntityId),

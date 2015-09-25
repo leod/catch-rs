@@ -52,5 +52,12 @@ impl Interaction for PlayerItemInteraction {
              data: &mut DataHelper<Components, Services>) {
         data.full_player_state[player_e].hidden_item = Some(data.item[item_e].clone());
         entities::remove_net(**item_e, data);
+
+        let owner = data.net_entity[player_e].owner;
+        let position = data.position[player_e].p;
+        data.services.add_event(&GameEvent::PlayerTakeItem {
+           player_id: owner,
+           position: position,
+        });
     }
 }
