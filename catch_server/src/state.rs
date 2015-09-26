@@ -303,18 +303,41 @@ impl GameState {
 
     fn tick_remove_disconnected_players(&mut self) {
         let mut remove = Vec::new();
-        for (player_id, player) in self.players.iter_mut() {
+        for (&player_id, player) in self.players.iter_mut() {
             if player.remove {
                 info!("removing player {}", player_id);
-                remove.push(*player_id);
+                remove.push(player_id);
             }
         }
 
         for &id in remove.iter() {
+            let is_catcher = if let Some(entity) = self.players[&id].entity {
+                self.world.with_entity_data(&entity, |e, c| {
+                    c.player_state[e].is_catcher
+                }).unwrap()
+            } else {
+                false
+            };
+
             self.world.systems.net_entity_system
                 .remove_player_entities(id, &mut self.world.data);
             self.players.remove(&id); 
+
+            // If the disconnected player was the catcher, choose a random new one
+            let alive_players = self.players.iter()
+                                    .filter(|&(&other_id, player)| player.alive())
+                                    .map(|(&id, _)| id)
+                                    .collect::<Vec<_>>();
+            if !alive_players.is_empty() {
+                let chosen_one = alive_players[rand::random::<usize>() % alive_players.len()];
+
+                self.world.with_entity_data(&self.players[&chosen_one].entity.unwrap(), |e, c| {
+                    assert!(c.player_state[e].is_catcher);
+                    c.player_state[e].is_catcher = true;
+                });
+            }
         }
+
     }
 
     fn tick_run_player_input(&mut self) {

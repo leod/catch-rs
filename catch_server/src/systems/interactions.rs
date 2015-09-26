@@ -62,7 +62,7 @@ impl Interaction for PlayerItemInteraction {
         entities::remove_net(**item_e, data);
 
         let owner = data.net_entity[player_e].owner;
-        let position = data.position[player_e].p;
+        let position = data.position[item_e].p;
         data.services.add_event(&GameEvent::PlayerTakeItem {
            player_id: owner,
            position: position,
