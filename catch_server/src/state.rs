@@ -332,7 +332,7 @@ impl GameState {
                 let chosen_one = alive_players[rand::random::<usize>() % alive_players.len()];
 
                 self.world.with_entity_data(&self.players[&chosen_one].entity.unwrap(), |e, c| {
-                    assert!(c.player_state[e].is_catcher);
+                    assert!(!c.player_state[e].is_catcher);
                     c.player_state[e].is_catcher = true;
                 });
             }
