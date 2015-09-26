@@ -303,7 +303,7 @@ fn main() {
         ticks_per_second: 30,
     };
 
-    match Server::start(&game_info, 2338, 32).as_mut() {
+    match Server::start(&game_info, 9988, 32).as_mut() {
         Ok(server) =>
             server.run(),
         Err(error) =>

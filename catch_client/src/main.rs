@@ -67,10 +67,11 @@ fn main() {
 
     // Connect
     enet::initialize().unwrap();
-    info!("connecting to {}", address);
+    let port = 9988;
+    info!("connecting to {}:{}", address, port);
     let mut client = Client::connect(5000,
                                      address,
-                                     2338,
+                                     9988,
                                      "leo".to_string()).unwrap();
     client.finish_connecting(5000).unwrap();
 

@@ -92,7 +92,7 @@ impl GameState {
                 });
             } else if &object.type_str == "player_spawn" {
             } else {
-                warn!("Ignoring unknown entity type {} in map", object.type_str);
+                warn!("ignoring unknown entity type {} in map", object.type_str);
             }
         }
     }
@@ -213,10 +213,10 @@ impl GameState {
             .next_input.push(input.clone());
     }
 
-    pub fn run_player_input(&mut self,
-                            player_id: PlayerId,
-                            entity: ecs::Entity,
-                            input: &TimedPlayerInput) {
+    fn run_player_input(&mut self,
+                        player_id: PlayerId,
+                        entity: ecs::Entity,
+                        input: &TimedPlayerInput) {
         self.world.systems.player_movement_system
             .run_player_input(entity, input, &self.map, &mut self.world.data);
         self.world.systems.player_item_system
@@ -231,6 +231,8 @@ impl GameState {
 
     // For now, the resulting tick data will be written in Services::next_tick
     pub fn tick(&mut self) {
+        self.check_integrity();
+
         self.tick_number += 1;
         self.world.services.tick_dur_s = 1.0 / (self.game_info.ticks_per_second as f64); 
         self.world.services.prepare_for_tick(self.tick_number, self.players.keys().map(|i| *i));
@@ -325,13 +327,10 @@ impl GameState {
     fn tick_run_player_input(&mut self) {
         let mut input = Vec::new();
         for (player_id, player) in self.players.iter() {
-            match player.controlled_entity {
-                Some(entity) => {
-                    for player_input in &player.next_input {
-                        input.push((*player_id, entity, player_input.clone()));
-                    }
+            if let Some(entity) = player.controlled_entity {
+                for player_input in &player.next_input {
+                    input.push((*player_id, entity, player_input.clone()));
                 }
-                _ => {}
             }
         }
 
@@ -342,5 +341,26 @@ impl GameState {
         for (_, player) in self.players.iter_mut() {
             player.next_input.clear();
         }
+    }
+
+    fn check_integrity(&mut self) {
+        /*// When we have at least one player that is alive, there should be exactly one catcher
+        let mut num_alive = 0;
+        let mut num_catchers = 0;
+
+        for (_, player) in self.players.iter() {
+            if let Some(entity) = player.controlled_entity {
+                num_alive += 1;
+                self.world.with_entity_data(&entity, |e, c| {
+                    if c.player_state[e].is_catcher {
+                        num_catchers += 1;
+                    }
+                });
+            }
+        }
+
+        if num_alive > 0 {
+            assert!(num_catchers == 1, "There should be exactly one catcher!");
+        }*/
     }
 }

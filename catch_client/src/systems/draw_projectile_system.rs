@@ -28,7 +28,7 @@ impl DrawProjectileSystem {
             let p = data.position[entity].p;
             let angle = data.orientation[entity].angle;
 
-            let (w,h) = match data.shape[entity] {
+            let (w, h) = match data.shape[entity] {
                 Shape::Rect { width, height } => (width, height),
                 _ => panic!("projectile should be rect"),
             };
