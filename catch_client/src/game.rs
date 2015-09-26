@@ -20,7 +20,7 @@ use opengl_graphics::glyph_cache::GlyphCache;
 
 use shared::NUM_ITEM_SLOTS;
 use shared::math;
-use shared::{Item, GameEvent};
+use shared::{Item, GameEvent, PlayerId};
 use shared::net::{ClientMessage, TimedPlayerInput};
 use shared::tick::Tick;
 
@@ -145,24 +145,20 @@ impl Game {
     fn start_tick(&mut self) {
         assert!(self.client.num_ticks() >= 2);
 
-        let (tick_number, events) = {
-            let tick = self.client.pop_next_tick().1;
-            let next_tick = &self.client.get_next_tick().1;
-
-            self.game_state.run_tick(&tick);
-            self.game_state.load_interp_tick_state(&tick, next_tick);
-
-            let (tick_number, events) = (tick.tick_number, tick.events.clone());
-
-            self.current_tick = Some(tick);
-
-            (tick_number, events)
-        };
-
-        for event in events.iter() {
-            debug!("tick {}: {:?}", tick_number, event);
+        let tick = self.client.pop_next_tick().1;
+        for event in tick.events.iter() {
+            debug!("tick {}: {:?}", tick.tick_number, event);
             self.process_game_event(event);
         }
+
+        let next_tick = &self.client.get_next_tick().1;
+
+        self.game_state.run_tick(&tick);
+        self.game_state.load_interp_tick_state(&tick, next_tick);
+
+        let (tick_number, events) = (tick.tick_number, tick.events.clone());
+
+        self.current_tick = Some(tick);
     }
 
     fn client_service(&mut self) {
@@ -241,8 +237,29 @@ impl Game {
         }
     }
 
+    /// Produce graphics such as particles and audio from game events
     fn process_game_event(&mut self, event: &GameEvent) {
         match event {
+            &GameEvent::PlayerDied {
+                player_id,
+                position,
+                responsible_player_id: _
+            } => {
+                let entity = self.get_player_entity(player_id).unwrap();
+                let color = self.game_state.world.with_entity_data(&entity, |e, c| {
+                    [c.draw_player[e].color[0],
+                     c.draw_player[e].color[1],
+                     c.draw_player[e].color[2]]
+                }).unwrap();
+
+                let num = 100;
+                for i in 0..num {
+                    self.particles.spawn_cone(0.6, color, color, 3.5 * rand::random::<f64>() + 2.0,
+                                              position, 0.0, f64::consts::PI * 2.0,
+                                              70.0 + rand::random::<f64>() * 40.0,
+                                              rand::random::<f64>() * 8.0, 1.0);
+                }
+            }
             &GameEvent::PlayerDash {
                 player_id: _,
                 position,
@@ -293,7 +310,7 @@ impl Game {
                 for i in 0..num {
                     self.particles.spawn_cone(0.5, color, color, 2.5 * rand::random::<f64>() + 1.0,
                                               position, 0.0, f64::consts::PI * 2.0,
-                                              100.0 + rand::random::<f64>() * 20.0,
+                                              70.0 + rand::random::<f64>() * 20.0,
                                               rand::random::<f64>() * 5.0, 1.0);
                 }
             }
@@ -335,7 +352,7 @@ impl Game {
         gl.draw(viewport, |c, gl| {
             graphics::clear([0.0, 0.0, 0.0, 0.0], gl);
 
-            let pos = self.my_player_position().unwrap_or([0.0, 0.0]);
+            let pos = self.get_my_player_position().unwrap_or([0.0, 0.0]);
             self.cam_pos = math::add(self.cam_pos,
                                      math::scale(math::sub(pos, self.cam_pos),
                                      0.15));
@@ -417,7 +434,7 @@ impl Game {
         let s = &format!("time factor: {:.1}", self.time_factor);
         self.draw_text(color, 10.0, 135.0, s, c, gl);
 
-        if let Some(entity) = self.my_player_entity() {
+        if let Some(entity) = self.get_my_player_entity() {
             let speed =
                 self.game_state.world.with_entity_data(&entity, |e, c| {
                     math::square_len(c.linear_velocity[e].v).sqrt()
@@ -429,7 +446,7 @@ impl Game {
     }
 
     fn draw_player_text(&mut self, context: graphics::Context, gl: &mut GlGraphics) {
-        if let Some(entity) = self.my_player_entity() {
+        if let Some(entity) = self.get_my_player_entity() {
             let (dash_cooldown_s, hidden_item, player_state) =
                 self.game_state.world.with_entity_data(&entity, |e, c| {
                     (c.full_player_state[e].dash_cooldown_s,
@@ -502,22 +519,21 @@ impl Game {
                 format!("block placer"),
         }
     }
+
+    fn get_player_entity(&mut self, player_id: PlayerId) -> Option<ecs::Entity> {
+        self.game_state.world.systems.net_entity_system.inner
+            .as_ref().unwrap()
+            .get_player_entity(player_id)
+    }
     
-    fn my_player_entity(&mut self) -> Option<ecs::Entity> {
-        match self.game_state.world.systems.net_entity_system.inner
-                                   .as_ref().unwrap()
-                                   .my_player_entity_id() {
-            Some(player_entity_id) =>
-                Some(self.game_state.world.systems
-                         .net_entity_system.inner.as_ref().unwrap()
-                         .get_entity(player_entity_id)
-                         .unwrap()),
-            None => None
-        }
+    fn get_my_player_entity(&mut self) -> Option<ecs::Entity> {
+        self.game_state.world.systems.net_entity_system.inner
+            .as_ref().unwrap()
+            .get_my_player_entity()
     }
 
-    fn my_player_position(&mut self) -> Option<math::Vec2> {
-        self.my_player_entity().map(|entity| {
+    fn get_my_player_position(&mut self) -> Option<math::Vec2> {
+        self.get_my_player_entity().map(|entity| {
             self.game_state.world.with_entity_data(&entity, |e, c| {
                 c.position[e].p
             }).unwrap()

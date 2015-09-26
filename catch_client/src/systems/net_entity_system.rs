@@ -22,8 +22,10 @@ pub struct NetEntitySystem {
     // Map from network entity ids to the local component system's entity id
     entities: HashMap<EntityId, ecs::Entity>,
 
+    // Store for each player the current entity
+    player_entities: HashMap<PlayerId, ecs::Entity>,
+
     my_id: PlayerId,
-    my_player_entity_id: Option<EntityId>,
 }
 
 impl NetEntitySystem {
@@ -32,13 +34,17 @@ impl NetEntitySystem {
             entity_types: entity_types.clone(),
             component_type_traits: components::component_type_traits(),
             entities: HashMap::new(),
+            player_entities: HashMap::new(),
             my_id: my_id,
-            my_player_entity_id: None,
         }
     }
 
-    pub fn my_player_entity_id(&self) -> Option<EntityId> {
-        self.my_player_entity_id
+    pub fn get_my_player_entity(&self) -> Option<ecs::Entity> {
+        self.get_player_entity(self.my_id)
+    }
+
+    pub fn get_player_entity(&self, player_id: PlayerId) -> Option<ecs::Entity> {
+        self.player_entities.get(&player_id).map(|e| *e)
     }
 
     pub fn get_entity(&self, id: EntityId) -> Option<ecs::Entity> {
@@ -98,8 +104,9 @@ impl NetEntitySystem {
         });
 
         // HACK: detection of player entities
-        if owner == self.my_id && self.entity_types[entity_type_id as usize].0 == "player" {
-            self.my_player_entity_id = Some(entity_id);
+        if self.entity_types[entity_type_id as usize].0 == "player" {
+            assert!(self.player_entities.get(&owner).is_none());
+            self.player_entities.insert(owner, entity);
         }
 
         self.entities.insert(entity_id, entity);
@@ -109,13 +116,29 @@ impl NetEntitySystem {
     fn remove_entity(&mut self,
                      entity_id: EntityId,
                      data: &mut DataHelper<Components, Services>) {
-        if self.my_player_entity_id == Some(entity_id) {
-            self.my_player_entity_id = None;
-        }
 
         if self.entities.get(&entity_id).is_some() {
             info!("removing entity with id {}", entity_id);
-            data.remove_entity(self.entities[&entity_id]);
+
+            let entity = self.entities[&entity_id].clone();
+
+            // Clear references to the entity
+            {
+                let mut remove_id = None;
+
+                for (player_id, player_entity) in self.player_entities.iter_mut() {
+                    if *player_entity == entity {
+                        assert!(remove_id.is_none()); 
+                        remove_id = Some(*player_id);
+                    }
+                }
+
+                if let Some(remove_id) = remove_id {
+                    self.player_entities.remove(&remove_id);
+                }
+            }
+
+            data.remove_entity(entity);
             self.entities.remove(&entity_id);
         } else {
             panic!("unkown net entity id: {}", entity_id);

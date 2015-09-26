@@ -12,18 +12,21 @@ use systems::interaction_system::Interaction;
 /// Kill player on hitting enemy
 pub struct PlayerBouncyEnemyInteraction;
 impl Interaction for PlayerBouncyEnemyInteraction {
+    fn condition(&self,
+                 player_e: EntityData<Components>, _enemy_e: EntityData<Components>,
+                 data: &mut DataHelper<Components, Services>) -> bool {
+        data.player_state[player_e].vulnerable()
+    }
     fn apply(&self,
              player_e: EntityData<Components>, _enemy_e: EntityData<Components>,
              data: &mut DataHelper<Components, Services>) {
-        if data.player_state[player_e].vulnerable() {
-            let owner = data.net_entity[player_e].owner;
-            let position = data.position[player_e].p;
-            data.services.add_event_to_run(&GameEvent::PlayerDied {
-                player_id: owner,
-                position: position,
-                responsible_player_id: NEUTRAL_PLAYER_ID
-            });
-        }
+        let owner = data.net_entity[player_e].owner;
+        let position = data.position[player_e].p;
+        data.services.add_event_to_run(&GameEvent::PlayerDied {
+            player_id: owner,
+            position: position,
+            responsible_player_id: NEUTRAL_PLAYER_ID
+        });
     }
 }
 
@@ -100,7 +103,8 @@ impl Interaction for ProjectilePlayerInteraction {
     fn condition(&self,
                  projectile_e: EntityData<Components>, player_e: EntityData<Components>,
                  data: &mut DataHelper<Components, Services>) -> bool {
-        data.net_entity[projectile_e].owner != data.net_entity[player_e].owner
+        data.net_entity[projectile_e].owner != data.net_entity[player_e].owner &&
+        data.player_state[player_e].vulnerable()
     }
 
     fn apply(&self,
@@ -130,8 +134,8 @@ impl Interaction for PlayerPlayerInteraction {
     fn condition(&self,
                  player1_e: EntityData<Components>, player2_e: EntityData<Components>,
                  data: &mut DataHelper<Components, Services>) -> bool {
-        data.player_state[player1_e].is_catcher ||
-        data.player_state[player2_e].is_catcher
+        (data.player_state[player1_e].is_catcher && data.player_state[player2_e].vulnerable()) ||
+        (data.player_state[player2_e].is_catcher && data.player_state[player1_e].vulnerable())
     }
 
     fn apply(&self,
