@@ -46,7 +46,11 @@ pub struct GameInfo {
 pub enum GameEvent {
     PlayerJoin(PlayerId, String),
     PlayerLeave(PlayerId),
-    PlayerDied(PlayerId, PlayerId),
+    PlayerDied {
+        player_id: PlayerId,
+        position: math::Vec2, 
+        responsible_player_id: PlayerId,
+    },
     
     CreateEntity(EntityId, EntityTypeId, PlayerId),
     RemoveEntity(EntityId),
@@ -77,6 +81,9 @@ pub enum GameEvent {
         position: math::Vec2,
     },
     EnemyDied { // This one might not be necessary
+        position: math::Vec2,
+    },
+    ProjectileImpact {
         position: math::Vec2,
     },
 

@@ -61,7 +61,7 @@ fn main() {
 
     let opengl = OpenGL::V3_2;
     let window = GlutinWindow::new(
-        WindowSettings::new("catching game", [1024, 768])
+        WindowSettings::new("catching game", [800, 600])
         .opengl(opengl)
         .exit_on_esc(true)
         .vsync(true)

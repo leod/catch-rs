@@ -1,6 +1,6 @@
 #!/bin/sh
 cd catch_server &&
-cargo build &&
+cargo build $1 &&
 cd ../catch_client &&
-cargo build &&
+cargo build $1 &&
 cd ../

@@ -5,13 +5,15 @@ use ecs;
 use rand;
 
 use shared::math;
-use shared::{TickNumber, GameInfo, GameEvent, PlayerId, PlayerInfo};
+use shared::{TickNumber, GameInfo, GameEvent, PlayerId, PlayerInfo, Item};
 use shared::map::{LayerId, Map};
 use shared::net::TimedPlayerInput;
 
 use systems::Systems;
 use services::Services;
 use entities;
+
+const RESPAWN_TIME_S: f64 = 5.0;
 
 pub struct Player {
     // Has this player been sent its first tick yet?
@@ -23,7 +25,9 @@ pub struct Player {
     info: PlayerInfo,
     next_input: Vec<TimedPlayerInput>,
 
-    controlled_entity: Option<ecs::Entity>,
+    // Entity controlled by the player, if alive
+    entity: Option<ecs::Entity>,
+
     respawn_time: Option<f64>, 
 }
 
@@ -35,15 +39,18 @@ pub struct SpawnPoint {
 
 impl Player {
     fn new(info: PlayerInfo) -> Player {
-        assert!(!info.alive);
         Player {
             is_new: true,
             remove: false,
             info: info,
             next_input: Vec::new(),
-            controlled_entity: None,
+            entity: None,
             respawn_time: Some(0.0),
         }
+    }
+
+    fn alive(&self) -> bool {
+        self.entity.is_some()
     }
 }
 
@@ -144,15 +151,14 @@ impl GameState {
     }
 
     fn spawn_player(&mut self, id: PlayerId) -> ecs::Entity {
-        assert!(self.players[&id].controlled_entity.is_none(),
+        assert!(self.players[&id].entity.is_none(),
                 "Can't spawn a player that is already controlling an entity");
-        assert!(!self.players[&id].info.alive);
 
         let entity = entities::build_net("player", id, &mut self.world.data);
 
-        self.players.get_mut(&id).unwrap().controlled_entity = Some(entity);
-        self.players.get_mut(&id).unwrap().info.alive = true;
+        self.players.get_mut(&id).unwrap().entity = Some(entity);
 
+        // Pick a random spawn point
         let position = {
             let spawn_point = &self.spawn_points[rand::random::<usize>() %
                                                  self.spawn_points.len()];
@@ -160,38 +166,19 @@ impl GameState {
              spawn_point.position[1] + rand::random::<f64>() * spawn_point.size[1]]
         };
 
+        // If we don't have a catcher right now, this player is lucky
+        let is_catcher = self.current_catcher() == None; 
+
         self.world.with_entity_data(&entity, |e, c| {
             c.position[e].p = position;
             c.player_state[e].invulnerable_s = Some(2.5);
+            c.player_state[e].is_catcher = is_catcher;
+
+            // We'll equip a gun for now
+            c.player_state[e].equip(0, Item::Weapon { charges: 20 }); 
         });
         
         entity
-    }
-
-    fn process_event(&mut self, event: GameEvent) {
-        match event {
-            GameEvent::PlayerDied(player_id, _cause_player_id) => {
-                info!("killing player {}", player_id);
-
-                if !self.get_player_info(player_id).alive {
-                    info!("killing a dead player! HAH!");
-                } else {
-                    let entity = {
-                        let player = self.players.get_mut(&player_id).unwrap();
-                        let entity = player.controlled_entity.unwrap();
-
-                        player.info.alive = false;
-                        player.controlled_entity = None;
-                        player.respawn_time = Some(5.0);
-
-                        entity
-                    };
-
-                    entities::remove_net(entity, &mut self.world.data);
-                }
-            },
-            _ => (),
-        }
     }
 
     pub fn remove_player(&mut self, id: PlayerId) {
@@ -213,6 +200,18 @@ impl GameState {
             .next_input.push(input.clone());
     }
 
+    fn current_catcher(&mut self) -> Option<PlayerId> {
+        for (player_id, player) in self.players.iter() {
+            if let Some(entity) = player.entity {
+                if self.world.with_entity_data(&entity, |e, c| c.player_state[e].is_catcher)
+                       .unwrap() {
+                    return Some(*player_id);
+                }
+            }
+        }
+        return None;
+    }
+
     fn run_player_input(&mut self,
                         player_id: PlayerId,
                         entity: ecs::Entity,
@@ -221,15 +220,10 @@ impl GameState {
             .run_player_input(entity, input, &self.map, &mut self.world.data);
         self.world.systems.player_item_system
             .run_player_input(entity, input, &self.map, &mut self.world.data);
-
-        // Tell the player in that their input has been processed.
-        // TODO: Should this be done on a level thats finer than ticks?!
-        // The following GameEvent will be sent with the next tick the server starts!
-        /*self.world.services.add_player_event(player_id,
-            GameEvent::CorrectState(input_client_tick));*/
     }
 
-    // For now, the resulting tick data will be written in Services::next_tick
+    /// Advances the state of the server by one tick.
+    /// Events generated during the tick are stored for each player separately in the services.
     pub fn tick(&mut self) {
         self.check_integrity();
 
@@ -253,14 +247,15 @@ impl GameState {
         self.world.systems.rotate_system.tick(&mut self.world.data);
         self.world.systems.interaction_system.tick(&mut self.world.data);
         
-        // Process generated events
+        // Process events generated in this tick
         self.world.flush_queue();
 
-        // TODO: There might be a subtle problem with orderings here
-        // (events might be processed in a different order on some clients)
         for i in 0..self.world.services.next_events.len() {
+            // TODO: There might be a subtle problem with orderings here
+            // (events might be processed in a different order on some clients)
+
             let event = self.world.services.next_events[i].clone();
-            self.process_event(event);
+            self.tick_process_event(event);
             self.world.flush_queue();
         }
         self.world.services.next_events.clear();
@@ -286,9 +281,7 @@ impl GameState {
     fn tick_spawn_player_entities_if_needed(&mut self) {
         let mut respawn = Vec::new();
         for (player_id, player) in self.players.iter_mut() {
-            if !player.info.alive {
-                assert!(player.controlled_entity.is_none());
-
+            if !player.alive() {
                 if let Some(time) = player.respawn_time {
                     let time = time - self.world.services.tick_dur_s;
 
@@ -327,7 +320,7 @@ impl GameState {
     fn tick_run_player_input(&mut self) {
         let mut input = Vec::new();
         for (player_id, player) in self.players.iter() {
-            if let Some(entity) = player.controlled_entity {
+            if let Some(entity) = player.entity {
                 for player_input in &player.next_input {
                     input.push((*player_id, entity, player_input.clone()));
                 }
@@ -343,13 +336,88 @@ impl GameState {
         }
     }
 
+    fn tick_process_event(&mut self, event: GameEvent) {
+        match event {
+            GameEvent::PlayerDied {
+                player_id,
+                position,
+                responsible_player_id,
+            } => {
+                info!("killing player {}", player_id);
+
+                if !self.players[&player_id].alive() {
+                    info!("killing a dead player! HAH!");
+                } else {
+                    let player_entity = self.players[&player_id].entity.unwrap();
+
+                    // If this player is the catcher, we need to determine a new catcher
+                    let is_catcher = self.world.with_entity_data(&player_entity, |e, c| {
+                        let is_catcher = c.player_state[e].is_catcher;
+                        c.player_state[e].is_catcher = false;
+                        is_catcher
+                    }).unwrap();
+
+                    if is_catcher {
+                        let responsible_entity = 
+                            self.players.get(&responsible_player_id).map(|player| player.entity);
+
+                        if let Some(Some(responsible_entity)) = responsible_entity {
+                            // If we were killed by another player, that one becomes the catcher
+                            self.world.with_entity_data(&responsible_entity, |e, c| {
+                                c.player_state[e].is_catcher = true;
+                            });
+                        } else {
+                            // Otherwise, find the player that is the closest to the dead catcher
+                            let player_ids = self.players.keys().filter(|id| **id != player_id);
+
+                            let mut closest: Option<(ecs::Entity, f64)> = None; 
+                            for &id in player_ids {
+                                if let Some(entity) = self.players[&id].entity {
+                                    let d = self.world.with_entity_data(&entity, |e, c| {
+                                        math::square_len(math::sub(position,
+                                                                   c.position[e].p)).sqrt()
+                                    }).unwrap();
+                                    if closest.is_none() || closest.unwrap().1 > d {
+                                        closest = Some((entity, d));
+                                    }
+                                }
+                            }
+                            
+                            if let Some((closest_player_entity, _)) = closest {
+                                self.world.with_entity_data(&closest_player_entity, |e, c| {
+                                    assert!(!c.player_state[e].is_catcher);
+                                    c.player_state[e].is_catcher = true;
+                                });
+                            } else {
+                                // If we are here, this should mean that nobody is alive
+                                for (id, player) in self.players.iter() {
+                                    assert!(*id == player_id || player.entity.is_none());
+                                }
+                            }
+                        }
+                    }
+
+                    // Kill the player
+                    {
+                        let player = self.players.get_mut(&player_id).unwrap();
+                        player.entity = None;
+                        player.respawn_time = Some(RESPAWN_TIME_S);
+                    };
+
+                    entities::remove_net(player_entity, &mut self.world.data);
+                }
+            },
+            _ => (),
+        }
+    }
+
     fn check_integrity(&mut self) {
-        /*// When we have at least one player that is alive, there should be exactly one catcher
+        // When we have at least one player that is alive, there should be exactly one catcher
         let mut num_alive = 0;
         let mut num_catchers = 0;
 
         for (_, player) in self.players.iter() {
-            if let Some(entity) = player.controlled_entity {
+            if let Some(entity) = player.entity {
                 num_alive += 1;
                 self.world.with_entity_data(&entity, |e, c| {
                     if c.player_state[e].is_catcher {
@@ -361,6 +429,6 @@ impl GameState {
 
         if num_alive > 0 {
             assert!(num_catchers == 1, "There should be exactly one catcher!");
-        }*/
+        }
     }
 }

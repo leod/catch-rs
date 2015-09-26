@@ -48,7 +48,8 @@ impl Sounds {
             sounds: HashMap::new(),
         };
 
-        try!(s.load_sound("dash", "data/sounds/168177__speedenza__whoosh-woow-mk1.wav"));
+        try!(s.load_sound("dash", "data/sounds/270553__littlerobotsoundfactory__warpdrive-00.wav"));
+        try!(s.load_sound("take_item", "data/sounds/162476__kastenfrosch__gotitem.wav"));
 
         Ok(s)
     }

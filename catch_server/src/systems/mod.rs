@@ -46,6 +46,12 @@ systems! {
                  (aspect!(<Components> all: [projectile]),
                   aspect!(<Components> all: [bouncy_enemy]),
                   Box::new(interactions::ProjectileBouncyEnemyInteraction)),
+                 (aspect!(<Components> all: [projectile]),
+                  aspect!(<Components> all: [player_state]),
+                  Box::new(interactions::ProjectilePlayerInteraction)),
+                 (aspect!(<Components> all: [player_state]),
+                  aspect!(<Components> all: [player_state]),
+                  Box::new(interactions::PlayerPlayerInteraction)),
                 ])
     }
 }

@@ -2,8 +2,8 @@ use std::f64;
 
 use ecs::{Aspect, Process, System, EntityData, DataHelper};
 
+use shared::{GameEvent, Map};
 use shared::math;
-use shared::map::Map;
 use shared::net::ComponentType;
 use shared::util::CachedAspect;
 
@@ -22,16 +22,6 @@ impl ProjectileSystem {
         }
     }
 
-    fn move_straight(&self,
-                     e: EntityData<Components>,
-                     delta: math::Vec2,
-                     map: &Map,
-                     data: &mut Components) {
-        let p = data.position[e].p;
-        let q = math::add(p, delta);
-
-    }
-
     pub fn tick(&self, map: &Map, data: &mut DataHelper<Components, Services>) {
         let dur_s = data.services.tick_dur_s;
 
@@ -41,7 +31,12 @@ impl ProjectileSystem {
             let new_p = math::add(p, v);
 
             match map.line_segment_intersection(p, new_p) {
-                Some(intersection) => {
+                Some(_) => {
+                    let position = data.position[e].p;
+                    data.services.add_event(&GameEvent::ProjectileImpact {
+                        position: position,
+                    });
+                                    
                     entities::remove_net(**e, data);
                 }
                 None => {

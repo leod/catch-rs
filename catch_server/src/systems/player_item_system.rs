@@ -108,7 +108,6 @@ impl PlayerItemSystem {
 
             if input.has(PlayerInputKey::Equip) {
                 // Equipping items
-
                 let hidden_item = c.full_player_state[e].hidden_item.clone();
                 if let Some(hidden_item) = hidden_item {
                     let slot = if input.has(PlayerInputKey::Item1) {

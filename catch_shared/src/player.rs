@@ -159,7 +159,6 @@ pub struct PlayerInfo {
     pub name: String,
     pub score: i32,
     pub ping_ms: Option<u32>,
-    pub alive: bool,
 }
 
 impl PlayerInfo {
@@ -169,7 +168,6 @@ impl PlayerInfo {
             name: name,
             score: 0,
             ping_ms: None,
-            alive: false
         }
     }
 }

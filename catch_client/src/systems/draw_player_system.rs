@@ -85,7 +85,7 @@ impl DrawPlayerSystem {
                             0.3;
                     Rgb::new(1.0f32, 0.65f32 - 0.5 * t as f32, 0.0)
                 } else if data.player_state[entity].is_catcher {
-                    Rgb::new(0.0, 0.0, 1.0)
+                    Rgb::new(0.0, 1.0, 0.0)
                 } else {
                     Rgb::new(0.0f32, 0.0, 1.0)
                 };

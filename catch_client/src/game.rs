@@ -245,10 +245,10 @@ impl Game {
         match event {
             &GameEvent::PlayerDash {
                 player_id: _,
-                position: p,
+                position,
                 orientation: _,
             } => {
-                self.sounds.play("dash", p);
+                self.sounds.play("dash", position);
             }
             &GameEvent::PlayerFlip {
                 player_id: _,
@@ -275,19 +275,14 @@ impl Game {
                 player_id: _,
                 position,
             } => {
+                self.sounds.play("take_item", position);
+
                 let num = 100;
                 let color = [0.05, 0.5, 1.0];
                 for i in 0..num {
-                    self.particles.spawn_cone(0.4,
-                                              color,
-                                              color,
-                                              1.5,
-                                              position,
-                                              0.0,
+                    self.particles.spawn_cone(0.4, color, color, 1.5, position, 0.0,
                                               f64::consts::PI * 2.0,
-                                              200.0 + rand::random::<f64>() * 20.0,
-                                              0.0,
-                                              1.0);
+                                              200.0 + rand::random::<f64>() * 20.0, 0.0, 1.0);
                 }
             }
             &GameEvent::EnemyDied {
@@ -296,16 +291,23 @@ impl Game {
                 let num = 100;
                 let color = [1.0, 0.0, 0.0];
                 for i in 0..num {
-                    self.particles.spawn_cone(0.5,
-                                              color,
-                                              color,
-                                              2.5 * rand::random::<f64>() + 1.0,
-                                              position,
-                                              0.0,
-                                              f64::consts::PI * 2.0,
+                    self.particles.spawn_cone(0.5, color, color, 2.5 * rand::random::<f64>() + 1.0,
+                                              position, 0.0, f64::consts::PI * 2.0,
                                               100.0 + rand::random::<f64>() * 20.0,
-                                              rand::random::<f64>() * 5.0,
-                                              1.0);
+                                              rand::random::<f64>() * 5.0, 1.0);
+                }
+            }
+            &GameEvent::ProjectileImpact {
+                position,
+            } => {
+                let num = 30;
+                let color = [0.3, 0.3, 0.3];
+                for i in 0..num {
+                    self.particles.spawn_cone(0.25, color, color,
+                                              1.0 * rand::random::<f64>() + 0.5, position, 0.0,
+                                              f64::consts::PI * 2.0,
+                                              30.0 + rand::random::<f64>() * 15.0,
+                                              rand::random::<f64>() * 5.0, 1.0);
                 }
             }
             _ => ()

@@ -45,6 +45,10 @@ impl InteractionSystem {
         for &(ref aspect_a, ref aspect_b, ref interaction) in self.dispatch_table.iter() {
             for entity_a in aspect_a.iter() {
                 for entity_b in aspect_b.iter() {
+                    if **entity_a == **entity_b {
+                        continue;
+                    }
+
                     if interaction.condition(entity_a, entity_b, data) &&
                        self.overlap(entity_a, entity_b, &data.components) {
                         interaction.apply(entity_a, entity_b, data);
