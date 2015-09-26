@@ -352,7 +352,7 @@ impl Game {
         gl.draw(viewport, |c, gl| {
             graphics::clear([0.0, 0.0, 0.0, 0.0], gl);
 
-            let pos = self.get_my_player_position().unwrap_or([0.0, 0.0]);
+            let pos = self.get_my_player_position().unwrap_or(self.cam_pos);
             self.cam_pos = math::add(self.cam_pos,
                                      math::scale(math::sub(pos, self.cam_pos),
                                      0.15));
@@ -466,7 +466,7 @@ impl Game {
                 self.draw_text(color1, 25.0, y2, &format!("{:.1}", t), context, gl);
             }
 
-            let slot_names = vec!["Q", "W", "E"]; //TODO
+            let slot_names = vec!["Q", "W", "E"]; // TODO
             let mut cursor_x = 200.0;
 
             for (item_slot, slot_name) in (0..NUM_ITEM_SLOTS).zip(slot_names.iter()) {
