@@ -29,6 +29,7 @@ use state::GameState;
 use player_input::{PlayerInput, InputMap};
 use draw_map::DrawMap;
 use particles::Particles;
+use sounds::Sounds;
 
 type GameWindow = PistonWindow;
 
@@ -51,6 +52,7 @@ pub struct Game {
     window: GameWindow,
     draw_map: DrawMap,
     particles: Particles,
+    sounds: Sounds,
 
     cam_pos: math::Vec2,
     glyphs: GlyphCache<'static>,
@@ -67,8 +69,10 @@ impl Game {
         let draw_map = DrawMap::load(&game_state.map).unwrap();
         let window = GameWindow::new(Rc::new(RefCell::new(window)),
                                      Rc::new(RefCell::new(())));
-        let font = "../data/ProggyClean.ttf";
+        let font = "data/ProggyClean.ttf";
         let glyphs = GlyphCache::new(Path::new(font)).unwrap();
+
+        let sounds = Sounds::load().unwrap();
 
         Game {
             quit: false,
@@ -89,6 +93,7 @@ impl Game {
             window: window,
             draw_map: draw_map,
             particles: Particles::new(),
+            sounds: sounds,
 
             cam_pos: [0.0, 0.0],
             glyphs: glyphs,
@@ -238,6 +243,13 @@ impl Game {
 
     fn process_game_event(&mut self, event: &GameEvent) {
         match event {
+            &GameEvent::PlayerDash {
+                player_id: _,
+                position: p,
+                orientation: _,
+            } => {
+                self.sounds.play("dash", p);
+            }
             &GameEvent::PlayerFlip {
                 player_id: _,
                 position,

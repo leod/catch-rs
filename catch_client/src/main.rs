@@ -14,6 +14,8 @@ extern crate gl;
 extern crate getopts;
 extern crate color;
 extern crate rand;
+extern crate rodio;
+extern crate cpal;
 
 #[macro_use] extern crate catch_shared as shared;
 
@@ -27,6 +29,7 @@ mod systems;
 mod state;
 mod game;
 mod particles;
+mod sounds;
 
 use std::env;
 

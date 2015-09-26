@@ -18,7 +18,7 @@ impl DrawMap {
 
         for pathname in map.tileset_image_paths().iter() {
             // TODO: data paths
-            let full_pathname = "../data/maps/".to_string() + &pathname;
+            let full_pathname = "data/maps/".to_string() + &pathname;
 
             let path = Path::new(&full_pathname);
             //println!("{}", full_pathname);
