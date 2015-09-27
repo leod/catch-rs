@@ -14,7 +14,8 @@ impl InputMap {
             (Button::Keyboard(Key::Up), PlayerInputKey::Forward),
             (Button::Keyboard(Key::Down), PlayerInputKey::Back),
 
-            (Button::Keyboard(Key::LAlt), PlayerInputKey::Strafe),
+            (Button::Keyboard(Key::A), PlayerInputKey::StrafeLeft),
+            (Button::Keyboard(Key::D), PlayerInputKey::StrafeRight),
 
             (Button::Keyboard(Key::LShift), PlayerInputKey::Flip),
             (Button::Keyboard(Key::Space), PlayerInputKey::Dash),

@@ -122,7 +122,8 @@ pub enum PlayerInputKey {
     Forward,
     Back,
 
-    Strafe,
+    StrafeLeft,
+    StrafeRight,
 
     Flip,
     Dash,
@@ -136,7 +137,7 @@ pub enum PlayerInputKey {
     //Max,
 }
 
-pub const NUM_INPUT_KEYS: usize = 11; //usize = InputKey::Max as usize;
+pub const NUM_INPUT_KEYS: usize = 12; //usize = InputKey::Max as usize;
 
 #[derive(Clone)]
 pub struct PlayerInput {

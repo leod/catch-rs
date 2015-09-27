@@ -13,6 +13,9 @@ pub use shared::components::{NetEntity, Position, Orientation, LinearVelocity, S
 pub struct ServerNetEntity {
     // Components that should not be interpolated by clients into the current tick
     pub forced_components: Vec<net::ComponentType>,
+
+    // Used to prevent ecs entity removal events being queued multiple times for the same entity
+    pub removed: bool,
 }
 
 impl ServerNetEntity {

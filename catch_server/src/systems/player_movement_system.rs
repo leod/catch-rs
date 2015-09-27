@@ -174,17 +174,14 @@ impl PlayerMovementSystem {
 
                 let mut accel = math::scale(c.linear_velocity[e].v, -MOVE_FRICTION);
 
-                if input.has(PlayerInputKey::Strafe) {
-                    // Strafe left/right
+                if input.has(PlayerInputKey::StrafeLeft) {
                     c.angular_velocity[e].v = 0.0;
-
                     let strafe_direction = [direction[1], -direction[0]];
-                    if input.has(PlayerInputKey::Left) {
-                        accel = math::add(math::scale(strafe_direction, STRAFE_ACCEL), accel);
-                    }
-                    if input.has(PlayerInputKey::Right) {
-                        accel = math::add(math::scale(strafe_direction, -STRAFE_ACCEL), accel);
-                    }
+                    accel = math::add(math::scale(strafe_direction, STRAFE_ACCEL), accel);
+                } else if input.has(PlayerInputKey::StrafeRight) {
+                    c.angular_velocity[e].v = 0.0;
+                    let strafe_direction = [direction[1], -direction[0]];
+                    accel = math::add(math::scale(strafe_direction, -STRAFE_ACCEL), accel);
                 } else {
                     // Turn left/right
                     let mut ang_accel = c.angular_velocity[e].v * -TURN_FRICTION;

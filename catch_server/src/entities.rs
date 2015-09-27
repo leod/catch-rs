@@ -90,12 +90,26 @@ pub fn build_server(type_name: &str,
     }
 }
 
-/// Removes a net entity and tells clients about the removal
-pub fn remove_net(entity: ecs::Entity, data: &mut DataHelper<Components, Services>) {
-    let id = data.with_entity_data(&entity, |e, c| {
-        c.net_entity[e].id
+/// Removes a net entity and tells clients about the removal.
+/// Returns true if this is the first time the entity is being removed this tick.
+pub fn remove_net(entity: ecs::Entity, data: &mut DataHelper<Components, Services>) -> bool {
+    let (id, type_id, removed) = data.with_entity_data(&entity, |e, c| {
+        (c.net_entity[e].id, c.net_entity[e].type_id, c.server_net_entity[e].removed)
     }).unwrap();
 
-    data.services.add_event(&GameEvent::RemoveEntity(id));
-    data.remove_entity(entity);
+    if !removed {
+        data.services.add_event(&GameEvent::RemoveEntity(id));
+        data.remove_entity(entity);
+
+        data.with_entity_data(&entity, |e, c| {
+            c.server_net_entity[e].removed = true;
+        });
+
+        true
+    } else {
+        debug!("entity was removed twice in a tick: {} of type {}",
+               id, data.services.entity_types[type_id as usize].0);
+
+        false
+    }
 }
