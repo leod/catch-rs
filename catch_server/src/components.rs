@@ -22,7 +22,9 @@ impl ServerNetEntity {
 }
 
 #[derive(Default)]
-pub struct BouncyEnemy; 
+pub struct BouncyEnemy {
+    pub orbit: Option<ecs::Entity>,
+}
 
 pub struct Interact;
 pub struct Rotate;

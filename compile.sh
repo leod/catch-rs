@@ -1,6 +1,3 @@
 #!/bin/sh
-cd catch_server &&
-cargo build $1 &&
-cd ../catch_client &&
-cargo build $1 &&
-cd ../
+cargo build "$@" --manifest-path=catch_server/Cargo.toml &&
+cargo build "$@" --manifest-path=catch_client/Cargo.toml

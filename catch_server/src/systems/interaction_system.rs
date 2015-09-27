@@ -18,37 +18,52 @@ pub trait Interaction {
              data: &mut DataHelper<Components, Services>);
 }
 
-/// Each entry of the dispatch table is a pair of entity filters coupled with an interaction
-/// that is to be applied when two of these entities overlap
-type DispatchTable = Vec<(CachedAspect<Components>,
-                          CachedAspect<Components>,
-                          Box<Interaction>)>;
-
 pub struct InteractionSystem {
-    dispatch_table: DispatchTable,
+    /// Interactions between two different entity types
+    interactions: Vec<(CachedAspect<Components>, CachedAspect<Components>, Box<Interaction>)>,
+
+    /// Interactions between entities of the same type
+    self_interactions: Vec<(CachedAspect<Components>, Box<Interaction>)>,
 }
 
 impl InteractionSystem {
-    pub fn new(dispatch_table: Vec<(Aspect<Components>, Aspect<Components>, Box<Interaction>)>)
-               -> InteractionSystem {
+    pub fn new(
+            interactions: Vec<(Aspect<Components>, Aspect<Components>, Box<Interaction>)>,
+            self_interactions: Vec<(Aspect<Components>, Box<Interaction>)>)
+            -> InteractionSystem {
         InteractionSystem {
-            dispatch_table:
-                dispatch_table.into_iter()
-                              .map(|(a, b, i)| (CachedAspect::new(a), CachedAspect::new(b), i))
-                              .collect()
+            interactions:
+                interactions.into_iter()
+                            .map(|(a, b, i)| (CachedAspect::new(a), CachedAspect::new(b), i))
+                            .collect(),
+            self_interactions:
+                self_interactions.into_iter()
+                                 .map(|(a, i)| (CachedAspect::new(a), i))
+                                 .collect()
         }
     }
 
     pub fn tick(&self, data: &mut DataHelper<Components, Services>) {
         // n^2 kinda loop over all entity pairs that can interact
         
-        for &(ref aspect_a, ref aspect_b, ref interaction) in self.dispatch_table.iter() {
+        for &(ref aspect_a, ref aspect_b, ref interaction) in self.interactions.iter() {
             for entity_a in aspect_a.iter() {
                 for entity_b in aspect_b.iter() {
-                    if **entity_a == **entity_b {
+                    if interaction.condition(entity_a, entity_b, data) &&
+                       self.overlap(entity_a, entity_b, &data.components) {
+                        interaction.apply(entity_a, entity_b, data);
+                    }
+                }
+            }
+        }
+
+        for &(ref aspect, ref interaction) in self.self_interactions.iter() {
+            for entity_a in aspect.iter() {
+                for entity_b in aspect.iter() {
+                    if entity_a.index() <= entity_b.index() {
+                        // Don't perform interactions twice
                         continue;
                     }
-
                     if interaction.condition(entity_a, entity_b, data) &&
                        self.overlap(entity_a, entity_b, &data.components) {
                         interaction.apply(entity_a, entity_b, data);
@@ -103,25 +118,34 @@ impl System for InteractionSystem {
 
     fn activated(&mut self, entity: &EntityData<Components>, components: &Components,
                  _: &mut Services) {
-        for &mut (ref mut aspect_a, ref mut aspect_b, _) in self.dispatch_table.iter_mut() {
+        for &mut (ref mut aspect_a, ref mut aspect_b, _) in self.interactions.iter_mut() {
             aspect_a.activated(entity, components);
             aspect_b.activated(entity, components);
+        }
+        for &mut (ref mut aspect, _) in self.self_interactions.iter_mut() {
+            aspect.activated(entity, components);
         }
     }
 
     fn reactivated(&mut self, entity: &EntityData<Components>, components: &Components,
                    _: &mut Services) {
-        for &mut (ref mut aspect_a, ref mut aspect_b, _) in self.dispatch_table.iter_mut() {
+        for &mut (ref mut aspect_a, ref mut aspect_b, _) in self.interactions.iter_mut() {
             aspect_a.reactivated(entity, components);
             aspect_b.reactivated(entity, components);
+        }
+        for &mut (ref mut aspect, _) in self.self_interactions.iter_mut() {
+            aspect.reactivated(entity, components);
         }
     }
 
     fn deactivated(&mut self, entity: &EntityData<Components>, components: &Components,
                    _: &mut Services) {
-        for &mut (ref mut aspect_a, ref mut aspect_b, _) in self.dispatch_table.iter_mut() {
+        for &mut (ref mut aspect_a, ref mut aspect_b, _) in self.interactions.iter_mut() {
             aspect_a.deactivated(entity, components);
             aspect_b.deactivated(entity, components);
+        }
+        for &mut (ref mut aspect, _) in self.self_interactions.iter_mut() {
+            aspect.deactivated(entity, components);
         }
     }
 }

@@ -13,8 +13,9 @@ use systems::interaction_system::Interaction;
 pub struct PlayerBouncyEnemyInteraction;
 impl Interaction for PlayerBouncyEnemyInteraction {
     fn condition(&self,
-                 player_e: EntityData<Components>, _enemy_e: EntityData<Components>,
+                 player_e: EntityData<Components>, enemy_e: EntityData<Components>,
                  data: &mut DataHelper<Components, Services>) -> bool {
+        data.net_entity[player_e].owner != data.net_entity[enemy_e].owner &&
         data.player_state[player_e].vulnerable()
     }
     fn apply(&self,
@@ -37,18 +38,17 @@ impl Interaction for BouncyEnemyInteraction {
              a_e: EntityData<Components>, b_e: EntityData<Components>,
              data: &mut DataHelper<Components, Services>) {
         // Flip orientations of both entities and add some velocity in the new direction
-
         data.orientation[a_e].angle = data.orientation[a_e].angle + f64::consts::PI;
         let direction_a = [data.orientation[a_e].angle.cos(),
                            data.orientation[a_e].angle.sin()];
         data.linear_velocity[a_e].v = math::add(data.linear_velocity[a_e].v,
-                                                math::scale(direction_a, 500.0));
+                                                math::scale(direction_a, 100.0));
 
         data.orientation[b_e].angle = data.orientation[b_e].angle + f64::consts::PI;
         let direction_b = [data.orientation[b_e].angle.cos(),
                            data.orientation[b_e].angle.sin()];
         data.linear_velocity[b_e].v = math::add(data.linear_velocity[b_e].v,
-                                                math::scale(direction_b, 500.0));
+                                                math::scale(direction_b, 100.0));
     }
 }
 
@@ -153,7 +153,6 @@ impl Interaction for PlayerPlayerInteraction {
         let player_id = data.net_entity[catchee_e].owner;
         let position = data.position[catchee_e].p;
         let responsible_player_id = data.net_entity[catcher_e].owner;
-
         data.services.add_event_to_run(&GameEvent::PlayerDied {
             player_id: player_id,
             position: position,

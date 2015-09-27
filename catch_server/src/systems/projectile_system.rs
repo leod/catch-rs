@@ -31,8 +31,8 @@ impl ProjectileSystem {
             let new_p = math::add(p, v);
 
             match map.line_segment_intersection(p, new_p) {
-                Some(_) => {
-                    let position = data.position[e].p;
+                Some(intersection) => {
+                    let position = math::add(p, math::scale(new_p, intersection.t));
                     data.services.add_event(&GameEvent::ProjectileImpact {
                         position: position,
                     });

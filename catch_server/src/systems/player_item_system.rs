@@ -1,7 +1,8 @@
 use ecs;
 use ecs::{EntityData, Process, System, DataHelper};
 
-use shared::{ItemSlot, Map, Item, NUM_ITEM_SLOTS};
+use shared::math;
+use shared::{ItemSlot, GameEvent, Map, Item, NUM_ITEM_SLOTS};
 use shared::net::TimedPlayerInput;
 use shared::player::PlayerState;
 use shared::player::PlayerInputKey;
@@ -51,7 +52,21 @@ impl PlayerItemSystem {
                 } else {
                     None
                 }
-            },
+            }
+            Item::BallSpawner { charges } => {
+                let orbit_entity = entities::build_net("bouncy_enemy", player_id, data);
+
+                data.with_entity_data(&orbit_entity, |e, c| {
+                    c.position[e].p = math::add(player_position, [10.0, 0.0]);
+                    c.bouncy_enemy[e].orbit = Some(entity);
+                });
+
+                if charges > 1 {
+                    Some(Item::BallSpawner { charges: charges - 1 })
+                } else {
+                    None
+                }
+            }
             item => panic!("item use not implemented: {:?}", item)
         };
 
@@ -93,6 +108,8 @@ impl PlayerItemSystem {
         let dur_s = timed_input.duration_s;
         let input = &timed_input.input;
 
+        let mut events = Vec::new();
+
         data.with_entity_data(&entity, |e, c| {
             // Check item cooldowns
             for i in 0..NUM_ITEM_SLOTS {
@@ -124,8 +141,14 @@ impl PlayerItemSystem {
                         debug!("player {} equipping item {:?} to slot {}",
                                c.net_entity[e].owner, hidden_item, slot);
 
-                        c.player_state[e].equip(slot, hidden_item);
+                        c.player_state[e].equip(slot, hidden_item.clone());
                         c.full_player_state[e].hidden_item = None;
+
+                        events.push(GameEvent::PlayerEquipItem {
+                            player_id: c.net_entity[e].owner,
+                            position: c.position[e].p,
+                            item: hidden_item.clone(),
+                        });
                     }
                 }
             }
@@ -150,6 +173,10 @@ impl PlayerItemSystem {
             for &slot in used_slots.iter() {
                 self.try_use_item(entity, slot, data);
             }
+        }
+
+        for event in events.iter() {
+            data.services.add_event(&event.clone());
         }
     }
 }

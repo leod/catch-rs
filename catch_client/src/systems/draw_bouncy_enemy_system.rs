@@ -5,6 +5,7 @@ use graphics::context::Context;
 use graphics::Transformed;
 use opengl_graphics::GlGraphics;
 
+use shared::{NEUTRAL_PLAYER_ID};
 use shared::util::CachedAspect;
 
 use components::{Components, Shape};
@@ -33,10 +34,13 @@ impl DrawBouncyEnemySystem {
 
             let transform = c.trans(p[0], p[1]).transform;
 
-            graphics::ellipse([1.0, 0.0, 0.0, 1.0],
-                              [-r, -r, r*2.0, r*2.0],
-                              transform,
-                              gl);
+            let color = if data.net_entity[entity].owner == NEUTRAL_PLAYER_ID {
+                [1.0, 0.0, 0.0, 1.0]
+            } else {
+                [0.0, 0.0, 1.0, 1.0]
+            };
+
+            graphics::ellipse(color, [-r, -r, r*2.0, r*2.0], transform, gl);
         }
     }
 }

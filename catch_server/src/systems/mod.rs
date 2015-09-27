@@ -34,12 +34,10 @@ systems! {
         projectile_system: ProjectileSystem = ProjectileSystem::new(
             aspect!(<Components> all: [projectile])),
         interaction_system: InteractionSystem = InteractionSystem::new(
-            vec![(aspect!(<Components> all: [player_state]),
+            vec![
+                 (aspect!(<Components> all: [player_state]),
                   aspect!(<Components> all: [bouncy_enemy]),
                   Box::new(interactions::PlayerBouncyEnemyInteraction)),
-                 (aspect!(<Components> all: [bouncy_enemy]),
-                  aspect!(<Components> all: [bouncy_enemy]),
-                  Box::new(interactions::BouncyEnemyInteraction)),
                  (aspect!(<Components> all: [player_state]),
                   aspect!(<Components> all: [item]),
                   Box::new(interactions::PlayerItemInteraction)),
@@ -49,9 +47,12 @@ systems! {
                  (aspect!(<Components> all: [projectile]),
                   aspect!(<Components> all: [player_state]),
                   Box::new(interactions::ProjectilePlayerInteraction)),
+                ],
+            vec![
+                 (aspect!(<Components> all: [bouncy_enemy]),
+                  Box::new(interactions::BouncyEnemyInteraction)),
                  (aspect!(<Components> all: [player_state]),
-                  aspect!(<Components> all: [player_state]),
                   Box::new(interactions::PlayerPlayerInteraction)),
-                ])
+                ]),
     }
 }

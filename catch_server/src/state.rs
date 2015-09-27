@@ -108,7 +108,7 @@ impl GameState {
     fn init_first_tick(&mut self) {
         self.create_map_objects();
 
-        let num_bouncies = 20;
+        let num_bouncies = 50;
 
         for _ in 0..num_bouncies {
             let entity = entities::build_net("bouncy_enemy", 0, &mut self.world.data);
@@ -177,6 +177,14 @@ impl GameState {
             // We'll equip a gun for now
             c.player_state[e].equip(0, Item::Weapon { charges: 20 }); 
         });
+
+        /*// Spawn a complementary orbit ball
+        let orbit_entity = entities::build_net("bouncy_enemy", id, &mut self.world.data);
+
+        self.world.with_entity_data(&orbit_entity, |e, c| {
+            c.position[e].p = math::add(position, [10.0, 0.0]);
+            c.bouncy_enemy[e].orbit = Some(entity);
+        });*/
         
         entity
     }

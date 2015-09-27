@@ -42,7 +42,7 @@ pub struct GameInfo {
     pub ticks_per_second: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, CerealData)]
+#[derive(Debug, Clone, CerealData)]
 pub enum GameEvent {
     PlayerJoin(PlayerId, String),
     PlayerLeave(PlayerId),
@@ -79,6 +79,11 @@ pub enum GameEvent {
     PlayerTakeItem {
         player_id: PlayerId,
         position: math::Vec2,
+    },
+    PlayerEquipItem {
+        player_id: PlayerId,
+        position: math::Vec2,
+        item: Item,
     },
     EnemyDied { // This one might not be necessary
         position: math::Vec2,

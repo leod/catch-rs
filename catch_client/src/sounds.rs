@@ -13,6 +13,30 @@ pub struct Sounds {
 }
 
 impl Sounds {
+    pub fn load() -> Result<Sounds, String> {
+        let endpoint = match rodio::get_default_endpoint() {
+            Some(endpoint) => endpoint,
+            None => return Err("No sound device available".to_string()),
+        };
+
+        let mut s = Sounds {
+            endpoint: endpoint,
+            sounds: HashMap::new(),
+        };
+
+        try!(s.load_sound("dash", "data/sounds/270553__littlerobotsoundfactory__warpdrive-00.wav"));
+        try!(s.load_sound("take_item", "data/sounds/162476__kastenfrosch__gotitem.wav"));
+        try!(s.load_sound("equip_item", "data/sounds/254079__robinhood76__05505-punching-deploy-shot.wav"));
+
+        Ok(s)
+    }
+
+    pub fn play(&self, name: &str, p: math::Vec2) {
+        // TODO: ???
+        let input = Cursor::new(self.sounds.get(name).unwrap().clone());
+        rodio::play_once(&self.endpoint, input);
+    }
+
     fn load_sound(&mut self, name: &str, file_name: &str) -> Result<(), String> {
         info!("loading sound {} from {}", name, file_name);
 
@@ -37,26 +61,4 @@ impl Sounds {
         Ok(())
     }
 
-    pub fn load() -> Result<Sounds, String> {
-        let endpoint = match rodio::get_default_endpoint() {
-            Some(endpoint) => endpoint,
-            None => return Err("No sound device available".to_string()),
-        };
-
-        let mut s = Sounds {
-            endpoint: endpoint,
-            sounds: HashMap::new(),
-        };
-
-        try!(s.load_sound("dash", "data/sounds/270553__littlerobotsoundfactory__warpdrive-00.wav"));
-        try!(s.load_sound("take_item", "data/sounds/162476__kastenfrosch__gotitem.wav"));
-
-        Ok(s)
-    }
-
-    pub fn play(&self, name: &str, p: math::Vec2) {
-        // TODO: ???
-        let input = Cursor::new(self.sounds.get(name).unwrap().clone());
-        rodio::play_once(&self.endpoint, input);
-    }
 }

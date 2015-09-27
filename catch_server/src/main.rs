@@ -296,6 +296,8 @@ fn main() {
     env_logger::init().unwrap();
     enet::initialize().unwrap();
 
+    println!("{}", module_path!());
+
     let entity_types = shared::entities::all_entity_types();
     let game_info = GameInfo {
         map_name: "data/maps/lars2.tmx".to_string(),

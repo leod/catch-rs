@@ -15,15 +15,19 @@ pub enum Item {
     },
     BlockPlacer {
         charges: usize,
-    }
+    },
+    BallSpawner {
+        charges: usize,
+    },
 }
 
 impl Item {
     pub fn cooldown_s(&self) -> Option<f64> {
         match *self {
-            Item::Weapon { charges: _ } => Some(0.3),
+            Item::Weapon { charges: _ } => Some(0.7),
             Item::SpeedBoost { duration_s: _ } => None,
             Item::BlockPlacer { charges: _ } => Some(5.0),
+            Item::BallSpawner { charges: _ } => Some(2.5),
         }
     }
 }

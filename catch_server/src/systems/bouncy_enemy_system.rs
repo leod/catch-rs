@@ -10,7 +10,8 @@ use components::{Components};
 use services::Services;
 
 const MOVE_ACCEL: f64 = 150.0;
-
+const MOVE_FRICTION: f64 = 4.0;
+const ORBIT_SPEED_FACTOR: f64 = 20.0;
 
 pub struct BouncyEnemySystem {
     aspect: CachedAspect<Components>,
@@ -23,12 +24,12 @@ impl BouncyEnemySystem {
         }
     }
 
-    // TODO: Code duplication with PlayerMovementSystem...
-    pub fn move_flipping(&self,
-                         e: EntityData<Components>,
-                         delta: math::Vec2,
-                         map: &Map,
-                         data: &mut Components) {
+    // TODO: Code duplication
+     fn move_flipping(&self,
+                      e: EntityData<Components>,
+                      delta: math::Vec2,
+                      map: &Map,
+                      data: &mut Components) {
         let p = data.position[e].p;
         let q = math::add(p, delta);
 
@@ -47,7 +48,7 @@ impl BouncyEnemySystem {
                     data.orientation[e].angle.sin() * (speed + 1.0),
                 ];
 
-                let s = (intersection.t - 0.0001).max(0.0);
+                let s = (intersection.t - 0.001).max(0.0);
                 data.position[e].p = math::add(p, math::scale(delta, s));
             }
             None => {
@@ -60,15 +61,32 @@ impl BouncyEnemySystem {
         let dur_s = data.services.tick_dur_s;
 
         for e in self.aspect.iter() {
-            let angle = data.orientation[e].angle;
-            let direction = [angle.cos(), angle.sin()];
+            let accel = if let Some(orbit) = data.bouncy_enemy[e].orbit {
+                self.move_flipping(e, math::scale(data.linear_velocity[e].v, dur_s), map, data);
 
-            let accel = math::add(math::scale(direction, MOVE_ACCEL),
-                                  math::scale(data.linear_velocity[e].v, -4.0));
+                if let Some(orbit_position) =
+                        data.with_entity_data(&orbit, |e, c| { c.position[e].p }) {
+                    let w = math::sub(orbit_position, data.position[e].p);
+                    let r = math::square_len(w).sqrt();
+                    let f = r;
+                    math::add(math::scale(math::normalized(w), f*ORBIT_SPEED_FACTOR),
+                              math::scale(data.linear_velocity[e].v, -MOVE_FRICTION))
+                } else {
+                    data.bouncy_enemy[e].orbit = None;
+                    [0.0, 0.0]
+                }
+            } else {
+                self.move_flipping(e, math::scale(data.linear_velocity[e].v, dur_s), map, data);
+
+                let angle = data.orientation[e].angle;
+                let direction = [angle.cos(), angle.sin()];
+
+                math::add(math::scale(direction, MOVE_ACCEL),
+                          math::scale(data.linear_velocity[e].v, -MOVE_FRICTION))
+            };
+
             data.linear_velocity[e].v = math::add(data.linear_velocity[e].v,
                                                   math::scale(accel, dur_s));
-
-            self.move_flipping(e, math::scale(data.linear_velocity[e].v, dur_s), map, data);
         }
     }
 }

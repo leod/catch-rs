@@ -302,6 +302,21 @@ impl Game {
                                               200.0 + rand::random::<f64>() * 20.0, 0.0, 1.0);
                 }
             }
+            &GameEvent::PlayerEquipItem {
+                player_id: _,
+                position,
+                item: _,
+            } => {
+                self.sounds.play("equip_item", position);
+
+                /*let num = 100;
+                let color = [0.05, 0.5, 1.0];
+                for i in 0..num {
+                    self.particles.spawn_cone(0.4, color, color, 1.5, position, 0.0,
+                                              f64::consts::PI * 2.0,
+                                              200.0 + rand::random::<f64>() * 20.0, 0.0, 1.0);
+                }*/
+            }
             &GameEvent::EnemyDied {
                 position,
             } => {
@@ -517,6 +532,8 @@ impl Game {
                 format!("speed boost"),
             &Item::BlockPlacer { charges: _ } =>
                 format!("block placer"),
+            &Item::BallSpawner { charges: _ } =>
+                format!("ball spawner"),
         }
     }
 
