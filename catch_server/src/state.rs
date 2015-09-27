@@ -93,9 +93,15 @@ impl GameState {
     fn create_map_objects(&mut self) {
         for object in self.map.objects.iter() {
             if &object.type_str == "item_spawn" {
-                let entity = entities::build_net("item_spawn", 0, &mut self.world.data);
+                let entity = entities::build_net(&object.type_str, 0, &mut self.world.data);
                 self.world.with_entity_data(&entity, |e, c| {
                     c.position[e].p = [object.x, object.y];
+                });
+            } else if &object.type_str == "bouncy_enemy" {
+                let entity = entities::build_net(&object.type_str, 0, &mut self.world.data);
+                self.world.with_entity_data(&entity, |e, c| {
+                    c.position[e].p = [object.x, object.y];
+                    c.orientation[e].angle = rand::random::<f64>() * f64::consts::PI * 2.0;
                 });
             } else if &object.type_str == "player_spawn" {
             } else {
@@ -108,7 +114,7 @@ impl GameState {
     fn init_first_tick(&mut self) {
         self.create_map_objects();
 
-        let num_bouncies = 50;
+        /*let num_bouncies = 50;
 
         for _ in 0..num_bouncies {
             let entity = entities::build_net("bouncy_enemy", 0, &mut self.world.data);
@@ -134,7 +140,7 @@ impl GameState {
                 c.position[e].p = position;
                 c.orientation[e].angle = rand::random::<f64>() * f64::consts::PI * 2.0;
             });
-        }
+        }*/
 
         self.world.flush_queue();
     }

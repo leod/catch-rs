@@ -300,7 +300,7 @@ fn main() {
 
     let entity_types = shared::entities::all_entity_types();
     let game_info = GameInfo {
-        map_name: "data/maps/lars2.tmx".to_string(),
+        map_name: "data/maps/desert.tmx".to_string(),
         entity_types: entity_types,
         ticks_per_second: 30,
     };

@@ -38,17 +38,27 @@ impl Interaction for BouncyEnemyInteraction {
              a_e: EntityData<Components>, b_e: EntityData<Components>,
              data: &mut DataHelper<Components, Services>) {
         // Flip orientations of both entities and add some velocity in the new direction
-        data.orientation[a_e].angle = data.orientation[a_e].angle + f64::consts::PI;
+                /*data.orientation[e].angle = f64::consts::PI + n_angle - (angle - n_angle);
+                data.server_net_entity[e].force(ComponentType::Orientation);
+
+                let v = data.linear_velocity[e].v;
+                let speed = math::square_len(v).sqrt();
+                data.linear_velocity[e].v = [
+                    data.orientation[e].angle.cos() * (speed + 1.0),
+                    data.orientation[e].angle.sin() * (speed + 1.0),
+                ];*/
+
+        data.orientation[a_e].angle = data.orientation[a_e].angle + f64::consts::PI / 2.0;
         let direction_a = [data.orientation[a_e].angle.cos(),
                            data.orientation[a_e].angle.sin()];
         data.linear_velocity[a_e].v = math::add(data.linear_velocity[a_e].v,
-                                                math::scale(direction_a, 100.0));
+                                                math::scale(direction_a, 200.0));
 
-        data.orientation[b_e].angle = data.orientation[b_e].angle + f64::consts::PI;
+        data.orientation[b_e].angle = data.orientation[b_e].angle + f64::consts::PI / 2.0;
         let direction_b = [data.orientation[b_e].angle.cos(),
                            data.orientation[b_e].angle.sin()];
         data.linear_velocity[b_e].v = math::add(data.linear_velocity[b_e].v,
-                                                math::scale(direction_b, 100.0));
+                                                math::scale(direction_b, 200.0));
     }
 }
 

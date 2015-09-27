@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" width="52" height="48" tilewidth="32" tileheight="32">
+ <tileset firstgid="1" name="desert-ground" tilewidth="32" tileheight="32">
+  <image source="../tilesets/desert-ground.png" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="5" name="desert-walls" tilewidth="32" tileheight="32">
+  <image source="../tilesets/desert-walls.png" width="256" height="256"/>
+ </tileset>
+ <layer name="Tile Layer 1" width="52" height="48">
+  <data encoding="base64" compression="zlib">
+   eJztwwEJAAAMBKH7/qWXY6DgqqmqqqqqqqqqquqzB2WiCcE=
+  </data>
+ </layer>
+ <layer name="Tile Layer 2" width="52" height="48">
+  <data encoding="base64" compression="zlib">
+   eJztmU1vgzAMhn2p1ktpL9166cql2m79//+uWAI1Sm3sxDh8NK9kgYId8xAnBNEAwO9G7NjZFbajB2yX59zZV0H76/PeJ+jrQvDsjc9mTg33LvHgmF2Ec06aWK6f1Fgtz09n38I5J00s109qrJZnLRrjSR1rj/pJjR3jSR1rj/pJjf3Uegs1VW1wstS2tt5CaWvjSvjcGH9N/3PXG9WPdy178uBzC2sL60IaG6u814OQqcQ6U2J920dHT1We/ByVJz9XLo/mGyx8T2i/7XL1SfsdjTTjE+5LtjA+a5o/KTkqT34u3Pd68fxHR09R44NsbW/xt8qdaS+hc587XjOGdrSBIebZ9XaC93vH98iRaPcU3nMD7/tzbD/A634lHompLWQaFi2PxBT7Tm1alhSewSgm738fWpYcHmqcSmqMJYdnTiaJJZeHYgrXTM6s/pq5RvFQcwLnfQN8Xccxc/iHMdL/uZtwfWn+lceWz9u/8tjyeftXHls+b//KY8vn7V95bPm8/ZEH95gtYwfh+tL88foTdydLPg==
+  </data>
+ </layer>
+ <objectgroup name="Object Layer 1" width="52" height="48">
+  <object type="player_spawn" x="290" y="1377" width="315" height="123"/>
+  <object type="player_spawn" x="678" y="1380" width="315" height="123"/>
+  <object type="player_spawn" x="1059" y="1378" width="315" height="123"/>
+  <object type="item_spawn" x="450" y="1121"/>
+  <object type="item_spawn" x="834" y="1123"/>
+  <object type="bouncy_enemy" x="61" y="1187"/>
+  <object type="bouncy_enemy" x="99" y="1187"/>
+  <object type="bouncy_enemy" x="93" y="1241"/>
+  <object type="bouncy_enemy" x="117" y="1353"/>
+  <object type="bouncy_enemy" x="85" y="1427"/>
+  <object type="bouncy_enemy" x="71" y="1308"/>
+  <object type="bouncy_enemy" x="159" y="1252"/>
+  <object type="bouncy_enemy" x="159" y="1207"/>
+  <object type="bouncy_enemy" x="191" y="1189"/>
+  <object type="bouncy_enemy" x="196" y="1291"/>
+  <object type="bouncy_enemy" x="184" y="1359"/>
+  <object type="bouncy_enemy" x="183" y="1421"/>
+  <object type="bouncy_enemy" x="136" y="1459"/>
+  <object type="bouncy_enemy" x="83" y="1485"/>
+  <object type="bouncy_enemy" x="53" y="1359"/>
+  <object type="bouncy_enemy" x="129" y="1293"/>
+  <object type="bouncy_enemy" x="132" y="1216"/>
+  <object type="bouncy_enemy" x="1578" y="1246"/>
+  <object type="bouncy_enemy" x="1492" y="1343"/>
+  <object type="bouncy_enemy" x="1600" y="1341"/>
+  <object type="bouncy_enemy" x="1506" y="1429"/>
+  <object type="bouncy_enemy" x="1501" y="1290"/>
+  <object type="bouncy_enemy" x="1610" y="1286"/>
+  <object type="bouncy_enemy" x="1528" y="1374"/>
+  <object type="bouncy_enemy" x="1562" y="1322"/>
+  <object type="bouncy_enemy" x="1601" y="1477"/>
+  <object type="bouncy_enemy" x="1492" y="1231"/>
+  <object type="bouncy_enemy" x="1509" y="1474"/>
+  <object type="bouncy_enemy" x="1472" y="1193"/>
+  <object type="bouncy_enemy" x="1605" y="1225"/>
+  <object type="bouncy_enemy" x="1546" y="1489"/>
+  <object type="bouncy_enemy" x="1557" y="1357"/>
+  <object type="bouncy_enemy" x="1586" y="1431"/>
+  <object type="bouncy_enemy" x="1602" y="1386"/>
+  <object type="bouncy_enemy" x="1526" y="1243"/>
+  <object type="bouncy_enemy" x="1628" y="1079"/>
+  <object type="bouncy_enemy" x="1560" y="1210"/>
+  <object type="bouncy_enemy" x="1521" y="1307"/>
+  <object type="bouncy_enemy" x="1484" y="1394"/>
+  <object type="item_spawn" x="1217" y="1124"/>
+  <object type="bouncy_enemy" x="1611" y="965"/>
+  <object type="bouncy_enemy" x="1612" y="924"/>
+  <object type="bouncy_enemy" x="1615" y="879"/>
+  <object type="bouncy_enemy" x="1616" y="832"/>
+  <object type="bouncy_enemy" x="1616" y="783"/>
+  <object type="bouncy_enemy" x="45" y="1009"/>
+  <object type="bouncy_enemy" x="47" y="952"/>
+  <object type="bouncy_enemy" x="48" y="908"/>
+  <object type="bouncy_enemy" x="49" y="869"/>
+  <object type="bouncy_enemy" x="51" y="835"/>
+  <object type="item_spawn" x="131" y="68"/>
+  <object type="item_spawn" x="160" y="68"/>
+  <object type="item_spawn" x="193" y="67"/>
+  <object type="item_spawn" x="224" y="68"/>
+  <object type="item_spawn" x="1568" y="65"/>
+  <object type="item_spawn" x="1540" y="68"/>
+  <object type="item_spawn" x="1508" y="68"/>
+  <object type="item_spawn" x="1475" y="67"/>
+  <object type="item_spawn" x="739" y="687"/>
+  <object type="item_spawn" x="767" y="687"/>
+ </objectgroup>
+</map>
