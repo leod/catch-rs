@@ -11,7 +11,7 @@ use components::Components;
 use services::Services;
 use entities;
 
-const PROJECTILE_SPEED: f64 = 200.0; 
+const PROJECTILE_SPEED: f32 = 200.0; 
 
 pub struct PlayerItemSystem;
 

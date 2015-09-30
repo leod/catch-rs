@@ -1,8 +1,9 @@
-use std::f64;
+use std::f32;
 use std::collections::HashMap;
 
 use ecs;
 use rand;
+use hprof;
 
 use shared::math;
 use shared::{TickNumber, GameInfo, GameEvent, PlayerId, PlayerInfo, Item};
@@ -13,7 +14,7 @@ use systems::Systems;
 use services::Services;
 use entities;
 
-const RESPAWN_TIME_S: f64 = 5.0;
+const RESPAWN_TIME_S: f32 = 5.0;
 
 pub struct Player {
     // Has this player been sent its first tick yet?
@@ -28,13 +29,13 @@ pub struct Player {
     // Entity controlled by the player, if alive
     entity: Option<ecs::Entity>,
 
-    respawn_time: Option<f64>, 
+    respawn_time: Option<f32>, 
 }
 
 pub struct SpawnPoint {
     position: math::Vec2,
     size: math::Vec2,
-    last_used_time_s: Option<f64>,
+    last_used_time_s: Option<f32>,
 }
 
 impl Player {
@@ -60,7 +61,7 @@ pub struct GameState {
     spawn_points: Vec<SpawnPoint>,
     pub world: ecs::World<Systems>, 
     pub tick_number: TickNumber,
-    time_s: f64,
+    time_s: f32,
     players: HashMap<PlayerId, Player>,
 }
 
@@ -101,7 +102,7 @@ impl GameState {
                 let entity = entities::build_net(&object.type_str, 0, &mut self.world.data);
                 self.world.with_entity_data(&entity, |e, c| {
                     c.position[e].p = [object.x, object.y];
-                    c.orientation[e].angle = rand::random::<f64>() * f64::consts::PI * 2.0;
+                    c.orientation[e].angle = rand::random::<f32>() * f32::consts::PI * 2.0;
                 });
             } else if &object.type_str == "player_spawn" {
             } else {
@@ -168,8 +169,8 @@ impl GameState {
         let position = {
             let spawn_point = &self.spawn_points[rand::random::<usize>() %
                                                  self.spawn_points.len()];
-            [spawn_point.position[0] + rand::random::<f64>() * spawn_point.size[0],
-             spawn_point.position[1] + rand::random::<f64>() * spawn_point.size[1]]
+            [spawn_point.position[0] + rand::random::<f32>() * spawn_point.size[0],
+             spawn_point.position[1] + rand::random::<f32>() * spawn_point.size[1]]
         };
 
         // If we don't have a catcher right now, this player is lucky
@@ -242,7 +243,7 @@ impl GameState {
         self.check_integrity();
 
         self.tick_number += 1;
-        self.world.services.tick_dur_s = 1.0 / (self.game_info.ticks_per_second as f64); 
+        self.world.services.tick_dur_s = 1.0 / (self.game_info.ticks_per_second as f32); 
         self.world.services.prepare_for_tick(self.tick_number, self.players.keys().map(|i| *i));
 
         self.tick_replicate_entities_to_new_players();
@@ -255,11 +256,15 @@ impl GameState {
         self.world.flush_queue();
 
         // Let server entities have their time
-        self.world.systems.bouncy_enemy_system.tick(&self.map, &mut self.world.data);
-        self.world.systems.projectile_system.tick(&self.map, &mut self.world.data);
-        self.world.systems.item_spawn_system.tick(&mut self.world.data);
-        self.world.systems.rotate_system.tick(&mut self.world.data);
-        self.world.systems.interaction_system.tick(&mut self.world.data);
+        {
+            let _g = hprof::enter("entities");
+
+            self.world.systems.bouncy_enemy_system.tick(&self.map, &mut self.world.data);
+            self.world.systems.projectile_system.tick(&self.map, &mut self.world.data);
+            self.world.systems.item_spawn_system.tick(&mut self.world.data);
+            self.world.systems.rotate_system.tick(&mut self.world.data);
+            self.world.systems.interaction_system.tick(&mut self.world.data);
+        }
         
         // Process events generated in this tick
         self.world.flush_queue();
@@ -407,7 +412,7 @@ impl GameState {
                             // Otherwise, find the player that is the closest to the dead catcher
                             let player_ids = self.players.keys().filter(|id| **id != player_id);
 
-                            let mut closest: Option<(ecs::Entity, f64)> = None; 
+                            let mut closest: Option<(ecs::Entity, f32)> = None; 
                             for &id in player_ids {
                                 if let Some(entity) = self.players[&id].entity {
                                     let d = self.world.with_entity_data(&entity, |e, c| {

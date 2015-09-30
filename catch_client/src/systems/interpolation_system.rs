@@ -18,7 +18,7 @@ impl InterpolationSystem {
         }
     }
 
-    pub fn interpolate(&self, t: f64, data: &mut DataHelper<Components, Services>) {
+    pub fn interpolate(&self, t: f32, data: &mut DataHelper<Components, Services>) {
         for e in self.position_aspect.iter() {
             if let Some((a, b)) = data.interp_position[e].state.clone() {
                 data.position[e] = Position::interpolate(&a, &b, t);

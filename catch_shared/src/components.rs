@@ -22,7 +22,7 @@ pub struct Position {
 
 #[derive(Debug, Clone, Default, CerealData)]
 pub struct Orientation {
-    pub angle: f64, // radians
+    pub angle: f32, // radians
 }
 
 #[derive(Debug, Clone, Default, CerealData)]
@@ -32,20 +32,20 @@ pub struct LinearVelocity {
 
 #[derive(Debug, Clone, Default, CerealData)]
 pub struct AngularVelocity {
-    pub v: f64,
+    pub v: f32,
 }
 
 #[derive(Debug, Clone, CerealData)]
 pub enum Shape { 
     Circle {
-        radius: f64,
+        radius: f32,
     },
     Square {
-        size: f64,
+        size: f32,
     },
     Rect {
-        width: f64,
-        height: f64
+        width: f32,
+        height: f32
     }
 }
 

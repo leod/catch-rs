@@ -28,11 +28,11 @@ impl DrawBouncyEnemySystem {
             let p = data.position[entity].p;
 
             let r = match data.shape[entity] {
-                Shape::Circle { radius } => radius,
+                Shape::Circle { radius } => radius as f64,
                 _ => panic!("enemy should be circle"),
             };
 
-            let transform = c.trans(p[0], p[1]).transform;
+            let transform = c.trans(p[0] as f64, p[1] as f64).transform;
 
             let color = if data.net_entity[entity].owner == NEUTRAL_PLAYER_ID {
                 [1.0, 0.0, 0.0, 1.0]

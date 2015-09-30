@@ -10,7 +10,7 @@ pub const NUM_CHANNELS: usize = 2;
 
 #[derive(Debug, Clone, CerealData)]
 pub struct TimedPlayerInput {
-    pub duration_s: f64,
+    pub duration_s: f32,
     pub input: PlayerInput,
 }
 

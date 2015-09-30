@@ -1,4 +1,4 @@
-use std::f64;
+use std::f32;
 
 use ecs;
 use ecs::{Process, System, EntityData, DataHelper};
@@ -11,15 +11,15 @@ use shared::player::PlayerInputKey;
 use components::Components;
 use services::Services;
 
-const TURN_ACCEL: f64 = 1.5;
-const TURN_FRICTION: f64 = 0.25;
-const MOVE_ACCEL: f64 = 1000.0;
-const MOVE_FRICTION: f64 = 10.0;
-const BACK_ACCEL: f64 = 500.0;
-const STRAFE_ACCEL: f64 = 900.0;
-const MIN_SPEED: f64 = 0.1;
-const DASH_SPEED: f64 = 600.0;
-const DASH_DURATION_S: f64 = 0.3;
+const TURN_ACCEL: f32 = 1.5;
+const TURN_FRICTION: f32 = 0.25;
+const MOVE_ACCEL: f32 = 1000.0;
+const MOVE_FRICTION: f32 = 10.0;
+const BACK_ACCEL: f32 = 500.0;
+const STRAFE_ACCEL: f32 = 900.0;
+const MIN_SPEED: f32 = 0.1;
+const DASH_SPEED: f32 = 600.0;
+const DASH_DURATION_S: f32 = 0.3;
 
 /// System for interpreting player input.
 /// When we implement client-side prediction, this module will have to move to catch_shared in
@@ -46,7 +46,7 @@ impl PlayerMovementSystem {
                     data.player_state[e].dashing = Some(0.9);
                 }
 
-                let s = (intersection.t - 0.0001).max(0.0);
+                let s = (intersection.t - 0.01).max(0.0);
                 math::add(p, math::scale(delta, s))
             }
             None =>
@@ -93,7 +93,7 @@ impl PlayerMovementSystem {
                 let n_angle = intersection.n[1].atan2(intersection.n[0]);
                 let angle = data.orientation[e].angle;
 
-                data.orientation[e].angle = f64::consts::PI + n_angle - (angle - n_angle);
+                data.orientation[e].angle = f32::consts::PI + n_angle - (angle - n_angle);
                 data.server_net_entity[e].force(ComponentType::Orientation);
 
                 let v = data.linear_velocity[e].v;
@@ -103,7 +103,7 @@ impl PlayerMovementSystem {
                     data.orientation[e].angle.sin() * (speed + 1.0),
                 ];
 
-                let s = (intersection.t - 0.0001).max(0.0);
+                let s = (intersection.t - 0.01).max(0.0);
                 data.position[e].p = math::add(p, math::scale(delta, s));
 
                 // TODO: Actually at this point we still might have some 't' left to walk
@@ -160,7 +160,7 @@ impl PlayerMovementSystem {
                 // While dashing, movement input is ignored
 
                 let t = dashing / DASH_DURATION_S;
-                let scale = 1.0; //(t*f64::consts::PI/2.0).cos()*(1.0-(1.0-t).powi(10));
+                let scale = 1.0; //(t*f32::consts::PI/2.0).cos()*(1.0-(1.0-t).powi(10));
                 c.linear_velocity[e].v = math::scale(direction, scale*DASH_SPEED);
 
                 c.player_state[e].dashing =

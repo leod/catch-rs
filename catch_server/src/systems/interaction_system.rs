@@ -1,7 +1,9 @@
+use hprof;
 use ecs::{System, Process, Aspect, EntityData, DataHelper};
 
 use shared::math;
 use shared::util::CachedAspect;
+
 use components::{Components, Shape}; 
 use services::Services;
 
@@ -46,6 +48,8 @@ impl InteractionSystem {
     pub fn tick(&self, data: &mut DataHelper<Components, Services>) {
         // n^2 kinda loop over all entity pairs that can interact
         
+        let _g = hprof::enter("interaction");
+
         for &(ref aspect_a, ref aspect_b, ref interaction) in self.interactions.iter() {
             for entity_a in aspect_a.iter() {
                 for entity_b in aspect_b.iter() {

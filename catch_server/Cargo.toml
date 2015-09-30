@@ -11,6 +11,7 @@ log = "*"
 env_logger = "*"
 time = "0.1.32"
 rand = "0.3.11"
+hprof = "*"
 
 [dependencies.ecs]
 git = "https://github.com/HeroesGrave/ecs-rs.git"

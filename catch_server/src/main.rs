@@ -9,6 +9,7 @@ extern crate libc;
 extern crate cereal;
 extern crate time;
 extern crate rand;
+extern crate hprof;
 
 pub mod components;
 pub mod entities;
@@ -57,6 +58,11 @@ struct Server {
     game_state: GameState,
 
     tick_timer: PeriodicTimer,
+
+    // Statistics and stuff
+    print_prof_timer: PeriodicTimer,
+    sum_tick_size: usize,
+    samples_tick_size: usize,
 }
 
 impl Server {
@@ -70,7 +76,7 @@ impl Server {
         info!("server started on port {}", port);
         info!("game info: {:?}", game_info);
 
-        let tick_duration_s = 1.0 / (game_info.ticks_per_second as f64);
+        let tick_duration_s = 1.0 / (game_info.ticks_per_second as f32);
 
         Ok(Server {
             game_info: game_info.clone(),
@@ -79,11 +85,15 @@ impl Server {
             clients: HashMap::new(),
             game_state: GameState::new(game_info),
             tick_timer: PeriodicTimer::new(tick_duration_s),
+
+            print_prof_timer: PeriodicTimer::new(5.0),
+            sum_tick_size: 0,
+            samples_tick_size: 0,
         })
     }
 
-    fn tick_time(&self) -> f64 {
-        self.game_state.tick_number() as f64 + self.tick_timer.progress()
+    fn tick_time(&self) -> f32 {
+        self.game_state.tick_number() as f32 + self.tick_timer.progress()
     }
 
     fn service(&mut self) -> bool {
@@ -240,54 +250,92 @@ impl Server {
 
     fn run(&mut self) {
         loop {
-            let start_time_s = time::precise_time_s();
+            let start_time_s = time::precise_time_s() as f32;
 
-            // Is this how DDOS happens?
-            while self.service() {};
+            hprof::start_frame();
 
-            // Start ticks
-            while self.tick_timer.next() {
-                self.game_state.tick();
-                
-                // Broadcast tick to clients
-                for (player_id, client) in self.clients.iter() {
-                    if client.state == ClientState::Normal {
-                        let mut data = Vec::new(); 
+            {
+                let _g = hprof::enter("service");
 
-                        // Build tick for each client separately. This makes it possible to do
-                        // delta encoding and stuff.
-                        let tick_number = self.game_state.tick_number;
+                // Is this how DDOS happens?
+                while self.service() {};
+            }
 
-                        let mut tick = Tick::new(tick_number);
-                        tick.events = self.game_state.world.services.next_player_events[player_id]
-                                          .clone();
+            {
+                let _g = hprof::enter("ticks");
 
-                        self.game_state.world.systems.net_entity_system
-                            .store_in_tick_state(*player_id,
-                                                 &mut tick.state,
-                                                 &mut self.game_state.world.data);
-
-                        match tick.write(&mut data) {
-                            Err(_) => {
-                                warn!("error encoding tick");
-                                continue;
-                            }
-                            Ok(_) => ()
-                        };
-
-                        client.peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE,
-                                         net::Channel::Ticks as u8);
-
-                        self.game_state.world.services.next_player_events
-                            .get_mut(&player_id).unwrap().clear();
-                    }
+                // Start ticks
+                while self.tick_timer.next() {
+                    self.tick();
                 }
             }
 
-            thread::sleep_ms(1);
+            {
+                let _g = hprof::enter("sleep");
+                thread::sleep_ms(1);
+            }
 
-            let end_time_s = time::precise_time_s();
-            self.tick_timer.add(end_time_s - start_time_s);
+            hprof::end_frame();
+
+            let end_time_s = time::precise_time_s() as f32;
+
+            let delta_s = end_time_s - start_time_s;
+            self.tick_timer.add(delta_s);
+            self.print_prof_timer.add(delta_s);
+
+            if self.print_prof_timer.next_reset() {
+                hprof::profiler().print_timing();  
+
+                if self.samples_tick_size > 0 {
+                    info!("average tick size over last {} ticks: {:.2} bytes, {:.2} kb/s",
+                          self.samples_tick_size,
+                          self.sum_tick_size as f64 / self.samples_tick_size as f64,
+                          self.sum_tick_size as f64 / (1000.0 * 5.0));
+                }
+            }
+        }
+    }
+
+    fn tick(&mut self) {
+        self.game_state.tick();
+        
+        // Broadcast tick to clients
+        let _g = hprof::enter("broadcast");
+
+        for (player_id, client) in self.clients.iter() {
+            if client.state == ClientState::Normal {
+                let mut data = Vec::new(); 
+
+                // Build tick for each client separately. This makes it possible to do
+                // delta encoding and stuff.
+                let tick_number = self.game_state.tick_number;
+
+                let mut tick = Tick::new(tick_number);
+                tick.events = self.game_state.world.services.next_player_events[player_id]
+                                  .clone();
+
+                self.game_state.world.systems.net_entity_system
+                    .store_in_tick_state(*player_id,
+                                         &mut tick.state,
+                                         &mut self.game_state.world.data);
+
+                match tick.write(&mut data) {
+                    Err(_) => {
+                        warn!("error encoding tick");
+                        continue;
+                    }
+                    Ok(_) => ()
+                };
+
+                self.sum_tick_size += data.len();
+                self.samples_tick_size += 1;
+
+                client.peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE,
+                                 net::Channel::Ticks as u8);
+
+                self.game_state.world.services.next_player_events
+                    .get_mut(&player_id).unwrap().clear();
+            }
         }
     }
 }
@@ -295,8 +343,6 @@ impl Server {
 fn main() {
     env_logger::init().unwrap();
     enet::initialize().unwrap();
-
-    println!("{}", module_path!());
 
     let entity_types = shared::entities::all_entity_types();
     let game_info = GameInfo {

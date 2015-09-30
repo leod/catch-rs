@@ -1,3 +1,4 @@
+use hprof;
 use ecs::{Aspect, Process, DataHelper};
 
 use shared::util::CachedAspect;
@@ -17,6 +18,8 @@ impl RotateSystem {
     }
 
     pub fn tick(&self, data: &mut DataHelper<Components, Services>) {
+        let _g = hprof::enter("rotate");
+
         for e in self.aspect.iter() {
             data.orientation[e].angle += data.angular_velocity[e].v * data.services.tick_dur_s;
         }

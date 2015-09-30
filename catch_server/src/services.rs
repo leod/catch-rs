@@ -15,7 +15,7 @@ pub struct Services {
     pub entity_types: EntityTypes,
 
     // Tick duration in seconds
-    pub tick_dur_s: f64,
+    pub tick_dur_s: f32,
 
     // Events generated in a tick that are to be performed on the server as well
     // as sent to the clients

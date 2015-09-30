@@ -1,4 +1,4 @@
-use std::f64;
+use std::f32;
 
 use ecs;
 use ecs::{BuildData, DataHelper, EntityBuilder};
@@ -28,7 +28,7 @@ pub fn build_net_custom<B: EntityBuilder<Components>>
     let entity_type = data.services.entity_types[entity_type_id as usize].1.clone();
     let entity_id = data.services.next_entity_id();
 
-    info!("building {} net entity {} for {}", type_name, entity_id, owner);
+    debug!("building {} net entity {} for {}", type_name, entity_id, owner);
 
     // Tell the clients about the new entity
     data.services.add_event(
@@ -80,7 +80,7 @@ pub fn build_server(type_name: &str,
     } else if type_name == "item_spawn" {
         data.item_spawn.add(&entity, ItemSpawn::default());
     } else if type_name == "item" {
-        data.angular_velocity.add(&entity, AngularVelocity { v: f64::consts::PI });
+        data.angular_velocity.add(&entity, AngularVelocity { v: f32::consts::PI });
         data.rotate.add(&entity, Rotate);
     } else if type_name == "bullet" {
         data.linear_velocity.add(&entity, LinearVelocity::default());

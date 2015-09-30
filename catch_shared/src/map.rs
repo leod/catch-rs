@@ -25,10 +25,10 @@ pub struct Map {
 
 /// Information about an entity on a map
 pub struct MapObject {
-    pub x: f64,
-    pub y: f64,
-    pub width: f64,
-    pub height: f64,
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
     pub type_str: String,
 }
 
@@ -115,24 +115,24 @@ pub struct TraceIter<'a> {
     ty: isize,
 
     // Progress
-    t: f64,
+    t: f32,
 
-    dt_dx: f64,
-    dt_dy: f64,
+    dt_dx: f32,
+    dt_dy: f32,
 
     x_inc: isize,
     y_inc: isize,
     
-    t_next_vertical: f64,
-    t_next_horizontal: f64,
+    t_next_vertical: f32,
+    t_next_horizontal: f32,
 }
 
 impl<'a> TraceIter<'a> {
     // http://playtechs.blogspot.de/2007/03/raytracing-on-grid.html
 
     fn new(map: &'a Map,
-           ax: f64, ay: f64,
-           bx: f64, by: f64) -> TraceIter<'a> {
+           ax: f32, ay: f32,
+           bx: f32, by: f32) -> TraceIter<'a> {
         let tx = ax as isize / map.tile_width() as isize;
         let ty = ay as isize / map.tile_height() as isize;
         let (dx, dy) = (bx - ax, by - ay);
@@ -143,10 +143,10 @@ impl<'a> TraceIter<'a> {
         let (x_inc, t_next_horizontal) =
             if bx > ax {
                 (1,
-                 (((ax as usize / map.tile_width() + 1) * map.tile_width()) as f64 - ax) * dt_dx)
+                 (((ax as usize / map.tile_width() + 1) * map.tile_width()) as f32 - ax) * dt_dx)
             } else if bx < ax {
                 (-1,
-                 (ax - (ax as usize / map.tile_width() * map.tile_width()) as f64) * dt_dx)
+                 (ax - (ax as usize / map.tile_width() * map.tile_width()) as f32) * dt_dx)
             } else {
                 (0,
                  dt_dx) // Infinity
@@ -155,10 +155,10 @@ impl<'a> TraceIter<'a> {
         let (y_inc, t_next_vertical) =
             if by > ay {
                 (1,
-                 (((ay as usize / map.tile_height() + 1) * map.tile_height()) as f64 - ay) * dt_dy)
+                 (((ay as usize / map.tile_height() + 1) * map.tile_height()) as f32 - ay) * dt_dy)
             } else if by < ay {
                 (-1,
-                 (ay - (ay as usize / map.tile_height() * map.tile_height()) as f64) * dt_dy)
+                 (ay - (ay as usize / map.tile_height() * map.tile_height()) as f32) * dt_dy)
             } else {
                 (0,
                  dt_dy) // Infinity
@@ -198,11 +198,11 @@ impl<'a> Iterator for TraceIter<'a> {
         if self.t_next_vertical > self.t_next_horizontal {
             self.tx += self.x_inc;
             self.t = self.t_next_horizontal;
-            self.t_next_horizontal += self.map.width() as f64 * self.dt_dx;
+            self.t_next_horizontal += self.map.width() as f32 * self.dt_dx;
         } else {
             self.ty += self.y_inc;
             self.t = self.t_next_vertical;
-            self.t_next_vertical += self.map.height() as f64 * self.dt_dy;
+            self.t_next_vertical += self.map.height() as f32 * self.dt_dy;
         }
 
         Some((rx as usize, ry as usize))
@@ -216,7 +216,7 @@ pub struct LineSegmentIntersection {
     pub ty: usize,
 
     // Can be used to find the intersection point, 0 <= t <= 1
-    pub t: f64,
+    pub t: f32,
 
     // Normal at the intersection
     pub n: math::Vec2,
@@ -314,10 +314,10 @@ impl Map {
         for (x_i, y_i) in self.trace_line(p, q) {
             let tile = self.get_tile(LayerId::Block, x_i, y_i);
             if let Some(_) = tile {
-                let x = (x_i * self.tile_width()) as f64;
-                let y = (y_i * self.tile_width()) as f64;
-                let w = self.tile_width() as f64;
-                let h = self.tile_height() as f64;
+                let x = (x_i * self.tile_width()) as f32;
+                let y = (y_i * self.tile_width()) as f32;
+                let w = self.tile_width() as f32;
+                let h = self.tile_height() as f32;
 
                 let i1 = math::line_segments_intersection(p, q, [x, y], [x+w, y])
                              .map(|t| ([0.0, -1.0], t));
@@ -397,10 +397,10 @@ impl Map {
                     &tiled::Object::Rect { ref x, ref y, ref width, ref height,
                                            ref type_str, visible: _ } => {
                         objects.push(MapObject {
-                            x: *x as f64,
-                            y: *y as f64,
-                            width: *width as f64,
-                            height: *height as f64,
+                            x: *x as f32,
+                            y: *y as f32,
+                            width: *width as f32,
+                            height: *height as f32,
                             type_str: type_str.clone(),
                         });
                     }

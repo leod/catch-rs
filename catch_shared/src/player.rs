@@ -11,7 +11,7 @@ pub enum Item {
         charges: usize,
     },
     SpeedBoost {
-        duration_s: f64,
+        duration_s: f32,
     },
     BlockPlacer {
         charges: usize,
@@ -22,7 +22,7 @@ pub enum Item {
 }
 
 impl Item {
-    pub fn cooldown_s(&self) -> Option<f64> {
+    pub fn cooldown_s(&self) -> Option<f32> {
         match *self {
             Item::Weapon { charges: _ } => Some(0.7),
             Item::SpeedBoost { duration_s: _ } => None,
@@ -36,7 +36,7 @@ impl Item {
 // Item states, cooldowns etc.
 #[derive(Clone, Default, CerealData)]
 pub struct FullPlayerState {
-    pub dash_cooldown_s: Option<f64>,
+    pub dash_cooldown_s: Option<f32>,
 
     // An item that the player picked up but hasn't equipped
     pub hidden_item: Option<Item>,
@@ -45,7 +45,7 @@ pub struct FullPlayerState {
 #[derive(Clone, CerealData)]
 pub struct EquippedItem {
     pub item: Item,
-    pub cooldown_s: Option<f64>, // Some items have a cooldown
+    pub cooldown_s: Option<f32>, // Some items have a cooldown
 }
 
 impl EquippedItem {
@@ -61,8 +61,8 @@ impl EquippedItem {
 #[derive(Clone, Default, CerealData)]
 pub struct PlayerState { 
     pub color: u32,
-    pub dashing: Option<f64>,
-    pub invulnerable_s: Option<f64>,
+    pub dashing: Option<f32>,
+    pub invulnerable_s: Option<f32>,
 
     // Equipped items
     pub items: Vec<Option<EquippedItem>>,

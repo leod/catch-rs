@@ -10,7 +10,7 @@ pub use vecmath_lib::vec2_scale as scale;
 pub use vecmath_lib::vec2_square_len as square_len;
 pub use vecmath_lib::vec2_normalized as normalized;
 
-pub type Scalar = f64;
+pub type Scalar = f32;
 pub type Matrix2 = vecmath_lib::Matrix2x3<Scalar>;
 pub type Vec2 = vecmath_lib::Vector2<Scalar>;
 
@@ -19,7 +19,7 @@ pub const EPSILON: Scalar = 10e-9; // TODO: Epsilon
 /// Checks for an intersection between the line segments [a,b] and [p,q].
 /// If there is an intersection, returns 0 <= s <= 1 with
 ///     a + s*(b-a) = p + t*(q-p)       for some 0 <= t <= 1.
-pub fn line_segments_intersection(a: Vec2, b: Vec2, p: Vec2, q: Vec2) -> Option<f64> {
+pub fn line_segments_intersection(a: Vec2, b: Vec2, p: Vec2, q: Vec2) -> Option<f32> {
     // a + s*(b-a) = p + t*(q-p)
     //          <=>
     // s*(b-a) - t*(q-p) = p-a 
@@ -65,7 +65,7 @@ pub fn line_segments_intersection(a: Vec2, b: Vec2, p: Vec2, q: Vec2) -> Option<
     }
 }
 
-pub fn min_intersection<T>(a: Option<(T, f64)>, b: Option<(T, f64)>) -> Option<(T, f64)> {
+pub fn min_intersection<T>(a: Option<(T, f32)>, b: Option<(T, f32)>) -> Option<(T, f32)> {
     match (a, b) {
         (Some((x, s)), Some((y, t))) => 
             if s < t { Some((x, s)) } else { Some((y, t)) },

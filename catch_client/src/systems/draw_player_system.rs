@@ -1,4 +1,4 @@
-use std::f64;
+use std::f32;
 
 use ecs::{Aspect, System, DataHelper, Process};
 
@@ -27,12 +27,12 @@ impl DrawPlayerSystem {
         }
     }
 
-    pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, time_s: f64,
+    pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, time_s: f32,
                 particles: &mut Particles, c: graphics::Context, gl: &mut GlGraphics) {
         for entity in self.aspect.iter() {
             let p = data.position[entity].p;
             let r = match data.shape[entity] {
-                Shape::Circle { radius } => radius,
+                Shape::Circle { radius } => radius as f64,
                 _ => panic!("player should be circle"),
             };
 
@@ -54,9 +54,9 @@ impl DrawPlayerSystem {
                                              color, color,
                                              2.5, // size
                                              p, // position
-                                             data.orientation[entity].angle - f64::consts::PI,
-                                             f64::consts::PI / 8.0,
-                                             100.0 + rand::random::<f64>() * 50.0, // speed
+                                             data.orientation[entity].angle - f32::consts::PI,
+                                             f32::consts::PI / 8.0,
+                                             100.0 + rand::random::<f32>() * 50.0, // speed
                                              //f64::consts::PI * 2.0,
                                              0.0,
                                              1.0,
@@ -83,7 +83,7 @@ impl DrawPlayerSystem {
                 } else if data.player_state[entity].dashing.is_some() {
                     let t = data.player_state[entity].dashing.unwrap() / 
                             0.3;
-                    Rgb::new(1.0f32, 0.65f32 - 0.5 * t as f32, 0.0)
+                    Rgb::new(1.0f32, 0.65f32 - 0.5 * t, 0.0)
                 } else if data.player_state[entity].is_catcher {
                     Rgb::new(0.0, 1.0, 0.0)
                 } else {
@@ -102,9 +102,9 @@ impl DrawPlayerSystem {
             data.draw_player[entity].color = color;
 
             let scale_x = data.draw_player[entity].scale_x;
-            let transform = c.trans(p[0], p[1])
-                             .rot_rad(data.orientation[entity].angle)
-                             .scale(scale_x, 1.0/scale_x)
+            let transform = c.trans(p[0] as f64, p[1] as f64)
+                             .rot_rad(data.orientation[entity].angle as f64)
+                             .scale(scale_x as f64, 1.0/scale_x as f64)
                              .transform;
             graphics::ellipse(color,
                               [-r, -r, r*2.0, r*2.0],

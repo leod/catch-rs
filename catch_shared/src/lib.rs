@@ -67,14 +67,14 @@ pub enum GameEvent {
     PlayerDash {
         player_id: PlayerId,
         position: math::Vec2,
-        orientation: f64,
+        orientation: f32,
     },
     PlayerFlip {
         player_id: PlayerId,
         position: math::Vec2,
-        orientation: f64,
-        speed: f64,
-        orientation_wall: f64,
+        orientation: f32,
+        speed: f32,
+        orientation_wall: f32,
     },
     PlayerTakeItem {
         player_id: PlayerId,

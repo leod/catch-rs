@@ -1,17 +1,19 @@
-use std::f64;
+use std::f32;
 
+use hprof;
 use ecs::{Aspect, Process, System, EntityData, DataHelper};
 
 use shared::math;
 use shared::map::Map;
 use shared::net::ComponentType;
 use shared::util::CachedAspect;
+
 use components::{Components};
 use services::Services;
 
-const MOVE_ACCEL: f64 = 150.0;
-const MOVE_FRICTION: f64 = 4.0;
-const ORBIT_SPEED_FACTOR: f64 = 20.0;
+const MOVE_ACCEL: f32 = 150.0;
+const MOVE_FRICTION: f32 = 4.0;
+const ORBIT_SPEED_FACTOR: f32 = 20.0;
 
 pub struct BouncyEnemySystem {
     aspect: CachedAspect<Components>,
@@ -25,11 +27,11 @@ impl BouncyEnemySystem {
     }
 
     // TODO: Code duplication
-     fn move_flipping(&self,
-                      e: EntityData<Components>,
-                      delta: math::Vec2,
-                      map: &Map,
-                      data: &mut Components) {
+    fn move_flipping(&self,
+                     e: EntityData<Components>,
+                     delta: math::Vec2,
+                     map: &Map,
+                     data: &mut Components) {
         let p = data.position[e].p;
         let q = math::add(p, delta);
 
@@ -38,7 +40,7 @@ impl BouncyEnemySystem {
                 let n_angle = intersection.n[1].atan2(intersection.n[0]);
                 let angle = data.orientation[e].angle;
 
-                data.orientation[e].angle = f64::consts::PI + n_angle - (angle - n_angle);
+                data.orientation[e].angle = f32::consts::PI + n_angle - (angle - n_angle);
                 data.server_net_entity[e].force(ComponentType::Orientation);
 
                 let v = data.linear_velocity[e].v;
@@ -58,6 +60,8 @@ impl BouncyEnemySystem {
     }
 
     pub fn tick(&self, map: &Map, data: &mut DataHelper<Components, Services>) {
+        let _g = hprof::enter("bouncy enemy");
+
         let dur_s = data.services.tick_dur_s;
 
         for e in self.aspect.iter() {

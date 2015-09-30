@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use ecs;
+use hprof;
 use ecs::{Aspect, Process, System, EntityData, DataHelper};
 
 use shared;

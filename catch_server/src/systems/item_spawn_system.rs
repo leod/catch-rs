@@ -1,4 +1,5 @@
 use rand;
+use hprof;
 use ecs::{Aspect, Process, System, BuildData, DataHelper};
 
 use shared::Item;
@@ -8,7 +9,7 @@ use components::{Components};
 use services::Services;
 use entities;
 
-const COOLDOWN_S: f64 = 5.0;
+const COOLDOWN_S: f32 = 5.0;
 
 pub struct ItemSpawnSystem {
     aspect: CachedAspect<Components>,
@@ -22,6 +23,8 @@ impl ItemSpawnSystem {
     }
 
     pub fn tick(&self, data: &mut DataHelper<Components, Services>) {
+        let _g = hprof::enter("item spawn");
+
         // Iterate all item spawn entities
         for e in self.aspect.iter() {
             // Did our spawned entity die?

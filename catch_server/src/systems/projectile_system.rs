@@ -1,5 +1,4 @@
-use std::f64;
-
+use hprof;
 use ecs::{Aspect, Process, System, EntityData, DataHelper};
 
 use shared::{GameEvent, Map};
@@ -23,6 +22,8 @@ impl ProjectileSystem {
     }
 
     pub fn tick(&self, map: &Map, data: &mut DataHelper<Components, Services>) {
+        let _g = hprof::enter("projectile");
+
         let dur_s = data.services.tick_dur_s;
 
         for e in self.aspect.iter() {

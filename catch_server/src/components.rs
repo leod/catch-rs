@@ -35,7 +35,7 @@ pub struct Rotate;
 #[derive(Default)]
 pub struct ItemSpawn {
     pub spawned_entity: Option<ecs::Entity>,
-    pub cooldown_s: Option<f64>,
+    pub cooldown_s: Option<f32>,
 }
 
 components! {

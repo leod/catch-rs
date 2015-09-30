@@ -10,7 +10,7 @@ pub use shared::components::{NetEntity, Position, Orientation, LinearVelocity, S
                              ComponentTypeTraits, component_type_traits};
 
 pub struct DrawPlayer {
-    pub scale_x: f64,
+    pub scale_x: f32,
     pub color: graphics::types::Color,
     pub dash_particle_timer: PeriodicTimer,
 }
@@ -44,7 +44,7 @@ impl Default for DrawItem {
 pub struct DrawShadow;
 
 pub trait Interpolatable {
-    fn interpolate(&Self, &Self, t: f64) -> Self; 
+    fn interpolate(&Self, &Self, t: f32) -> Self; 
 }
 
 pub struct InterpolationState<T: Interpolatable> {
@@ -91,7 +91,7 @@ components! {
 }
 
 impl Interpolatable for Position {
-    fn interpolate(a: &Position, b: &Position, t: f64) -> Position {
+    fn interpolate(a: &Position, b: &Position, t: f32) -> Position {
         Position {
             p: math::add(math::scale(a.p, 1.0 - t),
                          math::scale(b.p, t))
@@ -100,7 +100,7 @@ impl Interpolatable for Position {
 }
 
 impl Interpolatable for Orientation {
-    fn interpolate(a: &Orientation, b: &Orientation, t: f64) -> Orientation {
+    fn interpolate(a: &Orientation, b: &Orientation, t: f32) -> Orientation {
         Orientation {
             angle: (1.0 - t) * a.angle + t * b.angle
         }

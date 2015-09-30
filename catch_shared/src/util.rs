@@ -5,19 +5,19 @@ use ecs::entity::IndexedEntity;
 use ecs::{Aspect, EntityData, EntityIter, ComponentManager};
 
 pub struct PeriodicTimer {
-    period_s: f64,
-    accum_s: f64
+    period_s: f32,
+    accum_s: f32
 }
 
 impl PeriodicTimer {
-    pub fn new(period_s: f64) -> PeriodicTimer {
+    pub fn new(period_s: f32) -> PeriodicTimer {
         PeriodicTimer {
             period_s: period_s,
             accum_s: 0.0,
         }
     }
 
-    pub fn add(&mut self, s: f64) {
+    pub fn add(&mut self, s: f32) {
         self.accum_s = self.accum_s + s;
     }
 
@@ -30,8 +30,17 @@ impl PeriodicTimer {
         }
     }
 
+    pub fn next_reset(&mut self) -> bool {
+        if self.accum_s >= self.period_s {
+            self.accum_s = 0.0;
+            true
+        } else {
+            false
+        }
+    }
+
     // Percentual progress until next period
-    pub fn progress(&self) -> f64 {
+    pub fn progress(&self) -> f32 {
         self.accum_s / self.period_s
     }
 }

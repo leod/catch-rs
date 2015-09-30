@@ -1,4 +1,4 @@
-use std::f64;
+use std::f32;
 use std::thread;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -7,6 +7,7 @@ use std::path::Path;
 use ecs;
 use rand;
 use time;
+use hprof;
 use graphics;
 use graphics::Transformed;
 use graphics::Viewport;
@@ -46,8 +47,8 @@ pub struct Game {
 
     interpolation_ticks: usize,
     current_tick: Option<Tick>,
-    tick_progress: f64,
-    time_factor: f64,
+    tick_progress: f32,
+    time_factor: f32,
 
     window: GameWindow,
     draw_map: DrawMap,
@@ -56,7 +57,9 @@ pub struct Game {
 
     cam_pos: math::Vec2,
     glyphs: GlyphCache<'static>,
-    fps: f64,
+    fps: f32,
+
+    print_prof: bool,
 }
 
 impl Game {
@@ -98,6 +101,8 @@ impl Game {
             cam_pos: [0.0, 0.0],
             glyphs: glyphs,
             fps: 0.0,
+
+            print_prof: false,
         }
     }
 
@@ -107,7 +112,9 @@ impl Game {
         self.wait_first_ticks();
 
         while !self.quit {
-            let frame_start_s = time::precise_time_s();
+            hprof::start_frame();
+
+            let frame_start_s = time::precise_time_s() as f32;
 
             self.client_service();
             self.read_input();
@@ -118,10 +125,17 @@ impl Game {
 
             //thread::sleep_ms(10);
 
-            let frame_end_s = time::precise_time_s();
+            let frame_end_s = time::precise_time_s() as f32;
             simulation_time_s = frame_end_s - frame_start_s;
 
             self.fps = 1.0 / simulation_time_s;
+
+            hprof::end_frame();
+
+            if self.print_prof {
+                hprof::profiler().print_timing();
+                self.print_prof = false;
+            }
         }
     }
 
@@ -162,6 +176,8 @@ impl Game {
     }
 
     fn client_service(&mut self) {
+        let _g = hprof::enter("client service");
+
         loop {
             match self.client.service().unwrap() {
                 Some(_) => continue,
@@ -171,6 +187,8 @@ impl Game {
     }
 
     fn read_input(&mut self) {
+        let _g = hprof::enter("read input");
+
         while let Some(input) = (&mut self.window as &mut Window<Event=Input>).poll_event() {
             match input {
                 Input::Press(Button::Keyboard(Key::Escape)) => {
@@ -178,8 +196,11 @@ impl Game {
                     self.quit = true;
                     return;
                 }
-                Input::Press(Button::Keyboard(Key::P)) => {
+                Input::Press(Button::Keyboard(Key::L)) => {
                     thread::sleep_ms(200);
+                }
+                Input::Press(Button::Keyboard(Key::P)) => {
+                    self.print_prof = true;
                 }
                 _ => {
                     self.modifier_key.handle_input(&input);
@@ -192,7 +213,9 @@ impl Game {
         }
     }
 
-    fn send_input(&mut self, simulation_time_s: f64) {
+    fn send_input(&mut self, simulation_time_s: f32) {
+        let _g = hprof::enter("send input");
+
         self.client.send(&ClientMessage::PlayerInput(
             TimedPlayerInput {
                 duration_s: simulation_time_s,
@@ -201,7 +224,9 @@ impl Game {
         ));
     }
 
-    fn manage_ticks(&mut self, simulation_time_s: f64) {
+    fn manage_ticks(&mut self, simulation_time_s: f32) {
+        let _g = hprof::enter("manage ticks");
+
         assert!(self.current_tick.is_some());
 
         if self.tick_progress < 1.0 {
@@ -222,7 +247,7 @@ impl Game {
 
             self.tick_progress += self.time_factor * 
                                   simulation_time_s *
-                                  self.client.game_info().ticks_per_second as f64;
+                                  self.client.game_info().ticks_per_second as f32;
         }
 
         if self.tick_progress >= 1.0 {
@@ -254,10 +279,10 @@ impl Game {
 
                 let num = 100;
                 for i in 0..num {
-                    self.particles.spawn_cone(0.6, color, color, 3.5 * rand::random::<f64>() + 2.0,
-                                              position, 0.0, f64::consts::PI * 2.0,
-                                              70.0 + rand::random::<f64>() * 40.0,
-                                              rand::random::<f64>() * 8.0, 1.0);
+                    self.particles.spawn_cone(0.6, color, color, 3.5 * rand::random::<f32>() + 2.0,
+                                              position, 0.0, f32::consts::PI * 2.0,
+                                              70.0 + rand::random::<f32>() * 40.0,
+                                              rand::random::<f32>() * 8.0, 1.0);
                 }
             }
             &GameEvent::PlayerDash {
@@ -282,8 +307,8 @@ impl Game {
                                               1.5,
                                               position,
                                               orientation_wall,
-                                              f64::consts::PI,
-                                              20.0 + rand::random::<f64>() * 20.0,
+                                              f32::consts::PI,
+                                              20.0 + rand::random::<f32>() * 20.0,
                                               0.0,
                                               1.0);
                 }
@@ -298,8 +323,8 @@ impl Game {
                 let color = [0.05, 0.5, 1.0];
                 for i in 0..num {
                     self.particles.spawn_cone(0.4, color, color, 1.5, position, 0.0,
-                                              f64::consts::PI * 2.0,
-                                              200.0 + rand::random::<f64>() * 20.0, 0.0, 1.0);
+                                              f32::consts::PI * 2.0,
+                                              200.0 + rand::random::<f32>() * 20.0, 0.0, 1.0);
                 }
             }
             &GameEvent::PlayerEquipItem {
@@ -313,8 +338,8 @@ impl Game {
                 let color = [0.05, 0.5, 1.0];
                 for i in 0..num {
                     self.particles.spawn_cone(0.4, color, color, 1.5, position, 0.0,
-                                              f64::consts::PI * 2.0,
-                                              200.0 + rand::random::<f64>() * 20.0, 0.0, 1.0);
+                                              f32::consts::PI * 2.0,
+                                              200.0 + rand::random::<f32>() * 20.0, 0.0, 1.0);
                 }*/
             }
             &GameEvent::EnemyDied {
@@ -323,10 +348,10 @@ impl Game {
                 let num = 100;
                 let color = [1.0, 0.0, 0.0];
                 for i in 0..num {
-                    self.particles.spawn_cone(0.5, color, color, 2.5 * rand::random::<f64>() + 1.0,
-                                              position, 0.0, f64::consts::PI * 2.0,
-                                              70.0 + rand::random::<f64>() * 20.0,
-                                              rand::random::<f64>() * 5.0, 1.0);
+                    self.particles.spawn_cone(0.5, color, color, 2.5 * rand::random::<f32>() + 1.0,
+                                              position, 0.0, f32::consts::PI * 2.0,
+                                              70.0 + rand::random::<f32>() * 20.0,
+                                              rand::random::<f32>() * 5.0, 1.0);
                 }
             }
             &GameEvent::ProjectileImpact {
@@ -336,10 +361,10 @@ impl Game {
                 let color = [0.3, 0.3, 0.3];
                 for i in 0..num {
                     self.particles.spawn_cone(0.25, color, color,
-                                              1.0 * rand::random::<f64>() + 0.5, position, 0.0,
-                                              f64::consts::PI * 2.0,
-                                              30.0 + rand::random::<f64>() * 15.0,
-                                              rand::random::<f64>() * 5.0, 1.0);
+                                              1.0 * rand::random::<f32>() + 0.5, position, 0.0,
+                                              f32::consts::PI * 2.0,
+                                              30.0 + rand::random::<f32>() * 15.0,
+                                              rand::random::<f32>() * 5.0, 1.0);
                 }
             }
             _ => ()
@@ -347,13 +372,17 @@ impl Game {
     }
 
     fn interpolate(&mut self) {
+        let _g = hprof::enter("interpolate");
+
         let t = if self.tick_progress >= 1.0 { 1.0 } else { self.tick_progress };
 
         self.game_state.world.systems.interpolation_system
             .interpolate(t, &mut self.game_state.world.data);
     }
 
-    fn draw(&mut self, simulation_time_s: f64, gl: &mut GlGraphics) {
+    fn draw(&mut self, simulation_time_s: f32, gl: &mut GlGraphics) {
+        let _g = hprof::enter("draw");
+
         let draw_width = self.window.draw_size().width;
         let draw_height = self.window.draw_size().height;
 
@@ -372,59 +401,72 @@ impl Game {
                                      math::scale(math::sub(pos, self.cam_pos),
                                      0.15));
 
-            let half_width = draw_width as f64 / 2.0;
-            let half_height = draw_height as f64 / 2.0;
+            let half_width = draw_width as f32 / 2.0;
+            let half_height = draw_height as f32 / 2.0;
             let zoom = 3.0;
 
             // Clip camera position to map size in pixels
             if self.cam_pos[0] < half_width / zoom {
                 self.cam_pos[0] = half_width / zoom; 
             } else if self.cam_pos[0] + half_width / zoom >
-                      self.game_state.map.width_pixels() as f64 {
-                self.cam_pos[0] = self.game_state.map.width_pixels() as f64 - half_width / zoom;
+                      self.game_state.map.width_pixels() as f32 {
+                self.cam_pos[0] = self.game_state.map.width_pixels() as f32 - half_width / zoom;
             }
             if self.cam_pos[1] < half_height / zoom {
                 self.cam_pos[1] = half_height / zoom; 
             } else if self.cam_pos[1] + half_height / zoom >
-                      self.game_state.map.height_pixels() as f64 {
-                self.cam_pos[1] = self.game_state.map.height_pixels() as f64 - half_height / zoom;
+                      self.game_state.map.height_pixels() as f32 {
+                self.cam_pos[1] = self.game_state.map.height_pixels() as f32 - half_height / zoom;
             }
 
             {
-                let c = c.trans(half_width, half_height)
-                         .zoom(zoom)
-                         .trans(-self.cam_pos[0], -self.cam_pos[1]);
+                let c = c.trans(half_width as f64, half_height as f64)
+                         .zoom(zoom as f64)
+                         .trans(-self.cam_pos[0] as f64, -self.cam_pos[1] as f64);
 
                 // What part of the map is visible?
                 let cam_tx_min = ((self.cam_pos[0]*zoom - half_width) /
-                                   (zoom * self.game_state.map.tile_width() as f64))
+                                   (zoom * self.game_state.map.tile_width() as f32))
                                  .floor() as isize;
                 let cam_ty_min = ((self.cam_pos[1]*zoom - half_height) /
-                                   (zoom * self.game_state.map.tile_height() as f64))
+                                   (zoom * self.game_state.map.tile_height() as f32))
                                  .floor() as isize;
-                let cam_tx_size = (draw_width as f64 /
-                                   (zoom * self.game_state.map.tile_width() as f64))
+                let cam_tx_size = (draw_width as f32 /
+                                   (zoom * self.game_state.map.tile_width() as f32))
                                   .ceil() as isize;
-                let cam_ty_size = (draw_height as f64 /
-                                   (zoom * self.game_state.map.tile_height() as f64))
+                let cam_ty_size = (draw_height as f32 /
+                                   (zoom * self.game_state.map.tile_height() as f32))
                                   .ceil() as isize;
                 let cam_t_rect = [cam_tx_min, cam_ty_min, cam_tx_size+1, cam_ty_size+1];
 
-                self.draw_map.draw(&self.game_state.map, cam_t_rect, c, gl);
-                self.game_state.world.systems.draw_item_system
-                    .draw(&mut self.game_state.world.data, simulation_time_s,
-                          &mut self.particles, c, gl);
-                self.game_state.world.systems.draw_projectile_system
-                    .draw(&mut self.game_state.world.data, simulation_time_s,
-                          &mut self.particles, c, gl);
-                self.game_state.world.systems.draw_player_system
-                    .draw(&mut self.game_state.world.data, simulation_time_s,
-                          &mut self.particles, c, gl);
-                self.game_state.world.systems.draw_bouncy_enemy_system
-                    .draw(&mut self.game_state.world.data, c, gl);
+                {
+                    let _g = hprof::enter("map");
 
-                self.particles.update(simulation_time_s, &self.game_state.map);
-                self.particles.draw(c, gl);
+                    self.draw_map.draw(&self.game_state.map, cam_t_rect, c, gl);
+                }
+                {
+                    let _g = hprof::enter("entities");
+
+                    self.game_state.world.systems.draw_item_system
+                        .draw(&mut self.game_state.world.data, simulation_time_s,
+                              &mut self.particles, c, gl);
+                    self.game_state.world.systems.draw_projectile_system
+                        .draw(&mut self.game_state.world.data, simulation_time_s,
+                              &mut self.particles, c, gl);
+                    self.game_state.world.systems.draw_player_system
+                        .draw(&mut self.game_state.world.data, simulation_time_s,
+                              &mut self.particles, c, gl);
+                    self.game_state.world.systems.draw_bouncy_enemy_system
+                        .draw(&mut self.game_state.world.data, c, gl);
+                }
+                {
+                    let _g = hprof::enter("update particles");
+                    self.particles.update(simulation_time_s, &self.game_state.map);
+                }
+                {
+                    let _g = hprof::enter("draw particles");
+                    self.particles.draw(c, gl);
+                }
             }
 
             self.draw_player_text(c, gl);
@@ -449,6 +491,9 @@ impl Game {
         let s = &format!("time factor: {:.1}", self.time_factor);
         self.draw_text(color, 10.0, 135.0, s, c, gl);
 
+        let s = &format!("num particles: {}", self.particles.num());
+        self.draw_text(color, 10.0, 170.0, s, c, gl);
+
         if let Some(entity) = self.get_my_player_entity() {
             let speed =
                 self.game_state.world.with_entity_data(&entity, |e, c| {
@@ -456,7 +501,7 @@ impl Game {
                 }).unwrap();
 
             let s = &format!("player speed: {:.1}", speed);
-            self.draw_text(color, 10.0, 170.0, s, c, gl);
+            self.draw_text(color, 10.0, 205.0, s, c, gl);
         }
     }
 
@@ -469,7 +514,7 @@ impl Game {
                      c.player_state[e].clone())
                 }).unwrap();
 
-            let y1 = self.window.draw_size().height as f64 - 100.0;
+            let y1 = self.window.draw_size().height as f32 - 100.0;
             let y2 = y1 + 35.0; 
             let y3 = y2 + 35.0;
             let color1 = [0.0, 0.0, 1.0, 1.0];
@@ -514,13 +559,13 @@ impl Game {
         }
     }
 
-    fn draw_text(&mut self, color: [f32; 4], x: f64, y: f64, s: &str, c: graphics::Context,
+    fn draw_text(&mut self, color: [f32; 4], x: f32, y: f32, s: &str, c: graphics::Context,
                  gl: &mut GlGraphics) {
         Text::new_color(color, 30).draw(
             s,
             &mut self.glyphs,
             &c.draw_state,
-            c.transform.trans(x, y),
+            c.transform.trans(x as f64, y as f64),
             gl);
     }
 
