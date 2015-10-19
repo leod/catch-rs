@@ -21,16 +21,16 @@ pub fn build_shared<T: ComponentManager +
                     entity: BuildData<T>,
                     data: &mut T) {
     if type_name == "player" {
-        data.shape_mut().add(&entity, Shape::Circle { radius: 6.5 });
+        data.shape_mut().add(&entity, Shape::Circle { radius: 12.0 });
     } else if type_name == "bouncy_enemy" {
-        data.shape_mut().add(&entity, Shape::Circle { radius: 4.0 });
+        data.shape_mut().add(&entity, Shape::Circle { radius: 8.0 });
     } else if type_name == "item" {
-        data.shape_mut().add(&entity, Shape::Square { size: 5.5 });
+        data.shape_mut().add(&entity, Shape::Square { size: 8.0 });
     } else if type_name == "item_spawn" {
     } else if type_name == "bullet" {
-        data.shape_mut().add(&entity, Shape::Rect { width: 6.0, height: 2.0 });
+        data.shape_mut().add(&entity, Shape::Rect { width: 12.0, height: 4.0 });
     } else {
-        panic!("Unknown entity type: {}", type_name);
+        panic!("unknown entity type: {}", type_name);
     }
 }
 

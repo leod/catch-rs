@@ -203,7 +203,7 @@ impl Game {
                     self.print_prof = true;
                 }
                 _ => {
-                    self.modifier_key.handle_input(&input);
+                    //self.modifier_key.handle_input(&input);
                     self.player_input_map
                         .update_player_input(//self.modifier_key,
                                              &input,
