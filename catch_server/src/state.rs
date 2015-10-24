@@ -10,6 +10,7 @@ use shared::{TickNumber, GameInfo, GameEvent, PlayerId, PlayerInfo, Item};
 use shared::map::{LayerId, Map};
 use shared::net::TimedPlayerInput;
 
+use components::WallPosition;
 use systems::Systems;
 use services::Services;
 use entities;
@@ -142,6 +143,27 @@ impl GameState {
                 c.orientation[e].angle = rand::random::<f64>() * f64::consts::PI * 2.0;
             });
         }*/
+        
+        let num_walls = 15;
+
+        for _ in 0..num_walls {
+            let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
+
+            let width = 3000.0;
+            let height = 3000.0;
+            let ax = rand::random::<f32>() * width;
+            let ay = rand::random::<f32>() * height;
+            let bx = rand::random::<f32>() * width;
+            let by = rand::random::<f32>() * height;
+
+            println!("wall at {},{},{},{}", ax, ay, bx, by);
+
+            self.world.with_entity_data(&entity, |e, c| {
+                c.wall_position[e] = WallPosition {
+                    pos_a: [ax, ay], pos_b: [bx, by], 
+                };
+            });
+        }
 
         self.world.flush_queue();
     }
@@ -207,12 +229,18 @@ impl GameState {
     pub fn on_player_input(&mut self,
                            id: PlayerId,
                            input: &TimedPlayerInput) {
-        if self.players[&id].next_input.len() > 0 {
-            //println!("Already have player input for {}, queuing", id);
+        /*if self.players[&id].next_input.len() > 0 {
+            println!("Already have player input for {}, queuing", id);
         }
 
         self.players.get_mut(&id).as_mut().unwrap()
-            .next_input.push(input.clone());
+            .next_input.push(input.clone());*/
+
+        if let Some(entity) = self.players.get_mut(&id).unwrap().entity {
+            self.world.data.with_entity_data(&entity, |player, c| {
+                c.player_controller[player].inputs.push(input.clone()); 
+            });
+        }
     }
 
     fn current_catcher(&mut self) -> Option<PlayerId> {
@@ -231,10 +259,12 @@ impl GameState {
                         player_id: PlayerId,
                         entity: ecs::Entity,
                         input: &TimedPlayerInput) {
+        /*self.world.systems.movement_system
+            .move_one(entity, input.duration_s, &PlayerWallInteraction, &mut self.world.data);
         self.world.systems.player_movement_system
             .run_player_input(entity, input, &self.map, &mut self.world.data);
         self.world.systems.player_item_system
-            .run_player_input(entity, input, &self.map, &mut self.world.data);
+            .run_player_input(entity, input, &self.map, &mut self.world.data);*/
     }
 
     /// Advances the state of the server by one tick.
@@ -259,6 +289,7 @@ impl GameState {
         {
             let _g = hprof::enter("entities");
 
+            self.world.systems.movement_system.tick(&mut self.world.data);
             self.world.systems.bouncy_enemy_system.tick(&self.map, &mut self.world.data);
             self.world.systems.projectile_system.tick(&self.map, &mut self.world.data);
             self.world.systems.item_spawn_system.tick(&mut self.world.data);
@@ -360,7 +391,7 @@ impl GameState {
     }
 
     fn tick_run_player_input(&mut self) {
-        let mut input = Vec::new();
+        /*let mut input = Vec::new();
         for (player_id, player) in self.players.iter() {
             if let Some(entity) = player.entity {
                 for player_input in &player.next_input {
@@ -375,7 +406,10 @@ impl GameState {
 
         for (_, player) in self.players.iter_mut() {
             player.next_input.clear();
-        }
+        }*/
+
+        self.world.systems.player_controller_system
+            .run_queued_inputs(&mut self.world.data);
     }
 
     fn tick_process_event(&mut self, event: GameEvent) {

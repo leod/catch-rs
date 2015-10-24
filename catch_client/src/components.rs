@@ -4,9 +4,9 @@ use graphics;
 use shared::math;
 use shared::util::PeriodicTimer;
 use shared::components::{HasPosition, HasOrientation, HasLinearVelocity, HasShape, HasPlayerState,
-                         HasFullPlayerState};
+                         HasFullPlayerState, HasWallPosition, HasAngularVelocity, HasWall};
 pub use shared::components::{NetEntity, Position, Orientation, LinearVelocity, Shape, PlayerState,
-                             Projectile, FullPlayerState,
+                             Projectile, FullPlayerState, WallPosition, AngularVelocity, Wall,
                              ComponentTypeTraits, component_type_traits};
 
 pub struct DrawPlayer {
@@ -43,10 +43,14 @@ impl Default for DrawItem {
 #[derive(Default)]
 pub struct DrawShadow;
 
+#[derive(Default)]
+pub struct DrawWall;
+
 pub trait Interpolatable {
     fn interpolate(&Self, &Self, t: f32) -> Self; 
 }
 
+/// Holds the state of one component in two ticks
 pub struct InterpolationState<T: Interpolatable> {
     pub state: Option<(T, T)>
 }
@@ -75,7 +79,13 @@ components! {
         #[hot] linear_velocity: LinearVelocity,
         #[hot] shape: Shape,
         #[cold] player_state: PlayerState,
-        #[cold] full_player_state: FullPlayerState, // We will only have our own full player state 
+        #[cold] full_player_state: FullPlayerState,
+        #[cold] wall_position: WallPosition,
+
+        #[cold] wall: Wall,
+
+        // Locally predicted components
+        #[cold] angular_velocity: AngularVelocity,
 
         // Interpolation
         #[hot] interp_position: InterpolationState<Position>,
@@ -87,6 +97,7 @@ components! {
         #[cold] draw_item: DrawItem,
         #[cold] draw_projectile: DrawProjectile,
         #[cold] draw_shadow: DrawShadow,
+        #[cold] draw_wall: DrawWall,
     }
 }
 
@@ -134,6 +145,15 @@ impl HasLinearVelocity for Components {
     }
 }
 
+impl HasAngularVelocity for Components {
+    fn angular_velocity(&self) -> &ComponentList<Components, AngularVelocity> {
+        &self.angular_velocity
+    }
+    fn angular_velocity_mut(&mut self) -> &mut ComponentList<Components, AngularVelocity> {
+        &mut self.angular_velocity 
+    }
+}
+
 impl HasShape for Components {
     fn shape(&self) -> &ComponentList<Components, Shape> {
         &self.shape
@@ -158,5 +178,23 @@ impl HasFullPlayerState for Components {
     }
     fn full_player_state_mut(&mut self) -> &mut ComponentList<Components, FullPlayerState> {
         &mut self.full_player_state
+    }
+}
+
+impl HasWallPosition for Components {
+    fn wall_position(&self) -> &ComponentList<Components, WallPosition> {
+        &self.wall_position
+    }
+    fn wall_position_mut(&mut self) -> &mut ComponentList<Components, WallPosition> {
+        &mut self.wall_position
+    }
+}
+
+impl HasWall for Components {
+    fn wall(&self) -> &ComponentList<Components, Wall> {
+        &self.wall
+    }
+    fn wall_mut(&mut self) -> &mut ComponentList<Components, Wall> {
+        &mut self.wall
     }
 }

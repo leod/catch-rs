@@ -52,6 +52,30 @@ pub enum Shape {
 #[derive(Debug, Clone, Default)]
 pub struct Projectile;
 
+#[derive(Debug, Clone)]
+pub enum WallType {
+    Iron,
+    Wood
+}
+
+impl Default for WallType {
+    fn default() -> WallType {
+        WallType::Iron
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct Wall {
+    pub wall_type: WallType,
+    pub width: f32,
+}
+
+#[derive(Debug, Clone, Default, CerealData)]
+pub struct WallPosition {
+    pub pos_a: math::Vec2,
+    pub pos_b: math::Vec2,
+}
+
 impl Default for Shape {
     fn default() -> Shape {
         Shape::Circle { radius: 1.0 } // meh
@@ -75,6 +99,11 @@ pub trait HasLinearVelocity {
     fn linear_velocity_mut(&mut self) -> &mut ComponentList<Self, LinearVelocity>;
 }
 
+pub trait HasAngularVelocity {
+    fn angular_velocity(&self) -> &ComponentList<Self, AngularVelocity>;
+    fn angular_velocity_mut(&mut self) -> &mut ComponentList<Self, AngularVelocity>;
+}
+
 pub trait HasShape {
     fn shape(&self) -> &ComponentList<Self, Shape>;
     fn shape_mut(&mut self) -> &mut ComponentList<Self, Shape>;
@@ -88,6 +117,16 @@ pub trait HasPlayerState {
 pub trait HasFullPlayerState {
     fn full_player_state(&self) -> &ComponentList<Self, FullPlayerState>;
     fn full_player_state_mut(&mut self) -> &mut ComponentList<Self, FullPlayerState>;
+}
+
+pub trait HasWallPosition {
+    fn wall_position(&self) -> &ComponentList<Self, WallPosition>;
+    fn wall_position_mut(&mut self) -> &mut ComponentList<Self, WallPosition>;
+}
+
+pub trait HasWall {
+    fn wall(&self) -> &ComponentList<Self, Wall>;
+    fn wall_mut(&mut self) -> &mut ComponentList<Self, Wall>;
 }
 
 pub trait StateComponent<T: ComponentManager> {
@@ -129,6 +168,7 @@ state_component_impl!(HasLinearVelocity, LinearVelocity, linear_velocity, linear
 state_component_impl!(HasShape, Shape, shape, shape_mut);
 state_component_impl!(HasPlayerState, PlayerState, player_state, player_state_mut);
 state_component_impl!(HasFullPlayerState, FullPlayerState, full_player_state, full_player_state_mut);
+state_component_impl!(HasWallPosition, WallPosition, wall_position, wall_position_mut);
 
 pub struct ComponentTypeTraits<T>(Vec<Box<StateComponent<T>>>);
 
@@ -138,7 +178,8 @@ pub fn component_type_traits<T: ComponentManager +
                                 HasLinearVelocity +
                                 HasShape +
                                 HasPlayerState +
-                                HasFullPlayerState>()
+                                HasFullPlayerState +
+                                HasWallPosition>()
                              -> ComponentTypeTraits<T> {
     let mut traits = Vec::<Box<StateComponent<T>>>::new();
 
@@ -156,6 +197,8 @@ pub fn component_type_traits<T: ComponentManager +
                 traits.push(Box::new(StateComponentImpl::<PlayerState>(PhantomData))),
             ComponentType::FullPlayerState =>
                 traits.push(Box::new(StateComponentImpl::<FullPlayerState>(PhantomData))),
+            ComponentType::WallPosition =>
+                traits.push(Box::new(StateComponentImpl::<WallPosition>(PhantomData))),
         };
     }
 

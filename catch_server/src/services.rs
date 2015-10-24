@@ -4,6 +4,7 @@ use ecs::ServiceManager;
 
 use shared::net::ComponentType;
 use shared::components::StateComponent;
+use shared::services::HasEvents;
 use shared::{EntityId, EntityTypeId, EntityTypes, TickNumber, PlayerId, GameEvent};
 
 use components;
@@ -17,13 +18,11 @@ pub struct Services {
     // Tick duration in seconds
     pub tick_dur_s: f32,
 
-    // Events generated in a tick that are to be performed on the server as well
-    // as sent to the clients
+    // Events generated in a tick 
     pub next_events: Vec<GameEvent>,
     
-    // Game events for the current tick that are to be sent to clients
-    // are stored in `next_player_events`.
-    // Each event in `next_events` is also stored for each player here.
+    // Game events for the current tick that are to be sent to clients are stored in
+    // `next_player_events`.  Each event in `next_events` is also stored for each player here.
     pub next_player_events: HashMap<PlayerId, Vec<GameEvent>>,
 
     // Counter for creating net entities
@@ -31,6 +30,21 @@ pub struct Services {
 
     // Trait objects for loading/writing net components into TickState
     component_type_traits: ComponentTypeTraits<Components>,
+}
+
+impl HasEvents for Services {
+    /// Queue event for every player and also execute it on the server.
+    fn add_event(&mut self, event: &GameEvent) {
+        let player_ids = self.next_player_events.keys().map(|k| *k)
+                             .collect::<Vec<_>>();
+
+        for player_id in player_ids.iter() {
+            self.next_player_events.get_mut(player_id).unwrap()
+                .push(event.clone());
+        }
+
+        self.next_events.push(event.clone());
+    }
 }
 
 impl Services {
@@ -70,17 +84,6 @@ impl Services {
     pub fn next_entity_id(&mut self) -> EntityId {
         self.entity_id_counter += 1;
         self.entity_id_counter
-    }
-
-    /// Queue event for every player
-    pub fn add_event(&mut self, event: &GameEvent) {
-        let player_ids = self.next_player_events.keys().map(|k| *k)
-                             .collect::<Vec<_>>();
-
-        for player_id in player_ids.iter() {
-            self.next_player_events.get_mut(player_id).unwrap()
-                .push(event.clone());
-        }
     }
 
     /// Queue event for every player and also execute it on the server.

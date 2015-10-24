@@ -105,6 +105,7 @@ impl InteractionSystem {
                 d <= r + w.max(h) * 2.0
             }
 
+            // Try the other way around...
             (&Shape::Square { size: _ }, &Shape::Circle { radius: _ }) =>
                 self.overlap(e_b, e_a, c),
             (&Shape::Rect { width: _, height: _ }, &Shape::Circle { radius: _ }) =>

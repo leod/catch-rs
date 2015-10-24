@@ -2,8 +2,14 @@ use std::fmt;
 use std::io::{Read, Write};
 
 use cereal::{CerealData, CerealResult};
+use ecs::{Aspect, EntityData, DataHelper, ComponentManager, ServiceManager};
 
-use super::{PlayerId, ItemSlot, NUM_ITEM_SLOTS};
+use super::{PlayerId, ItemSlot, GameEvent, NUM_ITEM_SLOTS};
+use math;
+use util::CachedAspect;
+use net::TimedPlayerInput;
+use components::{HasPosition, HasLinearVelocity, HasOrientation, HasFullPlayerState,
+                 HasPlayerState, HasAngularVelocity};
 
 #[derive(Clone, Debug, CerealData)]
 pub enum Item {
@@ -40,6 +46,9 @@ pub struct FullPlayerState {
 
     // An item that the player picked up but hasn't equipped
     pub hidden_item: Option<Item>,
+
+    // Flip at walls?
+    pub wall_flip: bool,
 }
 
 #[derive(Clone, CerealData)]

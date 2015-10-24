@@ -36,7 +36,7 @@ impl DrawProjectileSystem {
             let transform = c.trans(p[0] as f64, p[1] as f64)
                              .rot_rad(angle as f64).transform;
 
-            graphics::rectangle([0.2, 0.2, 0.2, 1.0],
+            graphics::rectangle([0.4, 0.4, 0.4, 1.0],
                                 [-w/2.0, -h/2.0, w, h],
                                 transform,
                                 gl);

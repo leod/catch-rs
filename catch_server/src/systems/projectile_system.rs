@@ -5,6 +5,7 @@ use shared::{GameEvent, Map};
 use shared::math;
 use shared::net::ComponentType;
 use shared::util::CachedAspect;
+use shared::services::HasEvents;
 
 use components::{Components};
 use services::Services;

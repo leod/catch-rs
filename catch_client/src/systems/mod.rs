@@ -4,6 +4,7 @@ pub mod draw_player_system;
 pub mod draw_bouncy_enemy_system;
 pub mod draw_item_system;
 pub mod draw_projectile_system;
+pub mod draw_wall_system;
 
 use ecs::system::LazySystem;
 
@@ -15,6 +16,7 @@ pub use self::draw_player_system::DrawPlayerSystem;
 pub use self::draw_bouncy_enemy_system::DrawBouncyEnemySystem;
 pub use self::draw_item_system::DrawItemSystem;
 pub use self::draw_projectile_system::DrawProjectileSystem;
+pub use self::draw_wall_system::DrawWallSystem;
 
 systems! {
     struct Systems<Components, Services> {
@@ -30,5 +32,8 @@ systems! {
             aspect!(<Components> all: [draw_item])),
         draw_projectile_system: DrawProjectileSystem = DrawProjectileSystem::new(
             aspect!(<Components> all: [draw_projectile])),
+        draw_wall_system: DrawWallSystem = DrawWallSystem::new(
+            aspect!(<Components> all: [draw_wall])),
+
     }
 }

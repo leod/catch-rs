@@ -1,7 +1,7 @@
 use ecs::{ComponentManager, BuildData};
 
 use net::ComponentType;
-use components::{HasShape, Shape};
+use components::{HasShape, Shape, HasWall, Wall, WallType};
 
 #[derive(Debug, Clone, CerealData)]
 pub struct EntityType {
@@ -16,19 +16,29 @@ pub struct EntityType {
 
 /// Adds shared components that are not synchronized over the net to an entity
 pub fn build_shared<T: ComponentManager +
-                       HasShape>
+                       HasShape + HasWall>
                    (type_name: &str,
                     entity: BuildData<T>,
                     data: &mut T) {
     if type_name == "player" {
-        data.shape_mut().add(&entity, Shape::Circle { radius: 12.0 });
+        data.shape_mut().add(&entity, Shape::Circle { radius: 6.0 });
     } else if type_name == "bouncy_enemy" {
-        data.shape_mut().add(&entity, Shape::Circle { radius: 8.0 });
+        data.shape_mut().add(&entity, Shape::Circle { radius: 4.0 });
     } else if type_name == "item" {
-        data.shape_mut().add(&entity, Shape::Square { size: 8.0 });
+        data.shape_mut().add(&entity, Shape::Square { size: 5.0 });
     } else if type_name == "item_spawn" {
     } else if type_name == "bullet" {
-        data.shape_mut().add(&entity, Shape::Rect { width: 12.0, height: 4.0 });
+        data.shape_mut().add(&entity, Shape::Rect { width: 5.0, height: 2.0 });
+    } else if type_name == "wall_wood" {
+        data.wall_mut().add(&entity, Wall { 
+            wall_type: WallType::Wood,
+            width: 1.0,
+        });
+    } else if type_name == "wall_iron" {
+        data.wall_mut().add(&entity, Wall { 
+            wall_type: WallType::Iron,
+            width: 1.0,
+        });
     } else {
         panic!("unknown entity type: {}", type_name);
     }
@@ -61,6 +71,14 @@ pub fn all_entity_types() -> EntityTypes {
          ("bullet".to_string(), EntityType {
               component_types: vec![ComponentType::Position,
                                     ComponentType::Orientation],
+              owner_component_types: vec![],
+         }),
+         ("wall_wood".to_string(), EntityType {
+              component_types: vec![ComponentType::WallPosition],
+              owner_component_types: vec![],
+         }),
+         ("wall_iron".to_string(), EntityType {
+              component_types: vec![ComponentType::WallPosition],
               owner_component_types: vec![],
          }),
         ]

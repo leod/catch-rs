@@ -5,9 +5,10 @@ use ecs::{BuildData, DataHelper, EntityBuilder};
 
 use shared;
 use shared::{PlayerId, GameEvent};
+use shared::services::HasEvents;
 
 use components::{Components, NetEntity, ServerNetEntity, LinearVelocity, BouncyEnemy, ItemSpawn,
-                 AngularVelocity, Rotate, Projectile};
+                 AngularVelocity, Rotate, Projectile, PlayerController};
 use services::Services;
 
 /// Create a new networked entity, replicating it to the clients
@@ -73,6 +74,7 @@ pub fn build_server(type_name: &str,
         //data.interact.add(&entity, Interact);
         //data.rotate.add(&entity, Rotate);
         data.angular_velocity.add(&entity, AngularVelocity::default());
+        data.player_controller.add(&entity, PlayerController::default());
     } else if type_name == "bouncy_enemy" {
         //data.interact.add(&entity, Interact);
         data.linear_velocity.add(&entity, LinearVelocity::default());
@@ -85,6 +87,7 @@ pub fn build_server(type_name: &str,
     } else if type_name == "bullet" {
         data.linear_velocity.add(&entity, LinearVelocity::default());
         data.projectile.add(&entity, Projectile::default());
+    } else if type_name == "wall_wood" || type_name == "wall_iron" {
     } else {
         panic!("Unknown net entity type: {}", type_name);
     }

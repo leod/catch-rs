@@ -61,6 +61,7 @@ pub enum ComponentType {
     Shape,
     PlayerState,
     FullPlayerState,
+    WallPosition,
 }
 
 pub const COMPONENT_TYPES: &'static [ComponentType] = &[
@@ -70,5 +71,6 @@ pub const COMPONENT_TYPES: &'static [ComponentType] = &[
     ComponentType::Shape,
     ComponentType::PlayerState,
     ComponentType::FullPlayerState,
+    ComponentType::WallPosition,
 ];
 

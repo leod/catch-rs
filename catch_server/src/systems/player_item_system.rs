@@ -6,6 +6,7 @@ use shared::{ItemSlot, GameEvent, Map, Item, NUM_ITEM_SLOTS};
 use shared::net::TimedPlayerInput;
 use shared::player::PlayerState;
 use shared::player::PlayerInputKey;
+use shared::services::HasEvents;
 
 use components::Components;
 use services::Services;

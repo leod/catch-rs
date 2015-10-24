@@ -14,7 +14,7 @@ pub type Scalar = f32;
 pub type Matrix2 = vecmath_lib::Matrix2x3<Scalar>;
 pub type Vec2 = vecmath_lib::Vector2<Scalar>;
 
-pub const EPSILON: Scalar = 10e-9; // TODO: Epsilon
+pub const EPSILON: Scalar = 10e-5; // TODO: Epsilon
 
 /// Checks for an intersection between the line segments [a,b] and [p,q].
 /// If there is an intersection, returns 0 <= s <= 1 with

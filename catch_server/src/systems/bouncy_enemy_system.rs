@@ -66,8 +66,6 @@ impl BouncyEnemySystem {
 
         for e in self.aspect.iter() {
             let accel = if let Some(orbit) = data.bouncy_enemy[e].orbit {
-                self.move_flipping(e, math::scale(data.linear_velocity[e].v, dur_s), map, data);
-
                 if let Some(orbit_position) =
                         data.with_entity_data(&orbit, |e, c| { c.position[e].p }) {
                     let w = math::sub(orbit_position, data.position[e].p);
@@ -80,8 +78,6 @@ impl BouncyEnemySystem {
                     [0.0, 0.0]
                 }
             } else {
-                self.move_flipping(e, math::scale(data.linear_velocity[e].v, dur_s), map, data);
-
                 let angle = data.orientation[e].angle;
                 let direction = [angle.cos(), angle.sin()];
 

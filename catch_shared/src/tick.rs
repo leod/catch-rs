@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use components::{Position, Orientation, LinearVelocity, Shape, PlayerState, FullPlayerState};
+use components::{Position, Orientation, LinearVelocity, Shape, PlayerState, FullPlayerState,
+                 WallPosition};
 use net::ComponentType;
 use super::{EntityId, TickNumber, GameEvent};
 
@@ -17,6 +18,7 @@ pub struct TickState {
     pub shape: ComponentsNetState<Shape>,
     pub player_state: ComponentsNetState<PlayerState>,
     pub full_player_state: ComponentsNetState<FullPlayerState>,
+    pub wall_position: ComponentsNetState<WallPosition>,
 
     // List of components that should not be interpolated into this tick
     // (e.g. you wouldn't want to interpolate the position of a player that was just teleported)

@@ -116,8 +116,8 @@ impl Client {
                     }
                     Ok(_) =>
                         Err("Received unexpected message from server while connecting".to_string()),
-                    Err(_) => 
-                        Err("Received invalid message from server".to_string())
+                    Err(m) => 
+                        Err(format!("Received invalid message from server: {:?}", m).to_string())
                 }
             }
         }

@@ -394,7 +394,7 @@ impl Game {
         };
 
         gl.draw(viewport, |c, gl| {
-            graphics::clear([0.0, 0.0, 0.0, 0.0], gl);
+            graphics::clear([0.3, 0.3, 0.3, 0.0], gl);
 
             let pos = self.get_my_player_position().unwrap_or(self.cam_pos);
             self.cam_pos = math::add(self.cam_pos,
@@ -442,11 +442,14 @@ impl Game {
                 {
                     let _g = hprof::enter("map");
 
-                    self.draw_map.draw(&self.game_state.map, cam_t_rect, c, gl);
+                    //self.draw_map.draw(&self.game_state.map, cam_t_rect, c, gl);
                 }
                 {
                     let _g = hprof::enter("entities");
 
+                    self.game_state.world.systems.draw_wall_system
+                        .draw(&mut self.game_state.world.data, simulation_time_s,
+                              &mut self.particles, c, gl);
                     self.game_state.world.systems.draw_item_system
                         .draw(&mut self.game_state.world.data, simulation_time_s,
                               &mut self.particles, c, gl);

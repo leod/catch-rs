@@ -16,6 +16,8 @@ pub mod player;
 pub mod map;
 pub mod math;
 pub mod entities;
+pub mod movement;
+pub mod services;
 
 pub use map::Map;
 pub use tick::{TickState, Tick};

@@ -1,3 +1,5 @@
+use std::collections::BinaryHeap;
+
 use rand;
 use graphics;
 use graphics::context::Context;

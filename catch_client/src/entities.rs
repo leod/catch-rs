@@ -1,6 +1,7 @@
 use ecs::{BuildData};
 
-use components::{Components, DrawPlayer, DrawBouncyEnemy, DrawItem, DrawShadow, DrawProjectile};
+use components::{Components, DrawPlayer, DrawBouncyEnemy, DrawItem, DrawShadow, DrawProjectile,
+                 DrawWall};
 
 /// Adds client-side components that are not synchronized over the net to an entity
 pub fn build_client(type_name: &str,
@@ -18,6 +19,8 @@ pub fn build_client(type_name: &str,
     } else if type_name == "item_spawn" {
     } else if type_name == "bullet" {
         data.draw_projectile.add(&entity, DrawProjectile::default());
+    } else if type_name == "wall_wood" || type_name == "wall_iron" {
+        data.draw_wall.add(&entity, DrawWall::default());
     } else {
         panic!("Unknown entity type: {}", type_name);
     }
