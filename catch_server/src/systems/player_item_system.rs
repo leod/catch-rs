@@ -1,10 +1,9 @@
 use ecs;
-use ecs::{EntityData, Process, System, DataHelper};
+use ecs::{Process, System, DataHelper};
 
 use shared::math;
-use shared::{ItemSlot, GameEvent, Map, Item, NUM_ITEM_SLOTS};
+use shared::{ItemSlot, GameEvent, Item, NUM_ITEM_SLOTS};
 use shared::net::TimedPlayerInput;
-use shared::player::PlayerState;
 use shared::player::PlayerInputKey;
 use shared::services::HasEvents;
 
@@ -104,7 +103,6 @@ impl PlayerItemSystem {
     pub fn run_player_input(&self,
                             entity: ecs::Entity,
                             timed_input: &TimedPlayerInput,
-                            map: &Map,
                             data: &mut DataHelper<Components, Services>) {
         let dur_s = timed_input.duration_s;
         let input = &timed_input.input;
@@ -157,19 +155,16 @@ impl PlayerItemSystem {
 
         // Using items
         if !input.has(PlayerInputKey::Equip) {
-            let used_slots = data.with_entity_data(&entity, |e, c| {
-                let mut used_slots = Vec::new();
-                if input.has(PlayerInputKey::Item1) {
-                    used_slots.push(0);
-                }
-                if input.has(PlayerInputKey::Item2) {
-                    used_slots.push(1);
-                }
-                if input.has(PlayerInputKey::Item3) {
-                    used_slots.push(2);
-                }
-                used_slots
-            }).unwrap();
+            let mut used_slots = Vec::new();
+            if input.has(PlayerInputKey::Item1) {
+                used_slots.push(0);
+            }
+            if input.has(PlayerInputKey::Item2) {
+                used_slots.push(1);
+            }
+            if input.has(PlayerInputKey::Item3) {
+                used_slots.push(2);
+            }
 
             for &slot in used_slots.iter() {
                 self.try_use_item(entity, slot, data);

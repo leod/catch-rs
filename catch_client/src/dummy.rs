@@ -1,3 +1,4 @@
+use std::thread;
 use time;
 use rand;
 
@@ -35,10 +36,10 @@ impl DummyClient {
                     Some(_) => continue,
                     None => break
                 }
+            }
 
-                while self.client.num_ticks() > 0 {
-                    self.client.pop_next_tick();
-                }
+            while self.client.num_ticks() > 0 {
+                self.client.pop_next_tick();
             }
 
             while self.input_timer.next() {
@@ -51,6 +52,8 @@ impl DummyClient {
                     }
                 ));
             }
+
+            thread::sleep_ms(10);
 
             let frame_end_s = time::precise_time_s() as f32;
 

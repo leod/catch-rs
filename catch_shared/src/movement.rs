@@ -43,6 +43,7 @@ pub fn wall_orientation(p: &WallPosition) -> f32 {
     n[1].atan2(n[0])
 }
 
+const STEPBACK: f32 = 0.05;
 
 /// Moves an entity while checking for intersections with walls.
 /// If there is an intersection, the given `interaction` is called.
@@ -61,8 +62,6 @@ pub fn move_entity<Components: ComponentManager,
 
     c.position_mut()[e].p = match line_segment_walls_intersection(a, b, wall_aspect, c) {
         Some((t, wall)) => {
-            let s = (t - 0.01).max(0.0);
-
             // We hit a wall, ask `interaction` what to do
             match interaction.apply(e, wall, c) {
                 WallInteractionType::Slide => {
@@ -74,17 +73,17 @@ pub fn move_entity<Components: ComponentManager,
 
                     // Move into parallel and orthogonal directions individually
                     let new_a = match line_segment_walls_intersection(a, math::add(a, u),
-                                                                       wall_aspect, c) {
+                                                                      wall_aspect, c) {
                         Some((t, _)) => {
-                            let s = (t - 0.01).max(0.);
+                            let s = (t - STEPBACK).max(0.0);
                             math::add(a, math::scale(u, s))
                         }
                         None => math::add(a, u)
                     };
-                    let new_a = match line_segment_walls_intersection(new_a, math::add(a, v),
+                    let new_a = match line_segment_walls_intersection(new_a, math::add(new_a, v),
                                                                       wall_aspect, c) {
                         Some((t, _)) => {
-                            let s = (t - 0.01).max(0.);
+                            let s = (t - STEPBACK).max(0.0);
                             math::add(new_a, math::scale(v, s))
                         }
                         None => math::add(new_a, v)
@@ -106,12 +105,13 @@ pub fn move_entity<Components: ComponentManager,
                         c.orientation()[e].angle.sin() * (speed + 1.0),
                     ];
 
-                    let s = (t - 0.01).max(0.0);
+                    let s = (t - STEPBACK).max(0.0);
                     math::add(a, math::scale(delta, s))
 
                     // TODO: Actually at this point we still might have some 't' left to walk
                 }
                 WallInteractionType::Stop => {
+                    let s = (t - STEPBACK).max(0.0);
                     math::add(a, math::scale(delta, s))
                 }
             }
@@ -206,7 +206,7 @@ pub fn run_player_movement_input<Components: ComponentManager,
     if let Some(dashing) = c.player_state()[e].dashing {
         // While dashing, movement input is ignored
 
-        let t = dashing / DASH_DURATION_S;
+        //let t = dashing / DASH_DURATION_S;
         let scale = 1.0; //(t*f32::consts::PI/2.0).cos()*(1.0-(1.0-t).powi(10));
         c.linear_velocity_mut()[e].v = math::scale(direction, scale*DASH_SPEED);
 
@@ -269,12 +269,12 @@ pub fn run_player_movement_input<Components: ComponentManager,
             c.full_player_state_mut()[e].dash_cooldown_s = Some(5.0);
             c.angular_velocity_mut()[e].v = 0.0;
 
-            let event = GameEvent::PlayerDash {
+            /*let event = GameEvent::PlayerDash {
                 player_id: owner,
                 position: c.position()[e].p,
                 orientation: c.orientation()[e].angle,
             };
-            c.services.add_event(&event);
+            c.services.add_event(&event);*/
         }
     }
 }

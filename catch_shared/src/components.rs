@@ -84,47 +84,47 @@ impl Default for Shape {
 
 // Some boilerplate code for each net component type follows...
 
-pub trait HasPosition {
+pub trait HasPosition: Sized + ComponentManager {
     fn position(&self) -> &ComponentList<Self, Position>;
     fn position_mut(&mut self) -> &mut ComponentList<Self, Position>;
 }
 
-pub trait HasOrientation {
+pub trait HasOrientation: Sized + ComponentManager {
     fn orientation(&self) -> &ComponentList<Self, Orientation>;
     fn orientation_mut(&mut self) -> &mut ComponentList<Self, Orientation>;
 }
 
-pub trait HasLinearVelocity {
+pub trait HasLinearVelocity: Sized + ComponentManager {
     fn linear_velocity(&self) -> &ComponentList<Self, LinearVelocity>;
     fn linear_velocity_mut(&mut self) -> &mut ComponentList<Self, LinearVelocity>;
 }
 
-pub trait HasAngularVelocity {
+pub trait HasAngularVelocity: Sized + ComponentManager {
     fn angular_velocity(&self) -> &ComponentList<Self, AngularVelocity>;
     fn angular_velocity_mut(&mut self) -> &mut ComponentList<Self, AngularVelocity>;
 }
 
-pub trait HasShape {
+pub trait HasShape: Sized + ComponentManager {
     fn shape(&self) -> &ComponentList<Self, Shape>;
     fn shape_mut(&mut self) -> &mut ComponentList<Self, Shape>;
 }
 
-pub trait HasPlayerState {
+pub trait HasPlayerState: Sized + ComponentManager {
     fn player_state(&self) -> &ComponentList<Self, PlayerState>;
     fn player_state_mut(&mut self) -> &mut ComponentList<Self, PlayerState>;
 }
 
-pub trait HasFullPlayerState {
+pub trait HasFullPlayerState: Sized + ComponentManager {
     fn full_player_state(&self) -> &ComponentList<Self, FullPlayerState>;
     fn full_player_state_mut(&mut self) -> &mut ComponentList<Self, FullPlayerState>;
 }
 
-pub trait HasWallPosition {
+pub trait HasWallPosition: Sized + ComponentManager {
     fn wall_position(&self) -> &ComponentList<Self, WallPosition>;
     fn wall_position_mut(&mut self) -> &mut ComponentList<Self, WallPosition>;
 }
 
-pub trait HasWall {
+pub trait HasWall: Sized + ComponentManager {
     fn wall(&self) -> &ComponentList<Self, Wall>;
     fn wall_mut(&mut self) -> &mut ComponentList<Self, Wall>;
 }

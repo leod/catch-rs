@@ -1,8 +1,6 @@
 use hprof;
-use ecs;
 use ecs::{Aspect, Process, System, DataHelper, EntityData};
 
-use shared::math;
 use shared::util::CachedAspect;
 use shared::movement;
 

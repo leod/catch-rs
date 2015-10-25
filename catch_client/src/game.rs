@@ -15,7 +15,6 @@ use glutin_window::GlutinWindow;
 use piston_window::{PistonWindow, Text};
 use piston::window::Window;
 use piston::input::{Input, Button, Key};
-use piston::input::keyboard::ModifierKey;
 use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
 
@@ -43,7 +42,6 @@ pub struct Game {
 
     player_input_map: InputMap,
     player_input: PlayerInput,
-    modifier_key: ModifierKey,
 
     interpolation_ticks: usize,
     current_tick: Option<Tick>,
@@ -86,7 +84,6 @@ impl Game {
 
             player_input_map: player_input_map,
             player_input: PlayerInput::new(),
-            modifier_key: ModifierKey::default(),
 
             interpolation_ticks: 2,
             current_tick: None,
@@ -169,9 +166,6 @@ impl Game {
 
         self.game_state.run_tick(&tick);
         self.game_state.load_interp_tick_state(&tick, next_tick);
-
-        let (tick_number, events) = (tick.tick_number, tick.events.clone());
-
         self.current_tick = Some(tick);
     }
 
@@ -203,11 +197,8 @@ impl Game {
                     self.print_prof = true;
                 }
                 _ => {
-                    //self.modifier_key.handle_input(&input);
                     self.player_input_map
-                        .update_player_input(//self.modifier_key,
-                                             &input,
-                                             &mut self.player_input);
+                        .update_player_input(&input, &mut self.player_input);
                 }
             };
         }
@@ -278,7 +269,7 @@ impl Game {
                 }).unwrap();
 
                 let num = 100;
-                for i in 0..num {
+                for _ in 0..num {
                     self.particles.spawn_cone(0.6, color, color, 3.5 * rand::random::<f32>() + 2.0,
                                               position, 0.0, f32::consts::PI * 2.0,
                                               70.0 + rand::random::<f32>() * 40.0,
@@ -300,7 +291,7 @@ impl Game {
                 orientation_wall,
             } => {
                 let num = (3.0 * speed.sqrt()) as usize;
-                for i in 0..num {
+                for _ in 0..num {
                     self.particles.spawn_cone(0.5,
                                               [0.0, 0.0, 0.0],
                                               [0.0, 0.0, 0.0],
@@ -321,7 +312,7 @@ impl Game {
 
                 let num = 100;
                 let color = [0.05, 0.5, 1.0];
-                for i in 0..num {
+                for _ in 0..num {
                     self.particles.spawn_cone(0.4, color, color, 1.5, position, 0.0,
                                               f32::consts::PI * 2.0,
                                               200.0 + rand::random::<f32>() * 20.0, 0.0, 1.0);
@@ -347,7 +338,7 @@ impl Game {
             } => {
                 let num = 100;
                 let color = [1.0, 0.0, 0.0];
-                for i in 0..num {
+                for _ in 0..num {
                     self.particles.spawn_cone(0.5, color, color, 2.5 * rand::random::<f32>() + 1.0,
                                               position, 0.0, f32::consts::PI * 2.0,
                                               70.0 + rand::random::<f32>() * 20.0,
@@ -359,7 +350,7 @@ impl Game {
             } => {
                 let num = 30;
                 let color = [0.3, 0.3, 0.3];
-                for i in 0..num {
+                for _ in 0..num {
                     self.particles.spawn_cone(0.25, color, color,
                                               1.0 * rand::random::<f32>() + 0.5, position, 0.0,
                                               f32::consts::PI * 2.0,
@@ -424,7 +415,7 @@ impl Game {
                          .zoom(zoom as f64)
                          .trans(-self.cam_pos[0] as f64, -self.cam_pos[1] as f64);
 
-                // What part of the map is visible?
+                /*// What part of the map is visible?
                 let cam_tx_min = ((self.cam_pos[0]*zoom - half_width) /
                                    (zoom * self.game_state.map.tile_width() as f32))
                                  .floor() as isize;
@@ -436,13 +427,12 @@ impl Game {
                                   .ceil() as isize;
                 let cam_ty_size = (draw_height as f32 /
                                    (zoom * self.game_state.map.tile_height() as f32))
-                                  .ceil() as isize;
-                let cam_t_rect = [cam_tx_min, cam_ty_min, cam_tx_size+1, cam_ty_size+1];
+                                  .ceil() as isize;*/
 
                 {
                     let _g = hprof::enter("map");
 
-                    //self.draw_map.draw(&self.game_state.map, cam_t_rect, c, gl);
+                    self.draw_map.draw(&self.game_state.map, c, gl);
                 }
                 {
                     let _g = hprof::enter("entities");
@@ -464,7 +454,7 @@ impl Game {
                 }
                 {
                     let _g = hprof::enter("update particles");
-                    self.particles.update(simulation_time_s, &self.game_state.map);
+                    self.particles.update(simulation_time_s);
                 }
                 {
                     let _g = hprof::enter("draw particles");

@@ -302,12 +302,13 @@ impl Server {
         // Broadcast tick to clients
         let _g = hprof::enter("broadcast");
 
+        let mut data = Vec::new();
+
         for (player_id, client) in self.clients.iter() {
             if client.state == ClientState::Normal {
-                let mut data = Vec::new(); 
-
                 // Build tick for each client separately. This makes it possible to do
                 // delta encoding and stuff.
+                let _g = hprof::enter("store");
                 let tick_number = self.game_state.tick_number;
 
                 let mut tick = Tick::new(tick_number);
@@ -315,9 +316,10 @@ impl Server {
                                   .clone();
 
                 self.game_state.world.systems.net_entity_system
-                    .store_in_tick_state(*player_id,
-                                         &mut tick.state,
+                    .store_in_tick_state(*player_id, &mut tick.state,
                                          &mut self.game_state.world.data);
+                drop(_g);
+                let _g = hprof::enter("encode");
 
                 match tick.write(&mut data) {
                     Err(_) => {
@@ -327,6 +329,9 @@ impl Server {
                     Ok(_) => ()
                 };
 
+                drop(_g);
+                let _g = hprof::enter("send");
+
                 self.sum_tick_size += data.len();
                 self.samples_tick_size += 1;
 
@@ -335,6 +340,8 @@ impl Server {
 
                 self.game_state.world.services.next_player_events
                     .get_mut(&player_id).unwrap().clear();
+
+                data.clear(); 
             }
         }
     }
@@ -348,7 +355,7 @@ fn main() {
     let game_info = GameInfo {
         map_name: "data/maps/desert.tmx".to_string(),
         entity_types: entity_types,
-        ticks_per_second: 30,
+        ticks_per_second: 5,
     };
 
     match Server::start(&game_info, 9988, 32).as_mut() {

@@ -7,7 +7,7 @@ use hprof;
 
 use shared::math;
 use shared::{TickNumber, GameInfo, GameEvent, PlayerId, PlayerInfo, Item};
-use shared::map::{LayerId, Map};
+use shared::map::Map;
 use shared::net::TimedPlayerInput;
 
 use components::WallPosition;
@@ -25,7 +25,6 @@ pub struct Player {
     remove: bool,
 
     info: PlayerInfo,
-    next_input: Vec<TimedPlayerInput>,
 
     // Entity controlled by the player, if alive
     entity: Option<ecs::Entity>,
@@ -45,7 +44,6 @@ impl Player {
             is_new: true,
             remove: false,
             info: info,
-            next_input: Vec::new(),
             entity: None,
             respawn_time: Some(0.0),
         }
@@ -255,18 +253,6 @@ impl GameState {
         return None;
     }
 
-    fn run_player_input(&mut self,
-                        player_id: PlayerId,
-                        entity: ecs::Entity,
-                        input: &TimedPlayerInput) {
-        /*self.world.systems.movement_system
-            .move_one(entity, input.duration_s, &PlayerWallInteraction, &mut self.world.data);
-        self.world.systems.player_movement_system
-            .run_player_input(entity, input, &self.map, &mut self.world.data);
-        self.world.systems.player_item_system
-            .run_player_input(entity, input, &self.map, &mut self.world.data);*/
-    }
-
     /// Advances the state of the server by one tick.
     /// Events generated during the tick are stored for each player separately in the services.
     pub fn tick(&mut self) {
@@ -290,8 +276,8 @@ impl GameState {
             let _g = hprof::enter("entities");
 
             self.world.systems.movement_system.tick(&mut self.world.data);
-            self.world.systems.bouncy_enemy_system.tick(&self.map, &mut self.world.data);
-            self.world.systems.projectile_system.tick(&self.map, &mut self.world.data);
+            self.world.systems.bouncy_enemy_system.tick(&mut self.world.data);
+            self.world.systems.projectile_system.tick(&mut self.world.data);
             self.world.systems.item_spawn_system.tick(&mut self.world.data);
             self.world.systems.rotate_system.tick(&mut self.world.data);
             self.world.systems.interaction_system.tick(&mut self.world.data);
@@ -361,6 +347,7 @@ impl GameState {
         }
 
         for &id in remove.iter() {
+            // Was this player the catcher?
             let is_catcher = if let Some(entity) = self.players[&id].entity {
                 self.world.with_entity_data(&entity, |e, c| {
                     c.player_state[e].is_catcher
@@ -373,12 +360,12 @@ impl GameState {
                 .remove_player_entities(id, &mut self.world.data);
             self.players.remove(&id); 
 
-            // If the disconnected player was the catcher, choose a random new one
+            // If the disconnected player was the catcher, choose a random new alive one as catcher
             let alive_players = self.players.iter()
-                                    .filter(|&(&other_id, player)| player.alive())
+                                    .filter(|&(_, player)| player.alive())
                                     .map(|(&id, _)| id)
                                     .collect::<Vec<_>>();
-            if !alive_players.is_empty() {
+            if is_catcher && !alive_players.is_empty() {
                 let chosen_one = alive_players[rand::random::<usize>() % alive_players.len()];
 
                 self.world.with_entity_data(&self.players[&chosen_one].entity.unwrap(), |e, c| {

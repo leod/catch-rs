@@ -43,6 +43,8 @@ systems! {
             vec![
                  (aspect!(<Components> all: [bouncy_enemy]),
                   Box::new(wall_interactions::BouncyEnemyWallInteraction)),
+                 (aspect!(<Components> all: [projectile]),
+                  Box::new(wall_interactions::ProjectileWallInteraction)),
                 ]),
         interaction_system: InteractionSystem = InteractionSystem::new(
             vec![

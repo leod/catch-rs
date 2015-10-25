@@ -1,12 +1,9 @@
-use std::collections::BinaryHeap;
-
 use rand;
 use graphics;
 use graphics::context::Context;
 use graphics::Transformed;
 use opengl_graphics::GlGraphics;
 
-use shared::Map;
 use shared::math;
 
 #[derive(Clone, Debug)]
@@ -42,7 +39,7 @@ impl Particles {
         }
     }
 
-    pub fn update(&mut self, time_s: f32, map: &Map) {
+    pub fn update(&mut self, time_s: f32) {
         for i in 0..self.particles.len() {
             let remove = if let Some(p) = self.particles[i].as_mut() {
                 p.velocity = math::sub(p.velocity, math::scale(p.velocity,
@@ -124,6 +121,7 @@ impl Particles {
 
 
     pub fn add(&mut self, p: &Particle) {
+        return;
         self.num += 1;
 
         match self.free_indices.pop() {

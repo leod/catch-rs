@@ -7,7 +7,7 @@ use graphics;
 use graphics::context::Context;
 use graphics::Transformed;
 use opengl_graphics::GlGraphics;
-use color::{Rgb, Hsv, ToHsv, ToRgb};
+use color::Rgb;
 
 use shared::math;
 use shared::util::CachedAspect;
@@ -46,7 +46,7 @@ impl DrawPlayerSystem {
 
                 data.draw_player[entity].dash_particle_timer.add(time_s);
                 while data.draw_player[entity].dash_particle_timer.next() {
-                    for i in 0..5 {
+                    for _ in 0..5 {
                         let color = [color[0] + (-0.5 + rand::random::<f32>()) * 0.2,
                                      color[1] + (-0.5 + rand::random::<f32>()) * 0.2,
                                      color[2] + (-0.5 + rand::random::<f32>()) * 0.2];

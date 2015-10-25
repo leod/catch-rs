@@ -14,7 +14,7 @@ pub type Scalar = f32;
 pub type Matrix2 = vecmath_lib::Matrix2x3<Scalar>;
 pub type Vec2 = vecmath_lib::Vector2<Scalar>;
 
-pub const EPSILON: Scalar = 10e-5; // TODO: Epsilon
+pub const EPSILON: Scalar = 10e-12; // TODO: Epsilon
 
 /// Checks for an intersection between the line segments [a,b] and [p,q].
 /// If there is an intersection, returns 0 <= s <= 1 with
@@ -49,7 +49,7 @@ pub fn line_segments_intersection(a: Vec2, b: Vec2, p: Vec2, q: Vec2) -> Option<
 
     let det = x * v - y * u;
 
-    if det.abs() < EPSILON { // Matrix not invertible => no intersection
+    if det.abs() == 0.0 /*< EPSILON*/ { // Matrix not invertible => no intersection
         return None;
     }
 

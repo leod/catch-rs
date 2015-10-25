@@ -2,14 +2,8 @@ use std::fmt;
 use std::io::{Read, Write};
 
 use cereal::{CerealData, CerealResult};
-use ecs::{Aspect, EntityData, DataHelper, ComponentManager, ServiceManager};
 
-use super::{PlayerId, ItemSlot, GameEvent, NUM_ITEM_SLOTS};
-use math;
-use util::CachedAspect;
-use net::TimedPlayerInput;
-use components::{HasPosition, HasLinearVelocity, HasOrientation, HasFullPlayerState,
-                 HasPlayerState, HasAngularVelocity};
+use super::{PlayerId, ItemSlot, NUM_ITEM_SLOTS};
 
 #[derive(Clone, Debug, CerealData)]
 pub enum Item {

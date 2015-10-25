@@ -1,11 +1,7 @@
-use std::f32;
-
 use hprof;
-use ecs::{Aspect, Process, System, EntityData, DataHelper};
+use ecs::{Aspect, Process, System, DataHelper};
 
 use shared::math;
-use shared::map::Map;
-use shared::net::ComponentType;
 use shared::util::CachedAspect;
 
 use components::{Components};
@@ -26,40 +22,7 @@ impl BouncyEnemySystem {
         }
     }
 
-    // TODO: Code duplication
-    fn move_flipping(&self,
-                     e: EntityData<Components>,
-                     delta: math::Vec2,
-                     map: &Map,
-                     data: &mut Components) {
-        let p = data.position[e].p;
-        let q = math::add(p, delta);
-
-        match map.line_segment_intersection(p, q) {
-            Some(intersection) => {
-                let n_angle = intersection.n[1].atan2(intersection.n[0]);
-                let angle = data.orientation[e].angle;
-
-                data.orientation[e].angle = f32::consts::PI + n_angle - (angle - n_angle);
-                data.server_net_entity[e].force(ComponentType::Orientation);
-
-                let v = data.linear_velocity[e].v;
-                let speed = math::square_len(v).sqrt();
-                data.linear_velocity[e].v = [
-                    data.orientation[e].angle.cos() * (speed + 1.0),
-                    data.orientation[e].angle.sin() * (speed + 1.0),
-                ];
-
-                let s = (intersection.t - 0.001).max(0.0);
-                data.position[e].p = math::add(p, math::scale(delta, s));
-            }
-            None => {
-                data.position[e].p = q;
-            }
-        };
-    }
-
-    pub fn tick(&self, map: &Map, data: &mut DataHelper<Components, Services>) {
+    pub fn tick(&self, data: &mut DataHelper<Components, Services>) {
         let _g = hprof::enter("bouncy enemy");
 
         let dur_s = data.services.tick_dur_s;

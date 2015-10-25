@@ -22,8 +22,8 @@ impl DrawProjectileSystem {
         }
     }
 
-    pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, time_s: f32,
-                particles: &mut Particles, c: graphics::Context, gl: &mut GlGraphics) {
+    pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, _time_s: f32,
+                _particles: &mut Particles, c: graphics::Context, gl: &mut GlGraphics) {
         for entity in self.aspect.iter() {
             let p = data.position[entity].p;
             let angle = data.orientation[entity].angle;

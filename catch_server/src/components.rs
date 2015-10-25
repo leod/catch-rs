@@ -60,8 +60,8 @@ components! {
         #[hot] orientation: Orientation,
         #[hot] linear_velocity: LinearVelocity,
         #[hot] shape: Shape,
-        #[cold] player_state: PlayerState,
-        #[cold] full_player_state: FullPlayerState,
+        #[hot] player_state: PlayerState,
+        #[hot] full_player_state: FullPlayerState,
         #[hot] wall_position: WallPosition,
         #[hot] wall: Wall,
 

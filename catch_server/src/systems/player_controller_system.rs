@@ -1,12 +1,7 @@
-use std::f32;
+use ecs::{Aspect, Process, System, DataHelper};
 
-use ecs;
-use ecs::{Aspect, Process, System, EntityData, DataHelper};
-
-use shared::{math, movement, Map, GameEvent};
-use shared::net::{ComponentType, TimedPlayerInput};
+use shared::movement;
 use shared::util::CachedAspect;
-use shared::player::PlayerInputKey;
 
 use components::Components;
 use services::Services;

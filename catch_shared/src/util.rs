@@ -46,7 +46,7 @@ impl PeriodicTimer {
 }
 
 pub struct CachedAspect<T: ComponentManager> {
-    aspect: Aspect<T>,
+    pub aspect: Aspect<T>,
     interested: HashMap<ecs::Entity, ecs::IndexedEntity<T>>,
 }
 

@@ -10,7 +10,7 @@ use opengl_graphics::GlGraphics;
 use shared::{movement, math};
 use shared::util::CachedAspect;
 
-use components::{Components, Shape};
+use components::Components;
 use services::Services;
 use particles::Particles;
 
@@ -25,8 +25,8 @@ impl DrawWallSystem {
         }
     }
 
-    pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, time_s: f32,
-                particles: &mut Particles, c: graphics::Context, gl: &mut GlGraphics) {
+    pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, _: f32,
+                _: &mut Particles, c: graphics::Context, gl: &mut GlGraphics) {
         for entity in self.aspect.iter() {
             let p = data.wall_position[entity].clone();
             //let w = p.pos_b[0] - p.pos_a[0];
