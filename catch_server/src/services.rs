@@ -86,7 +86,7 @@ impl Services {
         self.entity_id_counter
     }
 
-    /// Queue event for every player and also execute it on the server.
+    /*/// Queue event for every player and also execute it on the server.
     /// For example, a system might want to kill a player. To do that, it would emit a PlayerDied
     /// event via `add_event_to_run`. The event will be executed on the server at the end of the
     /// tick.
@@ -98,7 +98,7 @@ impl Services {
     /*/// Queues an event to be run only locally
     pub fn add_local_event_to_run(&mut self, event: &GameEvent) {
         self.next_events.push(event.clone());
-    }*/
+    }*/*/
     
     /// Queue an event only for one specific player
     pub fn add_player_event(&mut self, player_id: PlayerId, event: GameEvent) {

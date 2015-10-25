@@ -78,11 +78,11 @@ components! {
         #[hot] orientation: Orientation,
         #[hot] linear_velocity: LinearVelocity,
         #[hot] shape: Shape,
-        #[cold] player_state: PlayerState,
-        #[cold] full_player_state: FullPlayerState,
-        #[cold] wall_position: WallPosition,
+        #[hot] player_state: PlayerState,
+        #[hot] full_player_state: FullPlayerState,
+        #[hot] wall_position: WallPosition,
 
-        #[cold] wall: Wall,
+        #[hot] wall: Wall,
 
         // Locally predicted components
         #[cold] angular_velocity: AngularVelocity,

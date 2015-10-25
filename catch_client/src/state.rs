@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 
 use ecs;
+use hprof;
 
 use shared::{GameInfo, TickNumber, PlayerId, PlayerInfo, PlayerInput, Tick, Map};
 use systems::{Systems, NetEntitySystem};
+use components::Components;
 
 pub struct GameState {
     pub game_info: GameInfo,
@@ -19,7 +21,8 @@ impl GameState {
     pub fn new(my_id: PlayerId, game_info: &GameInfo) -> GameState {
         let mut world = ecs::World::<Systems>::new();
         world.systems.net_entity_system.init(
-            NetEntitySystem::new(my_id, &game_info.entity_types));
+            NetEntitySystem::new(aspect!(<Components> all: [net_entity]),
+                                 my_id, &game_info.entity_types));
 
         GameState {
             game_info: game_info.clone(),
@@ -50,7 +53,11 @@ impl GameState {
     }
 
     pub fn run_tick(&mut self, tick: &Tick) {
+        let _g = hprof::enter("run tick");
+
         {
+            let _g = hprof::enter("entity events");
+
             let net_entity_system = self.world.systems.net_entity_system
                                         .inner.as_mut().unwrap();
 
@@ -62,6 +69,8 @@ impl GameState {
         self.world.flush_queue();
 
         {
+            let _g = hprof::enter("load tick state");
+
             let net_entity_system = self.world.systems.net_entity_system
                                         .inner.as_mut().unwrap();
 
@@ -71,6 +80,8 @@ impl GameState {
     }
 
     pub fn load_interp_tick_state(&mut self, tick_a: &Tick, tick_b: &Tick) {
+        let _g = hprof::enter("load interp");
+
         let net_entity_system = self.world.systems.net_entity_system
                                     .inner.as_mut().unwrap();
 

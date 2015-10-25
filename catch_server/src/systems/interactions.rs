@@ -24,7 +24,7 @@ impl Interaction for PlayerBouncyEnemyInteraction {
              data: &mut DataHelper<Components, Services>) {
         let owner = data.net_entity[player].owner;
         let position = data.position[player].p;
-        data.services.add_event_to_run(&GameEvent::PlayerDied {
+        data.services.add_event(&GameEvent::PlayerDied {
             player_id: owner,
             position: position,
             responsible_player_id: NEUTRAL_PLAYER_ID
@@ -124,7 +124,7 @@ impl Interaction for ProjectilePlayerInteraction {
         let player_id = data.net_entity[player].owner;
         let position = data.position[player].p;
         let responsible_player_id = data.net_entity[projectile].owner;
-        data.services.add_event_to_run(&GameEvent::PlayerDied {
+        data.services.add_event(&GameEvent::PlayerDied {
             player_id: player_id,
             position: position,
             responsible_player_id: responsible_player_id,
@@ -164,7 +164,7 @@ impl Interaction for PlayerPlayerInteraction {
         let player_id = data.net_entity[catchee].owner;
         let position = data.position[catchee].p;
         let responsible_player_id = data.net_entity[catcher].owner;
-        data.services.add_event_to_run(&GameEvent::PlayerDied {
+        data.services.add_event(&GameEvent::PlayerDied {
             player_id: player_id,
             position: position,
             responsible_player_id: responsible_player_id,

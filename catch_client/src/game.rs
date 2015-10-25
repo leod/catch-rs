@@ -154,12 +154,24 @@ impl Game {
     /// Starts the next tick in the queue, loading its state and running its events.
     /// The function assumes that we have at least 2 ticks queued, so that we can interpolate.
     fn start_tick(&mut self) {
+        let _g = hprof::enter("start tick");
+
         assert!(self.client.num_ticks() >= 2);
 
         let tick = self.client.pop_next_tick().1;
-        for event in tick.events.iter() {
-            debug!("tick {}: {:?}", tick.tick_number, event);
-            self.process_game_event(event);
+
+        {
+            let _g = hprof::enter("events");
+
+            for event in tick.events.iter() {
+                debug!("tick {}: {:?}", tick.tick_number, event);
+                debug!("p {}, o {}, lv {}, s {}, ps {}, fps {}, wp {}, forced {}",
+                       tick.state.position.len(), tick.state.orientation.len(),
+                       tick.state.linear_velocity.len(), tick.state.shape.len(),
+                       tick.state.player_state.len(), tick.state.full_player_state.len(),
+                       tick.state.wall_position.len(), tick.state.forced_components.len());
+                self.process_game_event(event);
+            }
         }
 
         let next_tick = &self.client.get_next_tick().1;

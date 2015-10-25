@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
 use ecs;
-use ecs::{System, DataHelper, BuildData, Process};
+use ecs::{Aspect, System, DataHelper, BuildData, Process};
 
 use shared;
+use shared::util::CachedAspect;
 use shared::net::ComponentType;
 use shared::components::StateComponent;
 use shared::{Tick, GameEvent, PlayerId, EntityId, EntityTypes, EntityTypeId};
@@ -14,6 +15,8 @@ use entities;
 use services::Services;
 
 pub struct NetEntitySystem {
+    aspect: CachedAspect<Components>,
+
     entity_types: EntityTypes,
 
     // List of trait objects for each net component type for loading and storing the state
@@ -29,8 +32,10 @@ pub struct NetEntitySystem {
 }
 
 impl NetEntitySystem {
-    pub fn new(my_id: PlayerId, entity_types: &EntityTypes) -> NetEntitySystem {
+    pub fn new(aspect: Aspect<Components>, my_id: PlayerId, entity_types: &EntityTypes)
+               -> NetEntitySystem {
         NetEntitySystem {
+            aspect: CachedAspect::new(aspect),
             entity_types: entity_types.clone(),
             component_type_traits: components::component_type_traits(),
             entities: HashMap::new(),
@@ -162,84 +167,79 @@ impl NetEntitySystem {
     }
 
     /// Loads net state from the given `Tick` into our entities
-    pub fn load_tick_state(&mut self, tick: &Tick, data: &mut DataHelper<Components, Services>) {
+    pub fn load_tick_state(&mut self, tick: &Tick, c: &mut DataHelper<Components, Services>) {
         // TODO: If these tick methods turn out to be a bottleneck, I'll need to find a better
         // representation for TickState than a bunch of HashMaps
 
         // Only load state for those entities that we already have
-        for (net_entity_id, entity) in self.entities.iter() {
-            data.with_entity_data(entity, |e, c| {
-                let entity_type = &self.entity_types[c.net_entity[e].type_id as usize].1;
+        for e in self.aspect.iter() {
+            let net_id = c.net_entity[e].id;
+            let entity_type = &self.entity_types[c.net_entity[e].type_id as usize].1;
 
-                for component_type in &entity_type.component_types {
+            for component_type in &entity_type.component_types {
+                self.component_type_traits[*component_type]
+                    .load(e, net_id, &tick.state, c);
+            }
+            if self.my_id == c.net_entity[e].owner {
+                for component_type in &entity_type.owner_component_types {
                     self.component_type_traits[*component_type]
-                        .load(e, *net_entity_id, &tick.state, c);
+                        .load(e, net_id, &tick.state, c);
                 }
-                if self.my_id == c.net_entity[e].owner {
-                    for component_type in &entity_type.owner_component_types {
-                        self.component_type_traits[*component_type]
-                            .load(e, *net_entity_id, &tick.state, c);
-                    }
-                }
-            });
+            }
         }
     }
 
     /// Loads state that is to be interpolated between `tick_a` and `tick_b`
     pub fn load_interp_tick_state(&mut self, tick_a: &Tick, tick_b: &Tick,
-                                  data: &mut DataHelper<Components, Services>) {
+                                  c: &mut DataHelper<Components, Services>) {
         // TODO: This would be more efficient if we stepped through tick_a's and tick_b's entity
         // lists simultaneously (=> O(n))
 
         // We only load state for those entities that we already have
-        for (net_entity_id, entity) in self.entities.iter() {
-            data.with_entity_data(entity, |e, c| {
-                let entity_type = &self.entity_types[c.net_entity[e].type_id as usize].1;
+        for e in self.aspect.iter() {
+            let net_id = c.net_entity[e].id;
+            let entity_type = &self.entity_types[c.net_entity[e].type_id as usize].1;
 
-                for component_type in &entity_type.component_types {
-                    // Don't interpolate into forced components
-                    let mut forced = false;
-                    for &(id, forced_component) in &tick_b.state.forced_components {
-                        if *net_entity_id == id && *component_type == forced_component {
-                            forced = true;
-                        }
+            for component_type in &entity_type.component_types {
+                // Don't interpolate into forced components
+                let mut forced = false;
+                for &(id, forced_component) in &tick_b.state.forced_components {
+                    if net_id == id && *component_type == forced_component {
+                        forced = true;
                     }
-
-                    match *component_type { 
-                        ComponentType::Position => {
-                            c.interp_position[e] = 
-                                match (forced,
-                                       tick_a.state.position.get(&net_entity_id),
-                                       tick_b.state.position.get(&net_entity_id)) {
-                                    (false, Some(a), Some(b)) =>
-                                        InterpolationState::some(a.clone(), b.clone()),
-                                    _ =>
-                                        InterpolationState::none() 
-                                };
-                        }
-                        ComponentType::Orientation => {
-                            c.interp_orientation[e] = 
-                                match (forced,
-                                       tick_a.state.orientation.get(&net_entity_id),
-                                       tick_b.state.orientation.get(&net_entity_id)) {
-                                    (false, Some(a), Some(b)) =>
-                                        InterpolationState::some(a.clone(), b.clone()),
-                                    _ =>
-                                        InterpolationState::none() 
-                                };
-                        }
-                        _ => {}
-                    };
                 }
-            });
+
+                match *component_type { 
+                    ComponentType::Position => {
+                        c.interp_position[e] = 
+                            match (forced,
+                                   tick_a.state.position.get(&net_id),
+                                   tick_b.state.position.get(&net_id)) {
+                                (false, Some(a), Some(b)) =>
+                                    InterpolationState::some(a.clone(), b.clone()),
+                                _ =>
+                                    InterpolationState::none() 
+                            };
+                    }
+                    ComponentType::Orientation => {
+                        c.interp_orientation[e] = 
+                            match (forced,
+                                   tick_a.state.orientation.get(&net_id),
+                                   tick_b.state.orientation.get(&net_id)) {
+                                (false, Some(a), Some(b)) =>
+                                    InterpolationState::some(a.clone(), b.clone()),
+                                _ =>
+                                    InterpolationState::none() 
+                            };
+                    }
+                    _ => {}
+                };
+            }
         }
     }
 }
 
-impl System for NetEntitySystem {
-    type Components = Components;
-    type Services = Services;
-}
+impl_cached_system!(Components, Services, NetEntitySystem, aspect);
 
 impl Process for NetEntitySystem {
     fn process(&mut self, _: &mut DataHelper<Components, Services>) {

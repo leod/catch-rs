@@ -276,6 +276,8 @@ impl Server {
                           self.sum_tick_size as f64 / self.samples_tick_size as f64,
                           self.sum_tick_size as f64 / (1000.0 * 5.0));
                 }
+                self.sum_tick_size = 0;
+                self.samples_tick_size = 0;
             }
         }
     }
