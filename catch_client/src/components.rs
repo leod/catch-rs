@@ -6,8 +6,7 @@ use shared::util::PeriodicTimer;
 use shared::components::{HasPosition, HasOrientation, HasLinearVelocity, HasShape, HasPlayerState,
                          HasFullPlayerState, HasWallPosition, HasAngularVelocity, HasWall};
 pub use shared::components::{NetEntity, Position, Orientation, LinearVelocity, Shape, PlayerState,
-                             Projectile, FullPlayerState, WallPosition, AngularVelocity, Wall,
-                             ComponentTypeTraits, component_type_traits};
+                             Projectile, FullPlayerState, WallPosition, AngularVelocity, Wall};
 
 pub struct DrawPlayer {
     pub scale_x: f32,

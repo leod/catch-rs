@@ -1,10 +1,12 @@
 use std::f32;
+use std::iter::Iterator;
 
 use ecs;
 use ecs::{BuildData, DataHelper, EntityBuilder};
 
 use shared;
 use shared::{PlayerId, GameEvent};
+use shared::net_components::NetComponents;
 use shared::services::HasEvents;
 
 use components::{Components, NetEntity, ServerNetEntity, LinearVelocity, BouncyEnemy, ItemSpawn,
@@ -35,13 +37,6 @@ pub fn build_net_custom<B: EntityBuilder<Components>>
     data.services.add_event(
         &GameEvent::CreateEntity(entity_id, entity_type_id, owner));
 
-    // Get the component type traits needed for this entity type.
-    // We will then use the trait objects to add net components to our entity
-    let all_traits = shared::components::component_type_traits::<Components>();
-    let traits = entity_type.component_types.iter()
-                            .chain(entity_type.owner_component_types.iter())
-                            .map(|t| &all_traits[*t]);
-
     data.create_entity(|entity: BuildData<Components>, data: &mut Components| {
         data.net_entity.add(&entity, NetEntity {
             id: entity_id,
@@ -51,8 +46,8 @@ pub fn build_net_custom<B: EntityBuilder<Components>>
         data.server_net_entity.add(&entity, ServerNetEntity::default());
 
         // Add net components to the entity using its component type traits
-        for component_type in traits {
-            component_type.add(entity, data);
+        for &c in entity_type.component_types.iter().chain(&entity_type.owner_component_types) {
+            NetComponents::add_component(c, entity, data);
         }
 
         // Add shared components that don't need to be synchronized

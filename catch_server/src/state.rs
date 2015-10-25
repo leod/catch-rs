@@ -142,19 +142,21 @@ impl GameState {
             });
         }*/
         
-        let num_walls = 15;
+        let num_walls = 30;
+        let width = self.map.width_pixels() as f32;
+        let height = self.map.height_pixels() as f32;
 
         for _ in 0..num_walls {
             let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
 
-            let width = 3000.0;
-            let height = 3000.0;
             let ax = rand::random::<f32>() * width;
             let ay = rand::random::<f32>() * height;
-            let bx = rand::random::<f32>() * width;
-            let by = rand::random::<f32>() * height;
+            let phi = rand::random::<f32>() * f32::consts::PI * 2.0;
+            let r = rand::random::<f32>() * (400.0 - 32.0) + 32.0;
+            let bx = ax + phi.cos() * r;
+            let by = ay + phi.sin() * r;
 
-            println!("wall at {},{},{},{}", ax, ay, bx, by);
+            //println!("wall at {},{},{},{}", ax, ay, bx, by);
 
             self.world.with_entity_data(&entity, |e, c| {
                 c.wall_position[e] = WallPosition {
@@ -162,6 +164,23 @@ impl GameState {
                 };
             });
         }
+
+        let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
+        self.world.with_entity_data(&entity, |e, c| {
+            c.wall_position[e] = WallPosition { pos_a: [0.0, 0.0], pos_b: [width, 0.0] };
+        });
+        let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
+        self.world.with_entity_data(&entity, |e, c| {
+            c.wall_position[e] = WallPosition { pos_a: [0.0, 0.0], pos_b: [0.0, height] };
+        });
+        let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
+        self.world.with_entity_data(&entity, |e, c| {
+            c.wall_position[e] = WallPosition { pos_a: [width, 0.0], pos_b: [width, height] };
+        });
+        let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
+        self.world.with_entity_data(&entity, |e, c| {
+            c.wall_position[e] = WallPosition { pos_a: [0.0, height], pos_b: [width, height] };
+        });
 
         self.world.flush_queue();
     }
@@ -284,17 +303,15 @@ impl GameState {
         }
         
         // Process events generated in this tick
-        self.world.flush_queue();
-
         for i in 0..self.world.services.next_events.len() {
             // TODO: There might be a subtle problem with orderings here
             // (events might be processed in a different order on some clients)
 
             let event = self.world.services.next_events[i].clone();
             self.tick_process_event(event);
-            self.world.flush_queue();
         }
         self.world.services.next_events.clear();
+        self.world.flush_queue();
 
         self.time_s += self.world.services.tick_dur_s;
     }

@@ -165,11 +165,6 @@ impl Game {
 
             for event in tick.events.iter() {
                 debug!("tick {}: {:?}", tick.tick_number, event);
-                debug!("p {}, o {}, lv {}, s {}, ps {}, fps {}, wp {}, forced {}",
-                       tick.state.position.len(), tick.state.orientation.len(),
-                       tick.state.linear_velocity.len(), tick.state.shape.len(),
-                       tick.state.player_state.len(), tick.state.full_player_state.len(),
-                       tick.state.wall_position.len(), tick.state.forced_components.len());
                 self.process_game_event(event);
             }
         }

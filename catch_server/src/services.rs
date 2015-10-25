@@ -2,13 +2,10 @@ use std::collections::HashMap;
 
 use ecs::ServiceManager;
 
-use shared::net::ComponentType;
-use shared::components::StateComponent;
 use shared::services::HasEvents;
 use shared::{EntityId, EntityTypeId, EntityTypes, TickNumber, PlayerId, GameEvent};
 
-use components;
-use components::{Components, ComponentTypeTraits};
+use components::Components;
 
 // State that can be accessed mutably by systems
 pub struct Services {
@@ -27,9 +24,6 @@ pub struct Services {
 
     // Counter for creating net entities
     entity_id_counter: EntityId,
-
-    // Trait objects for loading/writing net components into TickState
-    component_type_traits: ComponentTypeTraits<Components>,
 }
 
 impl HasEvents for Services {
@@ -55,7 +49,6 @@ impl Services {
             next_events: Vec::new(),
             next_player_events: HashMap::new(),
             entity_id_counter: 0,
-            component_type_traits: components::component_type_traits(),
         }
     }
 
@@ -111,11 +104,6 @@ impl Services {
             .find(|&(_, &(ref name, _))| name == &type_name)
             .unwrap()
             .0 as EntityTypeId
-    }
-
-    pub fn component_type_trait(&self, component_type: ComponentType)
-                                -> &Box<StateComponent<Components>> {
-        &self.component_type_traits[component_type]
     }
 }
 

@@ -1,9 +1,5 @@
-use std::ops::Index;
-use std::marker::PhantomData;
+use ecs::{ComponentManager, ComponentList};
 
-use ecs::{ComponentManager, ComponentList, BuildData, EntityData};
-
-use net::{COMPONENT_TYPES, ComponentType};
 use super::{EntityId, EntityTypeId, PlayerId, TickState};
 use math;
 pub use player::{PlayerState, FullPlayerState};
@@ -127,88 +123,4 @@ pub trait HasWallPosition: Sized + ComponentManager {
 pub trait HasWall: Sized + ComponentManager {
     fn wall(&self) -> &ComponentList<Self, Wall>;
     fn wall_mut(&mut self) -> &mut ComponentList<Self, Wall>;
-}
-
-pub trait StateComponent<T: ComponentManager> {
-    // Add net component to the component manager for the given entity
-    fn add(&self, entity: BuildData<T>, c: &mut T);
-
-    // Stores current component state in a TickState
-    fn store(&self, entity: EntityData<T>, id: EntityId, write: &mut TickState, c: &T);
-
-    // Load component state from TickState
-    fn load(&self, entity: EntityData<T>, id: EntityId, net_state: &TickState, c: &mut T);
-}
-
-struct StateComponentImpl<C>(PhantomData<C>);
-
-macro_rules! state_component_impl {
-    ($trait_ty: ident, $ty: ident, $field: ident, $field_mut: ident) => {
-        impl<T: ComponentManager> StateComponent<T> for StateComponentImpl<$ty>
-            where T: $trait_ty {
-            fn add(&self, entity: BuildData<T>, c: &mut T) {
-                c.$field_mut().add(&entity, $ty::default());
-            }
-            fn store(&self, entity: EntityData<T>, id: EntityId, net_state: &mut TickState,
-                     c: &T) {
-                net_state.$field.insert(id, c.$field()[entity].clone());
-            }
-            fn load(&self, entity: EntityData<T>, id: EntityId, net_state: &TickState, c: &mut T) {
-                if let Some($field) = net_state.$field.get(&id) {
-                    c.$field_mut()[entity] = $field.clone();
-                }
-            }
-        }
-    };
-}
-
-state_component_impl!(HasPosition, Position, position, position_mut);
-state_component_impl!(HasOrientation, Orientation, orientation, orientation_mut);
-state_component_impl!(HasLinearVelocity, LinearVelocity, linear_velocity, linear_velocity_mut);
-state_component_impl!(HasShape, Shape, shape, shape_mut);
-state_component_impl!(HasPlayerState, PlayerState, player_state, player_state_mut);
-state_component_impl!(HasFullPlayerState, FullPlayerState, full_player_state, full_player_state_mut);
-state_component_impl!(HasWallPosition, WallPosition, wall_position, wall_position_mut);
-
-pub struct ComponentTypeTraits<T>(Vec<Box<StateComponent<T>>>);
-
-pub fn component_type_traits<T: ComponentManager +
-                                HasPosition +
-                                HasOrientation +
-                                HasLinearVelocity +
-                                HasShape +
-                                HasPlayerState +
-                                HasFullPlayerState +
-                                HasWallPosition>()
-                             -> ComponentTypeTraits<T> {
-    let mut traits = Vec::<Box<StateComponent<T>>>::new();
-
-    for component_type in COMPONENT_TYPES.iter() {
-        match *component_type {
-            ComponentType::Position => 
-                traits.push(Box::new(StateComponentImpl::<Position>(PhantomData))),
-            ComponentType::Orientation =>
-                traits.push(Box::new(StateComponentImpl::<Orientation>(PhantomData))),
-            ComponentType::LinearVelocity =>
-                traits.push(Box::new(StateComponentImpl::<LinearVelocity>(PhantomData))),
-            ComponentType::Shape =>
-                traits.push(Box::new(StateComponentImpl::<Shape>(PhantomData))),
-            ComponentType::PlayerState =>
-                traits.push(Box::new(StateComponentImpl::<PlayerState>(PhantomData))),
-            ComponentType::FullPlayerState =>
-                traits.push(Box::new(StateComponentImpl::<FullPlayerState>(PhantomData))),
-            ComponentType::WallPosition =>
-                traits.push(Box::new(StateComponentImpl::<WallPosition>(PhantomData))),
-        };
-    }
-
-    ComponentTypeTraits::<T>(traits)
-}
-
-impl<T> Index<ComponentType> for ComponentTypeTraits<T> {
-    type Output = Box<StateComponent<T>>;
-
-    fn index<'a>(&'a self, index: ComponentType) -> &'a Box<StateComponent<T>> {
-        &(self.0)[index as usize]
-    }
 }

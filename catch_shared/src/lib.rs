@@ -16,6 +16,7 @@ pub mod math;
 pub mod entities;
 pub mod movement;
 pub mod services;
+pub mod net_components;
 
 pub use map::Map;
 pub use tick::{TickState, Tick};

@@ -1,26 +1,26 @@
 use ecs;
 use ecs::ComponentList;
 
-use shared::net::{self, TimedPlayerInput};
+use shared::net::TimedPlayerInput;
 use shared::player::Item;
+use shared::net_components::ComponentType;
 use shared::components::{HasPosition, HasOrientation, HasLinearVelocity, HasShape, HasPlayerState,
                          HasFullPlayerState, HasWallPosition, HasAngularVelocity, HasWall};
 pub use shared::components::{NetEntity, Position, Orientation, LinearVelocity, Shape, PlayerState,
-                             Projectile, FullPlayerState, AngularVelocity, Wall, WallPosition,
-                             ComponentTypeTraits, component_type_traits};
+                             Projectile, FullPlayerState, AngularVelocity, Wall, WallPosition};
 
 /// Server-side information about net entities
 #[derive(Default)]
 pub struct ServerNetEntity {
     // Components that should not be interpolated by clients into the current tick
-    pub forced_components: Vec<net::ComponentType>,
+    pub forced_components: Vec<ComponentType>,
 
     // Used to prevent ecs entity removal events being queued multiple times for the same entity
     pub removed: bool,
 }
 
 impl ServerNetEntity {
-    pub fn force(&mut self, component_type: net::ComponentType) {
+    pub fn force(&mut self, component_type: ComponentType) {
         self.forced_components.push(component_type);
     }
 }

@@ -1,24 +1,21 @@
+use std::iter::Iterator;
 use std::collections::HashMap;
 
 use ecs;
 use ecs::{Aspect, Process, System, EntityData, DataHelper};
 
 use shared;
-use shared::components::StateComponent;
+use shared::net_components::NetComponents;
 use shared::{EntityId, EntityTypes, PlayerId, GameEvent, TickState};
 use shared::util::CachedAspect;
 
-use components;
 use entities;
-use components::{Components, ComponentTypeTraits};
+use components::Components;
 use services::Services;
 
 pub struct NetEntitySystem {
     aspect: CachedAspect<Components>,
-
     entity_types: EntityTypes,
-    component_type_traits: ComponentTypeTraits<Components>,
-
     entities: HashMap<EntityId, ecs::Entity>,
 }
 
@@ -27,7 +24,6 @@ impl NetEntitySystem {
         NetEntitySystem {
             aspect: CachedAspect::new(aspect),
             entity_types: shared::entities::all_entity_types(),
-            component_type_traits: components::component_type_traits(),
             entities: HashMap::new(),
         }
     }
@@ -74,18 +70,19 @@ impl NetEntitySystem {
                 &self.entity_types[c.net_entity[e].type_id as usize];
             let net_id = c.net_entity[e].id;
 
-            for component_type in &entity_type.component_types {
-                self.component_type_traits[*component_type]
-                    .store(e, net_id, tick_state, c);
-            }
+            let net_components = 
+                if player_id == c.net_entity[e].owner {
+                    // Some components only need to be sent to the owner of the net entity
+                    let it = entity_type.component_types.iter()
+                                        .chain(entity_type.owner_component_types.iter())
+                                        .map(|c| *c);
+                    NetComponents::from_entity(it, e, c)
+                } else {
+                    let it = entity_type.component_types.iter().map(|c| *c);
+                    NetComponents::from_entity(it, e, c)
+                };
 
-            // Some components only need to be sent to the owner of the net entity
-            if player_id == c.net_entity[e].owner {
-                for component_type in &entity_type.owner_component_types {
-                    self.component_type_traits[*component_type]
-                        .store(e, net_id, tick_state, c);
-                }
-            }
+            tick_state.entities.push((net_id, net_components));
 
             // Mark forced components
             for forced_component in &c.server_net_entity[e].forced_components {
@@ -93,13 +90,9 @@ impl NetEntitySystem {
             }
             c.server_net_entity[e].forced_components = Vec::new();
         }
+        tick_state.sort();
 
         tick_state.forced_components = forced_components;
-    }
-
-    /// Serialize the current tick to be sent over the network
-    pub fn write_tick_state(&self, player_id: PlayerId,
-                            c: &mut DataHelper<Components, Services>) {
     }
 }
 

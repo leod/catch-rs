@@ -1,7 +1,7 @@
 use ecs::{ComponentManager, BuildData};
 
-use net::ComponentType;
 use components::{HasShape, Shape, HasWall, Wall, WallType};
+use net_components::ComponentType;
 
 #[derive(Debug, Clone, RustcEncodable, RustcDecodable)]
 pub struct EntityType {
