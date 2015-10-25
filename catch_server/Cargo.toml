@@ -12,6 +12,8 @@ env_logger = "*"
 time = "0.1.32"
 rand = "0.3.11"
 hprof = "*"
+rustc-serialize = "*"
+bincode = "*"
 
 [dependencies.ecs]
 git = "https://github.com/HeroesGrave/ecs-rs.git"
@@ -21,6 +23,3 @@ path = "../catch_shared"
 
 [dependencies.renet]
 path = "../../renet"
-
-[dependencies.cereal]
-path = "../../cereal"

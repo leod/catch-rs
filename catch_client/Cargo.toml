@@ -21,6 +21,8 @@ rand = "0.3.11"
 cpal = "*"
 hprof = "*"
 #rodio = "*"
+rustc-serialize = "*"
+bincode = "*"
 
 [dependencies.rodio]
 git = "https://github.com/tomaka/rodio.git"
@@ -36,9 +38,6 @@ path = "../catch_shared"
 
 [dependencies.renet]
 path = "../../renet"
-
-[dependencies.cereal]
-path = "../../cereal"
 
 [dependencies.image]
 version = "*"

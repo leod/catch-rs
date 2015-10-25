@@ -8,13 +8,13 @@ pub enum Channel {
 
 pub const NUM_CHANNELS: usize = 2;
 
-#[derive(Debug, Clone, CerealData)]
+#[derive(Debug, Clone, RustcEncodable, RustcDecodable)]
 pub struct TimedPlayerInput {
     pub duration_s: f32,
     pub input: PlayerInput,
 }
 
-#[derive(Debug, Clone, CerealData)]
+#[derive(Debug, Clone, RustcEncodable, RustcDecodable)]
 pub enum ClientMessage {
     Pong,
     WishConnect {
@@ -26,7 +26,7 @@ pub enum ClientMessage {
     }
 }
 
-#[derive(Debug, Clone, CerealData)]
+#[derive(Debug, Clone, RustcEncodable, RustcDecodable)]
 pub enum ServerMessage {
     Ping,
     AcceptConnect {
@@ -53,7 +53,7 @@ pub enum ServerMessage {
 // * Implement StateComponent<T> for StateComponentImpl<X> in shared::components (via macro),
 // * Add an entry for StateComponentImpl<X> in shared::component_type_traits,
 // * Optionally, make sure X is interpolated on the client side
-#[derive(Debug, Clone, Copy, PartialEq, Eq, CerealData)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, RustcEncodable, RustcDecodable)]
 pub enum ComponentType {
     Position,
     Orientation,

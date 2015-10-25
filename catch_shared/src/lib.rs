@@ -1,9 +1,7 @@
-#![plugin(cereal_macros)]
-#![feature(custom_derive, plugin)]
-
 #[macro_use] extern crate log;
 extern crate time;
-extern crate cereal;
+extern crate rustc_serialize;
+extern crate bincode;
 #[macro_use] extern crate ecs;
 extern crate tiled;
 extern crate vecmath as vecmath_lib;
@@ -37,14 +35,14 @@ pub const NUM_ITEM_SLOTS: ItemSlot = 3;
 pub type TickNumber = u32;
 
 /// Sent to the clients by the server after connecting
-#[derive(Debug, Clone, CerealData)]
+#[derive(Debug, Clone, RustcEncodable, RustcDecodable)]
 pub struct GameInfo {
     pub map_name: String,
     pub entity_types: EntityTypes,
     pub ticks_per_second: u32,
 }
 
-#[derive(Debug, Clone, CerealData)]
+#[derive(Debug, Clone, RustcEncodable, RustcDecodable)]
 pub enum GameEvent {
     PlayerJoin(PlayerId, String),
     PlayerLeave(PlayerId),

@@ -6,7 +6,8 @@ extern crate env_logger;
 #[macro_use] extern crate catch_shared as shared;
 extern crate renet as enet;
 extern crate libc;
-extern crate cereal;
+extern crate rustc_serialize;
+extern crate bincode;
 extern crate time;
 extern crate rand;
 extern crate hprof;
@@ -18,11 +19,11 @@ pub mod systems;
 pub mod state;
 
 use std::collections::HashMap;
-use std::io::Read;
 use std::thread;
 use time::{Duration, Timespec};
 
-use cereal::CerealData;
+use bincode::SizeLimit;
+use bincode::rustc_serialize::{encode, decode};
 
 use shared::net;
 use shared::{PlayerId, PlayerInfo, TickNumber, GameInfo, Tick};
@@ -144,8 +145,7 @@ impl Server {
                     warn!("received packet on non-message channel from client {}", player_id);
                 }
                 
-                let mut data = packet.data().clone();
-                match ClientMessage::read(&mut data) {
+                match decode(&packet.data()) {
                     Ok(message) => 
                         self.process_client_message(player_id, &message),
                     Err(_) => 
@@ -165,15 +165,7 @@ impl Server {
     fn broadcast(&self, message: &ServerMessage) {
         for (_, client) in &self.clients {
             if client.state == ClientState::Normal {
-                let mut data = Vec::new();
-                match message.write(&mut data) {
-                    Err(_) => {
-                        warn!("error encoding message {:?}", message);
-                        return;
-                    }
-                    Ok(_) => ()
-                }
-
+                let data = encode(message, SizeLimit::Infinite).unwrap();
                 client.peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE,
                                  net::Channel::Messages as u8);
             }
@@ -184,15 +176,7 @@ impl Server {
         //print!("sending message {:?}", message);
         assert!(client.state == ClientState::Normal);
 
-        let mut data = Vec::new();
-        match message.write(&mut data) {
-            Err(_) => {
-                warn!("error encoding message {:?}", message);
-                return;
-            }
-            Ok(_) => ()
-        }
-
+        let data = encode(message, SizeLimit::Infinite).unwrap();
         client.peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE,
                          net::Channel::Messages as u8);
     }
@@ -302,8 +286,6 @@ impl Server {
         // Broadcast tick to clients
         let _g = hprof::enter("broadcast");
 
-        let mut data = Vec::new();
-
         for (player_id, client) in self.clients.iter() {
             if client.state == ClientState::Normal {
                 // Build tick for each client separately. This makes it possible to do
@@ -321,13 +303,7 @@ impl Server {
                 drop(_g);
                 let _g = hprof::enter("encode");
 
-                match tick.write(&mut data) {
-                    Err(_) => {
-                        warn!("error encoding tick");
-                        continue;
-                    }
-                    Ok(_) => ()
-                };
+                let data = encode(&tick, SizeLimit::Infinite).unwrap();
 
                 drop(_g);
                 let _g = hprof::enter("send");
@@ -340,8 +316,6 @@ impl Server {
 
                 self.game_state.world.services.next_player_events
                     .get_mut(&player_id).unwrap().clear();
-
-                data.clear(); 
             }
         }
     }
@@ -355,7 +329,7 @@ fn main() {
     let game_info = GameInfo {
         map_name: "data/maps/desert.tmx".to_string(),
         entity_types: entity_types,
-        ticks_per_second: 5,
+        ticks_per_second: 30,
     };
 
     match Server::start(&game_info, 9988, 32).as_mut() {

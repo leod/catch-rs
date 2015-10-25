@@ -3,7 +3,7 @@ use ecs::{ComponentManager, BuildData};
 use net::ComponentType;
 use components::{HasShape, Shape, HasWall, Wall, WallType};
 
-#[derive(Debug, Clone, CerealData)]
+#[derive(Debug, Clone, RustcEncodable, RustcDecodable)]
 pub struct EntityType {
     // Net components of this entity type, i.e. components whose states are sent to clients in
     // ticks

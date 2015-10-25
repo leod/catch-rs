@@ -1,9 +1,9 @@
-use std::io::Read;
 use std::collections::VecDeque;
 use time;
 
-use cereal::CerealData;
 use enet;
+use bincode::SizeLimit;
+use bincode::rustc_serialize::{encode, decode};
 
 use shared::net;
 use shared::net::{ClientMessage, ServerMessage};
@@ -47,15 +47,7 @@ impl Client {
     }
 
     pub fn send(&self, message: &ClientMessage) {
-        let mut data = Vec::new();
-        match message.write(&mut data) {
-            Err(_) => {
-                warn!("Error encoding message {:?}", message);
-                return;
-            },
-            Ok(_) => ()
-        }
-
+        let data: Vec<u8> = encode(message, SizeLimit::Infinite).unwrap();
         self.server_peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE, 0);
     }
 
@@ -105,8 +97,7 @@ impl Client {
                     return Err("Received tick data while not yet fully connected".to_string());
                 }
 
-                let mut data = packet.data().clone();
-                match ServerMessage::read(&mut data) {
+                match decode(&packet.data()) {
                     Ok(ServerMessage::AcceptConnect { your_id: my_id, game_info }) => {
                         self.connected = true;
                         self.my_id = Some(my_id);
@@ -116,8 +107,8 @@ impl Client {
                     }
                     Ok(_) =>
                         Err("Received unexpected message from server while connecting".to_string()),
-                    Err(m) => 
-                        Err(format!("Received invalid message from server: {:?}", m).to_string())
+                    Err(_) => 
+                        Err("Received invalid message from server".to_string())
                 }
             }
         }
@@ -136,10 +127,8 @@ impl Client {
                 Err("Got disconnected".to_string())
             }
             Ok(enet::Event::Receive(_, channel_id, packet)) => {
-                let mut data = packet.data().clone();
-
                 if channel_id == net::Channel::Messages as u8 {
-                    match ServerMessage::read(&mut data) {
+                    match decode(&packet.data()) {
                         Ok(message) => {
                             //println!("Received message {:?}", message);
                             Ok(Some(message))
@@ -150,14 +139,11 @@ impl Client {
                 } else if channel_id == net::Channel::Ticks as u8 {
                     //println!("Received tick of size {}: {:?}", data.len(), &data);
 
-                    let tick_result = Tick::read(&mut data);
-
-                    match tick_result {
+                    match decode(&packet.data()) {
                         Ok(tick) =>
                             self.tick_deque.push_back((time::get_time(), tick)),
-                        Err(_) => {
-                            return Err("Received invalid tick".to_string());
-                        }
+                        Err(_) =>
+                            return Err("Received invalid tick".to_string())
                     };
                     
                     // We received a tick, but still need a Option<ServerMessage>... kind of awkward

@@ -10,8 +10,8 @@ log = "*"
 #ecs = "*"
 time = "0.1.32"
 vecmath = "*"
-#cereal = "0.2.2"
-#cereal_macros = "0.2.1"
+bincode = "*"
+rustc-serialize = "*"
 
 [dependencies.ecs]
 git = "https://github.com/HeroesGrave/ecs-rs.git"
@@ -21,9 +21,3 @@ path = "../../rs-tiled"
 
 [dependencies.renet]
 path = "../../renet"
-
-[dependencies.cereal]
-path = "../../cereal"
-
-[dependencies.cereal_macros]
-path = "../../cereal/plugin"

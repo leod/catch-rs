@@ -1,11 +1,8 @@
 use std::fmt;
-use std::io::{Read, Write};
-
-use cereal::{CerealData, CerealResult};
 
 use super::{PlayerId, ItemSlot, NUM_ITEM_SLOTS};
 
-#[derive(Clone, Debug, CerealData)]
+#[derive(Clone, Debug, RustcEncodable, RustcDecodable)]
 pub enum Item {
     Weapon {
         charges: usize,
@@ -34,7 +31,7 @@ impl Item {
 
 // Attached to players on the server and the clients controlling them
 // Item states, cooldowns etc.
-#[derive(Clone, Default, CerealData)]
+#[derive(Clone, Default, RustcEncodable, RustcDecodable)]
 pub struct FullPlayerState {
     pub dash_cooldown_s: Option<f32>,
 
@@ -45,7 +42,7 @@ pub struct FullPlayerState {
     pub wall_flip: bool,
 }
 
-#[derive(Clone, CerealData)]
+#[derive(Clone, RustcEncodable, RustcDecodable)]
 pub struct EquippedItem {
     pub item: Item,
     pub cooldown_s: Option<f32>, // Some items have a cooldown
@@ -61,7 +58,7 @@ impl EquippedItem {
 }
 
 // Component attached to any player for both client and server
-#[derive(Clone, Default, CerealData)]
+#[derive(Clone, Default, RustcEncodable, RustcDecodable)]
 pub struct PlayerState { 
     pub color: u32,
     pub dashing: Option<f32>,
@@ -142,7 +139,7 @@ pub enum PlayerInputKey {
 
 pub const NUM_INPUT_KEYS: usize = 12; //usize = InputKey::Max as usize;
 
-#[derive(Clone)]
+#[derive(Clone, RustcEncodable, RustcDecodable)]
 pub struct PlayerInput {
     pub pressed: [bool; NUM_INPUT_KEYS]
 }
@@ -161,7 +158,7 @@ impl PlayerInput {
     }
 }
 
-#[derive(Debug, Clone, CerealData)]
+#[derive(Debug, Clone, RustcEncodable, RustcDecodable)]
 pub struct PlayerInfo {
     pub id: PlayerId,
     pub name: String,
@@ -202,26 +199,3 @@ impl fmt::Debug for PlayerInput {
         write!(f, "PlayerInput")
     }
 }
-
-impl CerealData for PlayerInput {
-    fn read(r: &mut Read) -> CerealResult<PlayerInput> {
-        // TODO: Use the bits...
-
-        let mut input = [false; NUM_INPUT_KEYS];
-
-        for i in 0..NUM_INPUT_KEYS {
-            input[i] = try!(bool::read(r));
-        }
-
-        Ok(PlayerInput { pressed: input })
-    }
-
-    fn write(&self, w: &mut Write) -> CerealResult<()> {
-        for i in 0..NUM_INPUT_KEYS {
-            try!(self.pressed[i].write(w));
-        }
-
-        Ok(())
-    }
-}
-

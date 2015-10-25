@@ -8,7 +8,7 @@ use super::{EntityId, TickNumber, GameEvent};
 /// Stores the state of all net components in a tick
 pub type ComponentsNetState<T> = HashMap<EntityId, T>;
 
-#[derive(Default, CerealData)]
+#[derive(Default, RustcEncodable, RustcDecodable)]
 pub struct TickState {
     // Same order as net::COMPONENT_TYPES
 
@@ -25,7 +25,7 @@ pub struct TickState {
     pub forced_components: Vec<(EntityId, ComponentType)>,
 }
 
-#[derive(CerealData)]
+#[derive(RustcEncodable, RustcDecodable)]
 pub struct Tick {
     pub tick_number: TickNumber,
     pub events: Vec<GameEvent>,

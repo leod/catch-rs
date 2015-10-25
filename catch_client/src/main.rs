@@ -1,7 +1,6 @@
 #[macro_use] extern crate log;
 extern crate env_logger;
 extern crate renet as enet;
-extern crate cereal;
 #[macro_use] extern crate ecs;
 extern crate piston;
 extern crate piston_window;
@@ -17,6 +16,8 @@ extern crate rand;
 extern crate rodio;
 extern crate cpal;
 extern crate hprof;
+extern crate rustc_serialize;
+extern crate bincode;
 
 #[macro_use] extern crate catch_shared as shared;
 
