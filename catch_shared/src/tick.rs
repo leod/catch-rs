@@ -133,7 +133,6 @@ impl TickState {
     pub fn load_delta(&mut self, new_state: &TickState) {
         self.forced_components = new_state.forced_components.clone();
 
-        let mut to_remove: Vec<EntityId> = Vec::new();
         let mut to_add: Vec<(EntityId, NetComponents)> = Vec::new();
 
         for (id, pair) in self.iter_pairs_mut(new_state) {
@@ -149,9 +148,6 @@ impl TickState {
                     components.load_delta(new_components);
                 }
             }
-        }
-
-        for &remove_id in &to_remove {
         }
 
         for &(add_id, ref add_components) in &to_add {
