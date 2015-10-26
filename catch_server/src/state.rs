@@ -142,7 +142,7 @@ impl GameState {
             });
         }*/
         
-        let num_walls = 30;
+        let num_walls = 100;
         let width = self.map.width_pixels() as f32;
         let height = self.map.height_pixels() as f32;
 

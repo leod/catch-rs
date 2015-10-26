@@ -20,15 +20,17 @@ pub mod state;
 
 use std::collections::HashMap;
 use std::thread;
+use std::mem;
 use time::{Duration, Timespec};
 
 use bincode::SizeLimit;
-use bincode::rustc_serialize::{encode, decode};
+use bincode::rustc_serialize::{encode, encode_into, decode};
 
 use shared::net;
 use shared::{PlayerId, PlayerInfo, TickNumber, GameInfo, Tick};
 use shared::net::{ClientMessage, ServerMessage};
 use shared::util::PeriodicTimer;
+use shared::tick::DeltaEncodeTick;
 use state::GameState;
 
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -47,6 +49,8 @@ struct Client {
 
     // Not adjusted for ping
     at_tick: Option<TickNumber>,
+
+    last_tick: Option<Tick>,
 }
 
 struct Server {
@@ -114,6 +118,7 @@ impl Server {
                         ping_sent_time: None,
                         ping: None,
                         at_tick: None,
+                        last_tick: None,
                     });
 
                 return true;
@@ -236,76 +241,87 @@ impl Server {
         loop {
             let start_time_s = time::precise_time_s() as f32;
 
-            hprof::start_frame();
 
             {
-                let _g = hprof::enter("service");
-
                 // Is this how DDOS happens?
                 while self.service() {};
             }
 
             {
-                let _g = hprof::enter("ticks");
-
                 // Start ticks
-                while self.tick_timer.next() {
+                hprof::start_frame();
+                let mut r = false;
+                if self.tick_timer.next() {
+                    let _g = hprof::enter("ticks");
                     self.tick();
+                    r = true;
+                }
+                hprof::end_frame();
+
+                if r && self.print_prof_timer.next_reset() {
+                    hprof::profiler().print_timing();  
+
+                    if self.samples_tick_size > 0 {
+                        info!("average tick size over last {} ticks: {:.2} bytes, {:.2} kb/s",
+                              self.samples_tick_size,
+                              self.sum_tick_size as f64 / self.samples_tick_size as f64,
+                              self.sum_tick_size as f64 / (1000.0 * 5.0));
+                    }
+                    self.sum_tick_size = 0;
+                    self.samples_tick_size = 0;
                 }
             }
 
-            {
-                let _g = hprof::enter("sleep");
-                thread::sleep_ms(1);
-            }
-
-            hprof::end_frame();
+            thread::sleep_ms(0);
 
             let end_time_s = time::precise_time_s() as f32;
-
             let delta_s = end_time_s - start_time_s;
             self.tick_timer.add(delta_s);
             self.print_prof_timer.add(delta_s);
-
-            if self.print_prof_timer.next_reset() {
-                hprof::profiler().print_timing();  
-
-                if self.samples_tick_size > 0 {
-                    info!("average tick size over last {} ticks: {:.2} bytes, {:.2} kb/s",
-                          self.samples_tick_size,
-                          self.sum_tick_size as f64 / self.samples_tick_size as f64,
-                          self.sum_tick_size as f64 / (1000.0 * 5.0));
-                }
-                self.sum_tick_size = 0;
-                self.samples_tick_size = 0;
-            }
         }
     }
 
     fn tick(&mut self) {
         self.game_state.tick();
+
+        //debug!("sending tick {}", self.game_state.tick_number);
         
         // Broadcast tick to clients
         let _g = hprof::enter("broadcast");
 
-        for (player_id, client) in self.clients.iter() {
-            if client.state == ClientState::Normal {
+        let mut data = Vec::new();
+        for &player_id in &self.clients.keys().map(|k| *k).collect::<Vec<_>>() {
+            if self.clients[&player_id].state == ClientState::Normal {
                 // Build tick for each client separately. This makes it possible to do
                 // delta encoding and stuff.
                 let _g = hprof::enter("store");
                 let tick_number = self.game_state.tick_number;
 
                 let mut tick = Tick::new(tick_number);
-                tick.events = self.game_state.world.services.next_player_events[player_id]
+                tick.events = self.game_state.world.services.next_player_events[&player_id]
                                   .clone();
 
                 self.game_state.world.systems.net_entity_system
-                    .store_in_tick_state(*player_id, &mut tick.state,
+                    .store_in_tick_state(player_id, &mut tick.state,
                                          &mut self.game_state.world.data);
                 drop(_g);
                 let _g = hprof::enter("encode");
 
-                let data = encode(&tick, SizeLimit::Infinite).unwrap();
+                data.clear();
+                if let Some(last_tick) = self.clients[&player_id].last_tick.as_ref() {
+                    // We can do delta encoding
+                    let delta_encode_tick = DeltaEncodeTick {
+                        last_tick: last_tick,
+                        tick: &tick,
+                    };
+
+                    encode_into(&Some(last_tick.tick_number), &mut data, SizeLimit::Infinite);
+                    encode_into(&delta_encode_tick, &mut data, SizeLimit::Infinite);
+                } else {
+                    let delta_tick: Option<TickNumber> = None;
+                    encode_into(&delta_tick, &mut data, SizeLimit::Infinite);
+                    encode_into(&tick, &mut data, SizeLimit::Infinite);
+                }
 
                 drop(_g);
                 let _g = hprof::enter("send");
@@ -313,11 +329,14 @@ impl Server {
                 self.sum_tick_size += data.len();
                 self.samples_tick_size += 1;
 
-                client.peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE,
-                                 net::Channel::Ticks as u8);
+                self.clients[&player_id]
+                    .peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE,
+                               net::Channel::Ticks as u8);
 
                 self.game_state.world.services.next_player_events
                     .get_mut(&player_id).unwrap().clear();
+
+                self.clients.get_mut(&player_id).unwrap().last_tick = Some(tick);
             }
         }
     }

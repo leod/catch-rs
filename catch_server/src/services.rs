@@ -5,8 +5,6 @@ use ecs::ServiceManager;
 use shared::services::HasEvents;
 use shared::{EntityId, EntityTypeId, EntityTypes, TickNumber, PlayerId, GameEvent};
 
-use components::Components;
-
 // State that can be accessed mutably by systems
 pub struct Services {
     // List of entity types by name

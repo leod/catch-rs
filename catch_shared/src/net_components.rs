@@ -1,12 +1,11 @@
 use std::iter::Iterator;
 
 use rustc_serialize::{Encoder, Decoder, Encodable, Decodable};
-use ecs::{ComponentManager, BuildData, EntityData, DataHelper};
-use super::EntityId;
+use ecs::{ComponentManager, BuildData, EntityData};
 
 use components::*;
 
-type ComponentsBitSet = u16;
+pub type ComponentsBitSet = u16;
 
 macro_rules! net_components {
     {
@@ -16,7 +15,7 @@ macro_rules! net_components {
         enum $EnumName:ident;
         const $TypesName:ident;
     } => {
-        #[derive(Default)]
+        #[derive(Default, Clone)]
         pub struct $Name {
             $(
                 pub $field_name : Option<$field_ty>,
@@ -60,6 +59,25 @@ macro_rules! net_components {
                 Ok(())
             }
 
+            #[allow(unused_assignments)]
+            pub fn delta_encode<S: Encoder>
+                               (&self,
+                                neq_components: ComponentsBitSet,
+                                s: &mut S)
+                                -> Result<(), S::Error> {
+                try!(neq_components.encode(s));
+
+                let mut i = 0;
+                $(
+                    if (neq_components >> i) & 1 == 1 {
+                        try!(self.$field_name.as_ref().unwrap().encode(s));
+                    }
+                    i += 1;
+                )+
+
+                Ok(())
+            }
+
             #[allow(unused_assignments)] 
             pub fn decode<D: Decoder>
                          (d: &mut D)
@@ -77,6 +95,25 @@ macro_rules! net_components {
                 )+
 
                 Ok(e)
+            }
+
+            #[allow(unused_assignments)] 
+            pub fn neq_components(&self, other: &NetComponents) -> ComponentsBitSet {
+                let mut bit_set: ComponentsBitSet = 0;
+                let mut i = 0;
+                $(
+                    match (&self.$field_name, &other.$field_name) {
+                        (&Some(ref a), &Some(ref b)) => {
+                            if a != b {
+                                bit_set |= 1 << i;
+                            }
+                        }
+                        (&None, &None) => (),
+                        (_, _) => panic!("this shouldn't happen (I hope)"),
+                    }
+                    i += 1;
+                )+
+                bit_set
             }
 
             pub fn add_component<C: ComponentManager>
@@ -127,6 +164,14 @@ macro_rules! net_components {
                         )+
                     }
                 }
+            }
+
+            pub fn load_delta(&mut self, new_state: &NetComponents) {
+                $(
+                    if let Some(x) = new_state.$field_name.as_ref() {
+                        self.$field_name = Some(x.clone());
+                    }
+                )+
             }
         }
     };

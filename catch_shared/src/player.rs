@@ -2,7 +2,7 @@ use std::fmt;
 
 use super::{PlayerId, ItemSlot, NUM_ITEM_SLOTS};
 
-#[derive(Clone, Debug, RustcEncodable, RustcDecodable)]
+#[derive(PartialEq, Clone, Debug, RustcEncodable, RustcDecodable)]
 pub enum Item {
     Weapon {
         charges: usize,
@@ -31,7 +31,7 @@ impl Item {
 
 // Attached to players on the server and the clients controlling them
 // Item states, cooldowns etc.
-#[derive(Clone, Default, RustcEncodable, RustcDecodable)]
+#[derive(PartialEq, Clone, Default, RustcEncodable, RustcDecodable)]
 pub struct FullPlayerState {
     pub dash_cooldown_s: Option<f32>,
 
@@ -42,7 +42,7 @@ pub struct FullPlayerState {
     pub wall_flip: bool,
 }
 
-#[derive(Clone, RustcEncodable, RustcDecodable)]
+#[derive(PartialEq, Clone, RustcEncodable, RustcDecodable)]
 pub struct EquippedItem {
     pub item: Item,
     pub cooldown_s: Option<f32>, // Some items have a cooldown
@@ -58,7 +58,7 @@ impl EquippedItem {
 }
 
 // Component attached to any player for both client and server
-#[derive(Clone, Default, RustcEncodable, RustcDecodable)]
+#[derive(PartialEq, Clone, Default, RustcEncodable, RustcDecodable)]
 pub struct PlayerState { 
     pub color: u32,
     pub dashing: Option<f32>,

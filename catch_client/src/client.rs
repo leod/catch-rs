@@ -3,11 +3,11 @@ use time;
 
 use enet;
 use bincode::SizeLimit;
-use bincode::rustc_serialize::{encode, decode};
+use bincode::rustc_serialize::{encode, decode, decode_from};
 
 use shared::net;
 use shared::net::{ClientMessage, ServerMessage};
-use shared::{GameInfo, PlayerId, Tick};
+use shared::{GameInfo, PlayerId, Tick, TickNumber};
 
 pub struct Client {
     host: enet::Host,
@@ -21,6 +21,8 @@ pub struct Client {
 
     // Ticks received from the server together with the time at which they were received
     tick_deque: VecDeque<(time::Timespec, Tick)>,
+
+    last_tick: Option<Tick>,
 }
 
 impl Client {
@@ -43,6 +45,7 @@ impl Client {
             my_id: None,
             game_info: None,
             tick_deque: VecDeque::new(),
+            last_tick: None,
         })
     }
 
@@ -139,9 +142,22 @@ impl Client {
                 } else if channel_id == net::Channel::Ticks as u8 {
                     //println!("Received tick of size {}: {:?}", data.len(), &data);
 
-                    match decode(&packet.data()) {
-                        Ok(tick) =>
-                            self.tick_deque.push_back((time::get_time(), tick)),
+                    let mut data = packet.data().clone(); // TODO: clone
+                    let delta_tick: Option<TickNumber> =
+                        decode_from(&mut data, SizeLimit::Infinite).unwrap();
+
+                    match decode_from(&mut data, SizeLimit::Infinite) {
+                        Ok(tick) => {
+                            if let Some(delta_tick) = delta_tick {
+                                assert!(self.last_tick.as_ref().unwrap().tick_number == delta_tick);
+                                self.last_tick.as_mut().unwrap().load_delta(&tick);
+                            } else {
+                                self.last_tick = Some(tick); // TODO: clone
+                            }
+                            self.tick_deque.push_back((time::get_time(),
+                                                       self.last_tick.clone().unwrap()));
+
+                        }
                         Err(_) =>
                             return Err("Received invalid tick".to_string())
                     };

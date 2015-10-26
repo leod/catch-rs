@@ -1,6 +1,6 @@
 use ecs::{ComponentManager, ComponentList};
 
-use super::{EntityId, EntityTypeId, PlayerId, TickState};
+use super::{EntityId, EntityTypeId, PlayerId};
 use math;
 pub use player::{PlayerState, FullPlayerState};
 
@@ -11,27 +11,27 @@ pub struct NetEntity {
     pub owner: PlayerId,
 }
 
-#[derive(Debug, Clone, Default, RustcEncodable, RustcDecodable)]
+#[derive(PartialEq, Debug, Clone, Default, RustcEncodable, RustcDecodable)]
 pub struct Position {
     pub p: math::Vec2,
 }
 
-#[derive(Debug, Clone, Default, RustcEncodable, RustcDecodable)]
+#[derive(PartialEq, Debug, Clone, Default, RustcEncodable, RustcDecodable)]
 pub struct Orientation {
     pub angle: f32, // radians
 }
 
-#[derive(Debug, Clone, Default, RustcEncodable, RustcDecodable)]
+#[derive(PartialEq, Debug, Clone, Default, RustcEncodable, RustcDecodable)]
 pub struct LinearVelocity {
     pub v: math::Vec2,
 }
 
-#[derive(Debug, Clone, Default, RustcEncodable, RustcDecodable)]
+#[derive(PartialEq, Debug, Clone, Default, RustcEncodable, RustcDecodable)]
 pub struct AngularVelocity {
     pub v: f32,
 }
 
-#[derive(Debug, Clone, RustcEncodable, RustcDecodable)]
+#[derive(PartialEq, Debug, Clone, RustcEncodable, RustcDecodable)]
 pub enum Shape { 
     Circle {
         radius: f32,
@@ -66,7 +66,7 @@ pub struct Wall {
     pub width: f32,
 }
 
-#[derive(Debug, Clone, Default, RustcEncodable, RustcDecodable)]
+#[derive(PartialEq, Debug, Clone, Default, RustcEncodable, RustcDecodable)]
 pub struct WallPosition {
     pub pos_a: math::Vec2,
     pub pos_b: math::Vec2,

@@ -184,11 +184,10 @@ impl NetEntitySystem {
     /// Loads state that is to be interpolated between `tick_a` and `tick_b`
     pub fn load_interp_tick_state(&mut self, tick_a: &Tick, tick_b: &Tick,
                                   c: &mut DataHelper<Components, Services>) {
-        for pair in tick_a.state.iter_pairs(&tick_b.state) {
+        for (net_id, pair) in tick_a.state.iter_pairs(&tick_b.state) {
             match pair {
-                EntityPair::Both(i, j) => {
+                EntityPair::Both(state_a, state_b) => {
                     // TODO: Can we avoid these two lookups?
-                    let net_id = tick_a.state.entities[i].0;
                     let entity = self.entities.get(&net_id).unwrap();
                     c.with_entity_data(&entity, |e, c| {
                         let entity_type = &self.entity_types[c.net_entity[e].type_id as usize].1;
@@ -202,15 +201,12 @@ impl NetEntitySystem {
                                 }
                             }
 
-                            let state_a = &tick_a.state.entities[i].1;
-                            let state_b = &tick_b.state.entities[j].1;
-
                             match *component_type { 
                                 ComponentType::Position => {
                                     c.interp_position[e] = if !forced {
                                         InterpolationState::some(
-                                            state_a.position.as_ref().unwrap().clone(),
-                                            state_b.position.as_ref().unwrap().clone())
+                                            state_a.position.clone().unwrap(),
+                                            state_b.position.clone().unwrap())
                                     } else {
                                         InterpolationState::none()
                                     }
@@ -218,8 +214,8 @@ impl NetEntitySystem {
                                 ComponentType::Orientation => {
                                     c.interp_orientation[e] = if !forced {
                                         InterpolationState::some(
-                                            state_a.orientation.as_ref().unwrap().clone(),
-                                            state_b.orientation.as_ref().unwrap().clone())
+                                            state_a.orientation.clone().unwrap(),
+                                            state_b.orientation.clone().unwrap())
                                     } else {
                                         InterpolationState::none()
                                     }
