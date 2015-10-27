@@ -1,9 +1,6 @@
 use ecs::{Aspect, System, DataHelper, Process};
 
-use graphics;
-use graphics::context::Context;
-use graphics::Transformed;
-use opengl_graphics::GlGraphics;
+use glium::Surface;
 
 use shared::util::CachedAspect;
 
@@ -22,8 +19,8 @@ impl DrawProjectileSystem {
         }
     }
 
-    pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, _time_s: f32,
-                _particles: &mut Particles, c: graphics::Context, gl: &mut GlGraphics) {
+    pub fn draw<S: Surface> (&mut self, data: &mut DataHelper<Components, Services>, _time_s: f32,
+                             _particles: &mut Particles, target: &mut S) {
         for entity in self.aspect.iter() {
             let p = data.position[entity].p;
             let angle = data.orientation[entity].angle;
@@ -33,13 +30,13 @@ impl DrawProjectileSystem {
                 _ => panic!("projectile should be rect"),
             };
 
-            let transform = c.trans(p[0] as f64, p[1] as f64)
+            /*let transform = c.trans(p[0] as f64, p[1] as f64)
                              .rot_rad(angle as f64).transform;
 
             graphics::rectangle([0.4, 0.4, 0.4, 1.0],
                                 [-w/2.0, -h/2.0, w, h],
                                 transform,
-                                gl);
+                                gl);*/
         }
     }
 }

@@ -8,15 +8,10 @@ use ecs;
 use rand;
 use time;
 use hprof;
-use graphics;
-use graphics::Transformed;
-use graphics::Viewport;
-use glutin_window::GlutinWindow;
-use piston_window::{PistonWindow, Text};
-use piston::window::Window;
-use piston::input::{Input, Button, Key};
-use opengl_graphics::GlGraphics;
-use opengl_graphics::glyph_cache::GlyphCache;
+
+use glium::glutin;
+use glium::{Display, Surface};
+use glium_text::{TextSystem, FontTexture, TextDisplay};
 
 use shared::NUM_ITEM_SLOTS;
 use shared::math;
@@ -31,13 +26,10 @@ use draw_map::DrawMap;
 use particles::Particles;
 use sounds::Sounds;
 
-type GameWindow = PistonWindow;
-
 pub struct Game {
     quit: bool,
 
     client: Client,
-
     game_state: GameState,
 
     player_input_map: InputMap,
@@ -48,13 +40,16 @@ pub struct Game {
     tick_progress: f32,
     time_factor: f32,
 
-    window: GameWindow,
+    display: Display,
+
     draw_map: DrawMap,
     particles: Particles,
     sounds: Sounds,
 
+    /*text_system: TextSystem,
+    font: FontTexture,*/
+
     cam_pos: math::Vec2,
-    glyphs: GlyphCache<'static>,
     fps: f32,
 
     print_prof: bool,
@@ -64,14 +59,10 @@ impl Game {
     // The given client is expected to be connected already
     pub fn new(connected_client: Client,
                player_input_map: InputMap,
-               window: GlutinWindow) -> Game {
+               display: Display) -> Game {
         let game_state = GameState::new(connected_client.my_id(),
                                         connected_client.game_info());
         let draw_map = DrawMap::load(&game_state.map).unwrap();
-        let window = GameWindow::new(Rc::new(RefCell::new(window)),
-                                     Rc::new(RefCell::new(())));
-        let font = "data/ProggyClean.ttf";
-        let glyphs = GlyphCache::new(Path::new(font)).unwrap();
 
         let sounds = Sounds::load().unwrap();
 
@@ -90,20 +81,20 @@ impl Game {
             tick_progress: 0.0,
             time_factor: 0.0,
 
-            window: window,
+            display: display,
+
             draw_map: draw_map,
             particles: Particles::new(),
             sounds: sounds,
 
             cam_pos: [0.0, 0.0],
-            glyphs: glyphs,
             fps: 0.0,
 
             print_prof: false,
         }
     }
 
-    pub fn run(&mut self, gl: &mut GlGraphics) {
+    pub fn run(&mut self) {
         let mut simulation_time_s = 0.0;
 
         self.wait_first_ticks();
@@ -118,7 +109,7 @@ impl Game {
             self.send_input(simulation_time_s);
             self.manage_ticks(simulation_time_s);
             self.interpolate();
-            self.draw(simulation_time_s, gl);
+            self.draw(simulation_time_s);
 
             //thread::sleep_ms(10);
 
@@ -190,23 +181,26 @@ impl Game {
     fn read_input(&mut self) {
         let _g = hprof::enter("read input");
 
-        while let Some(input) = (&mut self.window as &mut Window<Event=Input>).poll_event() {
-            match input {
-                Input::Press(Button::Keyboard(Key::Escape)) => {
-                    info!("got escape input, quitting game");
-                    self.quit = true;
-                    return;
+        for event in self.display.poll_events() {
+            match event {
+                glutin::Event::KeyboardInput(state, _, Some(key)) => {
+                    if state == glutin::ElementState::Pressed {
+                        if key == glutin::VirtualKeyCode::Escape {
+                            info!("got escape input, quitting game");
+                            self.quit = true;
+                            return;
+                        } else if key == glutin::VirtualKeyCode::L {
+                            thread::sleep_ms(200);
+                            continue;
+                        } else if key == glutin::VirtualKeyCode::P {
+                            self.print_prof = true;
+                            continue;
+                        }
+                    }
+
+                    self.player_input_map.update_player_input(state, key, &mut self.player_input);
                 }
-                Input::Press(Button::Keyboard(Key::L)) => {
-                    thread::sleep_ms(200);
-                }
-                Input::Press(Button::Keyboard(Key::P)) => {
-                    self.print_prof = true;
-                }
-                _ => {
-                    self.player_input_map
-                        .update_player_input(&input, &mut self.player_input);
-                }
+                _ => (),
             };
         }
     }
@@ -378,20 +372,15 @@ impl Game {
             .interpolate(t, &mut self.game_state.world.data);
     }
 
-    fn draw(&mut self, simulation_time_s: f32, gl: &mut GlGraphics) {
+    fn draw(&mut self, simulation_time_s: f32) {
         let _g = hprof::enter("draw");
 
-        let draw_width = self.window.draw_size().width;
-        let draw_height = self.window.draw_size().height;
+        let mut target = self.display.draw();
+        target.clear_color(0.3, 0.3, 0.3, 1.0);
 
-        let viewport = Viewport {
-            rect: [0, 0, draw_width as i32, draw_height as i32],
-            draw_size: [draw_width, draw_height],
-            window_size: [self.window.size().width,
-                          self.window.size().height]
-        };
+        target.finish().unwrap();
 
-        gl.draw(viewport, |c, gl| {
+        /*gl.draw(viewport, |c, gl| {
             graphics::clear([0.3, 0.3, 0.3, 0.0], gl);
 
             let pos = self.get_my_player_position().unwrap_or(self.cam_pos);
@@ -469,30 +458,32 @@ impl Game {
                 }
             }
 
+            let _g = hprof::enter("text");
             self.draw_player_text(c, gl);
             self.draw_debug_text(c, gl);
         });
 
-        self.window.swap_buffers();
+        let _g = hprof::enter("swap");
+        self.window.swap_buffers();*/
     }
 
-    fn draw_debug_text(&mut self, c: graphics::Context, gl: &mut GlGraphics) {
+    fn draw_debug_text<S: Surface>(&mut self, target: &mut S) {
         let color = [1.0, 0.0, 1.0, 1.0];
 
         let s = &format!("fps: {:.1}", self.fps);
-        self.draw_text(color, 10.0, 30.0, s, c, gl);
+        self.draw_text(color, 10.0, 30.0, s, target);
 
         let s = &format!("# queued ticks: {}", self.client.num_ticks());
-        self.draw_text(color, 10.0, 65.0, s, c, gl);
+        self.draw_text(color, 10.0, 65.0, s, target);
 
         let s = &format!("tick progress: {:.1}", self.tick_progress);
-        self.draw_text(color, 10.0, 100.0, s, c, gl);
+        self.draw_text(color, 10.0, 100.0, s, target);
 
         let s = &format!("time factor: {:.1}", self.time_factor);
-        self.draw_text(color, 10.0, 135.0, s, c, gl);
+        self.draw_text(color, 10.0, 135.0, s, target);
 
         let s = &format!("num particles: {}", self.particles.num());
-        self.draw_text(color, 10.0, 170.0, s, c, gl);
+        self.draw_text(color, 10.0, 170.0, s, target);
 
         if let Some(entity) = self.get_my_player_entity() {
             let speed =
@@ -501,11 +492,11 @@ impl Game {
                 }).unwrap();
 
             let s = &format!("player speed: {:.1}", speed);
-            self.draw_text(color, 10.0, 205.0, s, c, gl);
+            self.draw_text(color, 10.0, 205.0, s, target);
         }
     }
 
-    fn draw_player_text(&mut self, context: graphics::Context, gl: &mut GlGraphics) {
+    fn draw_player_text<S: Surface>(&mut self, target: &mut S) {
         if let Some(entity) = self.get_my_player_entity() {
             let (dash_cooldown_s, hidden_item, player_state) =
                 self.game_state.world.with_entity_data(&entity, |e, c| {
@@ -514,16 +505,16 @@ impl Game {
                      c.player_state[e].clone())
                 }).unwrap();
 
-            let y1 = self.window.draw_size().height as f32 - 100.0;
+            let y1 = 900.0; //self.window.draw_size().height as f32 - 100.0;
             let y2 = y1 + 35.0; 
             let y3 = y2 + 35.0;
             let color1 = [0.0, 0.0, 1.0, 1.0];
             let color2 = [0.3, 0.3, 0.3, 1.0];
 
             self.draw_text(if dash_cooldown_s.is_none() { color1 } else { color2 },
-                           20.0, y1, "dash", context, gl);
+                           20.0, y1, "dash", target);
             if let Some(t) = dash_cooldown_s {
-                self.draw_text(color1, 25.0, y2, &format!("{:.1}", t), context, gl);
+                self.draw_text(color1, 25.0, y2, &format!("{:.1}", t), target);
             }
 
             let slot_names = vec!["Q", "W", "E"]; // TODO
@@ -535,38 +526,32 @@ impl Game {
                 if let Some(equipped_item) = player_state.get_item(item_slot) {
                     let color = if equipped_item.cooldown_s.is_none() { color1 } else { color2 };
 
-                    self.draw_text(color, cursor_x, y1, slot_name, context, gl);
+                    self.draw_text(color, cursor_x, y1, slot_name, target);
 
                     let text = &self.item_text(&equipped_item.item);
-                    self.draw_text(color, cursor_x, y2, &text, context, gl);
+                    self.draw_text(color, cursor_x, y2, &text, target);
 
                     if let Some(t) = equipped_item.cooldown_s {
                         self.draw_text(color1, cursor_x + 5.0, y3, &format!("{:.1}", t),
-                                       context, gl);
+                                       target);
                     }
                 } else {
-                    self.draw_text(color2, cursor_x, y1, slot_name, context, gl);
+                    self.draw_text(color2, cursor_x, y1, slot_name, target);
                 }
             }
 
             if let Some(item) = hidden_item {
                 let text = self.item_text(&item);
-                self.draw_text(color1, 200.0, y1, "item", context, gl);
-                self.draw_text(color1, 200.0, y2, &text, context, gl);
+                self.draw_text(color1, 200.0, y1, "item", target);
+                self.draw_text(color1, 200.0, y2, &text, target);
             } else {
-                self.draw_text(color2, 200.0, y1, "item", context, gl);
+                self.draw_text(color2, 200.0, y1, "item", target);
             }
         }
     }
 
-    fn draw_text(&mut self, color: [f32; 4], x: f32, y: f32, s: &str, c: graphics::Context,
-                 gl: &mut GlGraphics) {
-        Text::new_color(color, 30).draw(
-            s,
-            &mut self.glyphs,
-            &c.draw_state,
-            c.transform.trans(x as f64, y as f64),
-            gl);
+    fn draw_text<S: Surface>(&mut self, color: [f32; 4], x: f32, y: f32, s: &str,
+                             target: &mut S) {
     }
 
     fn item_text(&self, item: &Item) -> String {

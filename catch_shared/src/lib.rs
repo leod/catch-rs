@@ -1,3 +1,5 @@
+#![feature(concat_idents)]
+
 #[macro_use] extern crate log;
 extern crate time;
 extern crate rustc_serialize;

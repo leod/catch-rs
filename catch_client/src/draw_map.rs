@@ -1,5 +1,4 @@
-use graphics::Context;
-use opengl_graphics::GlGraphics;
+use glium::Surface;
 
 use shared::map::Map;
 
@@ -10,6 +9,6 @@ impl DrawMap {
         Ok(DrawMap)
     }
 
-    pub fn draw(&self, _map: &Map, _c: Context, _gl: &mut GlGraphics) {
+    pub fn draw<S: Surface>(&self, _map: &Map, _surface: &mut S) {
     }
 }

@@ -3,10 +3,8 @@ use std::f32;
 use ecs::{Aspect, System, DataHelper, Process};
 
 use rand;
-use graphics;
-use graphics::context::Context;
-use graphics::Transformed;
-use opengl_graphics::GlGraphics;
+
+use glium::Surface;
 
 use shared::util::CachedAspect;
 
@@ -25,8 +23,8 @@ impl DrawItemSystem {
         }
     }
 
-    pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, time_s: f32,
-                particles: &mut Particles, c: graphics::Context, gl: &mut GlGraphics) {
+    pub fn draw<S: Surface>(&mut self, data: &mut DataHelper<Components, Services>, time_s: f32,
+                            particles: &mut Particles, surface: &mut S) {
         for entity in self.aspect.iter() {
             let p = data.position[entity].p;
             let size = match data.shape[entity] {
@@ -49,14 +47,14 @@ impl DrawItemSystem {
                                      );
             }
 
-            let transform = c.trans(p[0] as f64, p[1] as f64)
+            /*let transform = c.trans(p[0] as f64, p[1] as f64)
                              .rot_rad(data.orientation[entity].angle as f64)
                              .transform;
 
             graphics::rectangle([0.0, 1.0, 0.0, 1.0],
                                 [-size/2.0, -size/2.0, size, size],
                                 transform,
-                                gl);
+                                gl);*/
         }
     }
 }

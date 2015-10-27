@@ -1,9 +1,6 @@
 use ecs::{Aspect, System, DataHelper, Process};
 
-use graphics;
-use graphics::context::Context;
-use graphics::Transformed;
-use opengl_graphics::GlGraphics;
+use glium::Surface;
 
 use shared::{NEUTRAL_PLAYER_ID};
 use shared::util::CachedAspect;
@@ -22,8 +19,8 @@ impl DrawBouncyEnemySystem {
         }
     }
 
-    pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, c: graphics::Context,
-                gl: &mut GlGraphics) {
+    pub fn draw<S: Surface>(&mut self, data: &mut DataHelper<Components, Services>,
+                            target: &mut S) {
         for entity in self.aspect.iter() {
             let p = data.position[entity].p;
 
@@ -32,7 +29,7 @@ impl DrawBouncyEnemySystem {
                 _ => panic!("enemy should be circle"),
             };
 
-            let transform = c.trans(p[0] as f64, p[1] as f64).transform;
+            //let transform = c.trans(p[0] as f64, p[1] as f64).transform;
 
             let color = if data.net_entity[entity].owner == NEUTRAL_PLAYER_ID {
                 [1.0, 0.0, 0.0, 1.0]
@@ -40,7 +37,7 @@ impl DrawBouncyEnemySystem {
                 [0.0, 0.0, 1.0, 1.0]
             };
 
-            graphics::ellipse(color, [-r, -r, r*2.0, r*2.0], transform, gl);
+            //graphics::ellipse(color, [-r, -r, r*2.0, r*2.0], transform, gl);
         }
     }
 }

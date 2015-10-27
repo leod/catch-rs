@@ -2,16 +2,10 @@
 extern crate env_logger;
 extern crate renet as enet;
 #[macro_use] extern crate ecs;
-extern crate piston;
-extern crate piston_window;
-extern crate graphics;
-extern crate glutin_window;
-extern crate opengl_graphics;
-extern crate image;
 extern crate time;
-extern crate gl;
+#[macro_use] extern crate glium;
+extern crate glium_text;
 extern crate getopts;
-extern crate color;
 extern crate rand;
 extern crate rodio;
 extern crate cpal;
@@ -37,9 +31,8 @@ mod dummy;
 use std::env;
 
 use getopts::Options;
-use piston::window::WindowSettings;
-use glutin_window::GlutinWindow;
-use opengl_graphics::{OpenGL, GlGraphics};
+
+use glium::DisplayBuild;
 
 use client::Client;
 use player_input::InputMap;
@@ -78,20 +71,16 @@ fn main() {
     info!("game info: {:?}", client.game_info());
 
     if !dummy {
-        let opengl = OpenGL::V3_2;
-        let window = GlutinWindow::new(
-            WindowSettings::new("catching game", [800, 600])
-            .opengl(opengl)
-            .exit_on_esc(true)
-            .vsync(true)
-            .fullscreen(false)
-        ).unwrap();
+        let display = glium::glutin::WindowBuilder::new()
+            .with_dimensions(1024, 768)
+            .with_title(format!("Catching game"))
+            .build_glium()
+            .unwrap();
 
         let mut game = Game::new(client,
                                  InputMap::new(),
-                                 window);
-        let mut gl = GlGraphics::new(opengl);
-        game.run(&mut gl);
+                                 display);
+        game.run();
     } else {
         let mut dummy = DummyClient::new(client);
         dummy.run();

@@ -1,5 +1,4 @@
 use ecs::ComponentList;
-use graphics;
 
 use shared::math;
 use shared::util::PeriodicTimer;
@@ -10,7 +9,7 @@ pub use shared::components::{NetEntity, Position, Orientation, LinearVelocity, S
 
 pub struct DrawPlayer {
     pub scale_x: f32,
-    pub color: graphics::types::Color,
+    pub color: [f32; 4],
     pub dash_particle_timer: PeriodicTimer,
 }
 

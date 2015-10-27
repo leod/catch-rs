@@ -2,10 +2,7 @@ use std::f64;
 
 use ecs::{Aspect, System, DataHelper, Process};
 
-use graphics;
-use graphics::context::Context;
-use graphics::Transformed;
-use opengl_graphics::GlGraphics;
+use glium::Surface;
 
 use shared::{movement, math};
 use shared::util::CachedAspect;
@@ -25,8 +22,8 @@ impl DrawWallSystem {
         }
     }
 
-    pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, _: f32,
-                _: &mut Particles, c: graphics::Context, gl: &mut GlGraphics) {
+    pub fn draw<S: Surface>(&mut self, data: &mut DataHelper<Components, Services>, _: f32,
+                            _: &mut Particles, target: &mut S) {
         for entity in self.aspect.iter() {
             let p = data.wall_position[entity].clone();
             //let w = p.pos_b[0] - p.pos_a[0];
@@ -37,14 +34,14 @@ impl DrawWallSystem {
             
             let size = 2.0; // TODO
 
-            let transform = c.trans(p.pos_a[0] as f64, p.pos_a[1] as f64)
+            /*let transform = c.trans(p.pos_a[0] as f64, p.pos_a[1] as f64)
                              .rot_rad(angle as f64 + f64::consts::PI / 2.0).transform;
 
             graphics::rectangle([1.0, 1.0, 1.0, 1.0],
                                 [0.0, -size/2.0 as f64, w as f64, size/2.0 as f64],
                                 //[-5.0, -5.0, 10.0, 10.0],
                                 transform,
-                                gl);
+                                gl);*/
         }
     }
 }

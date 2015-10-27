@@ -1,30 +1,30 @@
-use piston::input::{Button, Key, Input};
+use glium::glutin::{ElementState, VirtualKeyCode};
 
 pub use shared::player::{PlayerInput, PlayerInputKey};
 
 pub struct InputMap {
-    inputs: Vec<(Button, PlayerInputKey)>,
+    inputs: Vec<(VirtualKeyCode, PlayerInputKey)>,
 }
 
 impl InputMap {
     pub fn new() -> InputMap {
         let inputs = vec![
-            (Button::Keyboard(Key::Left), PlayerInputKey::Left),
-            (Button::Keyboard(Key::Right), PlayerInputKey::Right),
-            (Button::Keyboard(Key::Up), PlayerInputKey::Forward),
-            (Button::Keyboard(Key::Down), PlayerInputKey::Back),
+            (VirtualKeyCode::Left, PlayerInputKey::Left),
+            (VirtualKeyCode::Right, PlayerInputKey::Right),
+            (VirtualKeyCode::Up, PlayerInputKey::Forward),
+            (VirtualKeyCode::Down, PlayerInputKey::Back),
 
-            (Button::Keyboard(Key::A), PlayerInputKey::StrafeLeft),
-            (Button::Keyboard(Key::D), PlayerInputKey::StrafeRight),
+            (VirtualKeyCode::A, PlayerInputKey::StrafeLeft),
+            (VirtualKeyCode::D, PlayerInputKey::StrafeRight),
 
-            (Button::Keyboard(Key::LShift), PlayerInputKey::Flip),
-            (Button::Keyboard(Key::Space), PlayerInputKey::Dash),
+            (VirtualKeyCode::LShift, PlayerInputKey::Flip),
+            (VirtualKeyCode::Space, PlayerInputKey::Dash),
 
-            (Button::Keyboard(Key::Q), PlayerInputKey::Item1),
-            (Button::Keyboard(Key::W), PlayerInputKey::Item2),
-            (Button::Keyboard(Key::E), PlayerInputKey::Item3),
+            (VirtualKeyCode::Q, PlayerInputKey::Item1),
+            (VirtualKeyCode::W, PlayerInputKey::Item2),
+            (VirtualKeyCode::E, PlayerInputKey::Item3),
 
-            (Button::Keyboard(Key::LCtrl), PlayerInputKey::Equip),
+            (VirtualKeyCode::LControl, PlayerInputKey::Equip),
         ];
 
         InputMap {
@@ -33,22 +33,23 @@ impl InputMap {
     }
 
     pub fn update_player_input(&self,
-                               input: &Input,
+                               state: ElementState, key: VirtualKeyCode,
                                player_input: &mut PlayerInput) {
-        match *input {
-            Input::Press(button) =>
-                for &(ref b, ref input_key) in self.inputs.iter() {
-                    if *b == button {
-                        player_input.set(*input_key);
+        match state {
+            ElementState::Pressed => {
+                for &(k, input_key) in self.inputs.iter() {
+                    if k == key {
+                        player_input.set(input_key);
                     }
-                },
-            Input::Release(button) => 
-                for &(ref b, ref input_key) in self.inputs.iter() {
-                    if *b == button {
-                        player_input.unset(*input_key);
+                }
+            }
+            ElementState::Released => {
+                for &(k, input_key) in self.inputs.iter() {
+                    if k == key {
+                        player_input.unset(input_key);
                     }
-                },
-            _ => ()
+                }
+            }
         }
     }
 }

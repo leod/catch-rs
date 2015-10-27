@@ -1,8 +1,6 @@
 use rand;
-use graphics;
-use graphics::context::Context;
-use graphics::Transformed;
-use opengl_graphics::GlGraphics;
+
+use glium::Surface;
 
 use shared::math;
 
@@ -67,22 +65,22 @@ impl Particles {
         }
     }
 
-    pub fn draw(&self, c: graphics::Context, gl: &mut GlGraphics) {
+    pub fn draw<S: Surface>(&self, target: &mut S) {
         for p in self.particles.iter() {
             if let &Some(ref p) = p {
                 let alpha = 1.0 - p.progress;
-                let transform = c.trans(p.position[0] as f64, p.position[1] as f64)
+                /*let transform = c.trans(p.position[0] as f64, p.position[1] as f64)
                                  .rot_rad(p.orientation as f64)
-                                 .transform;
+                                 .transform;*/
                 let t = p.progress as f32;
                 let color = [p.color_a[0] * (1.0-t) + p.color_b[0] * t,
                              p.color_a[1] * (1.0-t) + p.color_b[1] * t,
                              p.color_a[2] * (1.0-t) + p.color_b[2] * t];
-                graphics::rectangle([color[0], color[1], color[2], alpha as f32],
+                /*graphics::rectangle([color[0], color[1], color[2], alpha as f32],
                                     [(-p.size/2.0) as f64, (-p.size/2.0) as f64,
                                      p.size as f64, p.size as f64],
                                     transform,
-                                    gl);
+                                    gl);*/
             }
         }
     }
