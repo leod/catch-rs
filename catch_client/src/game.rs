@@ -95,14 +95,12 @@ impl Game {
     }
 
     pub fn run(&mut self) {
-        let mut simulation_time_s = 0.0;
-
         self.wait_first_ticks();
 
+        let mut simulation_time_s = 0.0;
+        let mut frame_start_s = time::precise_time_s() as f32;
         while !self.quit {
             hprof::start_frame();
-
-            let frame_start_s = time::precise_time_s() as f32;
 
             self.client_service();
             self.read_input();
@@ -111,12 +109,8 @@ impl Game {
             self.interpolate();
             self.draw(simulation_time_s);
 
-            //thread::sleep_ms(10);
-
-            let frame_end_s = time::precise_time_s() as f32;
-            simulation_time_s = frame_end_s - frame_start_s;
-
             self.fps = 1.0 / simulation_time_s;
+            self.display.get_window().map(|w| w.set_title(&format!("{}", self.fps as usize)));
 
             hprof::end_frame();
 
@@ -124,6 +118,10 @@ impl Game {
                 hprof::profiler().print_timing();
                 self.print_prof = false;
             }
+
+            let new_frame_start_s = time::precise_time_s() as f32;
+            simulation_time_s = new_frame_start_s - frame_start_s;
+            frame_start_s = new_frame_start_s;
         }
     }
 
