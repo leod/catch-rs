@@ -1,6 +1,7 @@
 use std::f32;
 
 use ecs::{EntityData, DataHelper, ComponentManager, ServiceManager};
+use na::{Vec2, Norm, Dot};
 
 use super::{math, GameEvent, PlayerId};
 use util::CachedAspect;
@@ -33,9 +34,9 @@ pub trait WallInteraction<Components: ComponentManager,
              -> WallInteractionType;
 }
 
-pub fn wall_normal(p: &WallPosition) -> math::Vec2 {
-    let d = math::sub(p.pos_b, p.pos_a);
-    math::normalized([d[1], -d[0]])
+pub fn wall_normal(p: &WallPosition) -> Vec2<f32> {
+    let d = p.pos_b - p.pos_a;
+    Vec2::new(d.y, -d.x).normalize()
 }
 
 pub fn wall_orientation(p: &WallPosition) -> f32 {
@@ -56,9 +57,9 @@ pub fn move_entity<Components: ComponentManager,
                    c: &mut DataHelper<Components, Services>)
         where Components: HasPosition + HasLinearVelocity + HasShape +
                           HasOrientation + HasWallPosition {
-    let delta = math::scale(c.linear_velocity()[e].v, dur_s);
+    let delta = c.linear_velocity()[e].v * dur_s;
     let a = c.position()[e].p;
-    let b = math::add(a, delta);
+    let b = a + delta;
 
     c.position_mut()[e].p = match line_segment_walls_intersection(a, b, wall_aspect, c) {
         Some((t, wall)) => {
@@ -68,25 +69,25 @@ pub fn move_entity<Components: ComponentManager,
                     // We walked into a surface with normal n.
                     // Find parts of delta parallel and orthogonal to n
                     let n = wall_normal(&c.wall_position()[wall]);
-                    let u = math::scale(n, math::dot(delta, n));
-                    let v = math::sub(delta, u);
+                    let u = n * delta.dot(&n);
+                    let v = delta - u;
 
                     // Move into parallel and orthogonal directions individually
-                    let new_a = match line_segment_walls_intersection(a, math::add(a, u),
+                    let new_a = match line_segment_walls_intersection(a, a + u,
                                                                       wall_aspect, c) {
                         Some((t, _)) => {
                             let s = (t - STEPBACK).max(0.0);
-                            math::add(a, math::scale(u, s))
+                            a + u * s
                         }
-                        None => math::add(a, u)
+                        None => a + u
                     };
-                    let new_a = match line_segment_walls_intersection(new_a, math::add(new_a, v),
+                    let new_a = match line_segment_walls_intersection(new_a, new_a + v,
                                                                       wall_aspect, c) {
                         Some((t, _)) => {
                             let s = (t - STEPBACK).max(0.0);
-                            math::add(new_a, math::scale(v, s))
+                            new_a + v * s
                         }
-                        None => math::add(new_a, v)
+                        None => new_a + v
                     };
                     new_a
                 }
@@ -99,20 +100,20 @@ pub fn move_entity<Components: ComponentManager,
                     //data.server_net_entity[e].force(ComponentType::Orientation);
 
                     let v = c.linear_velocity()[e].v;
-                    let speed = math::square_len(v).sqrt();
-                    c.linear_velocity_mut()[e].v = [
+                    let speed = v.norm();
+                    c.linear_velocity_mut()[e].v = Vec2::new(
                         c.orientation()[e].angle.cos() * (speed + 1.0),
                         c.orientation()[e].angle.sin() * (speed + 1.0),
-                    ];
+                    );
 
                     let s = (t - STEPBACK).max(0.0);
-                    math::add(a, math::scale(delta, s))
+                    a + delta * s
 
                     // TODO: Actually at this point we still might have some 't' left to walk
                 }
                 WallInteractionType::Stop => {
                     let s = (t - STEPBACK).max(0.0);
-                    math::add(a, math::scale(delta, s))
+                    a + delta * s
                 }
             }
         }
@@ -137,7 +138,7 @@ impl<Components: ComponentManager,
                 player_id: self.0,
                 position: data.position()[player].p,
                 orientation: data.orientation()[player].angle,
-                speed: math::square_len(data.linear_velocity()[player].v).sqrt(),
+                speed: data.linear_velocity()[player].v.norm(),
                 orientation_wall: wall_orientation(&data.wall_position()[wall]),
             };
             data.services.add_event(&event);
@@ -201,14 +202,14 @@ pub fn run_player_movement_input<Components: ComponentManager,
     move_entity(e, dur_s, &interaction, wall_aspect, c);
 
     let angle = c.orientation()[e].angle;
-    let direction = [angle.cos(), angle.sin()];
+    let direction = Vec2::new(angle.cos(), angle.sin());
 
     if let Some(dashing) = c.player_state()[e].dashing {
         // While dashing, movement input is ignored
 
         //let t = dashing / DASH_DURATION_S;
         let scale = 1.0; //(t*f32::consts::PI/2.0).cos()*(1.0-(1.0-t).powi(10));
-        c.linear_velocity_mut()[e].v = math::scale(direction, scale*DASH_SPEED);
+        c.linear_velocity_mut()[e].v = direction * DASH_SPEED * scale;
 
         c.player_state_mut()[e].dashing =
             if dashing + dur_s <= DASH_DURATION_S {
@@ -219,16 +220,16 @@ pub fn run_player_movement_input<Components: ComponentManager,
     } else {
         c.orientation_mut()[e].angle += c.angular_velocity()[e].v;
 
-        let mut accel = math::scale(c.linear_velocity_mut()[e].v, -MOVE_FRICTION);
+        let mut accel = c.linear_velocity_mut()[e].v * -MOVE_FRICTION;
 
         if input.has(PlayerInputKey::StrafeLeft) {
             c.angular_velocity_mut()[e].v = 0.0;
-            let strafe_direction = [direction[1], -direction[0]];
-            accel = math::add(math::scale(strafe_direction, STRAFE_ACCEL), accel);
+            let strafe_direction = Vec2::new(direction[1], -direction[0]);
+            accel = strafe_direction * STRAFE_ACCEL + accel;
         } else if input.has(PlayerInputKey::StrafeRight) {
             c.angular_velocity_mut()[e].v = 0.0;
-            let strafe_direction = [direction[1], -direction[0]];
-            accel = math::add(math::scale(strafe_direction, -STRAFE_ACCEL), accel);
+            let strafe_direction = Vec2::new(direction[1], -direction[0]);
+            accel = -strafe_direction * -STRAFE_ACCEL + accel;
         } else {
             // Turn left/right
             let mut ang_accel = c.angular_velocity()[e].v * -TURN_FRICTION;
@@ -245,14 +246,13 @@ pub fn run_player_movement_input<Components: ComponentManager,
 
         // Move forward/backward
         if input.has(PlayerInputKey::Forward) {
-            accel = math::add(math::scale(direction, MOVE_ACCEL), accel);
+            accel = direction * MOVE_ACCEL + accel;
         }
         if input.has(PlayerInputKey::Back) {
-            accel = math::add(math::scale(direction, -BACK_ACCEL), accel);
+            accel = -direction * MOVE_ACCEL + accel;
         }
 
-        c.linear_velocity_mut()[e].v = math::add(c.linear_velocity()[e].v,
-                                                 math::scale(accel, dur_s));
+        c.linear_velocity_mut()[e].v = c.linear_velocity()[e].v + accel * dur_s;
 
         // If velocity is below some limit, set to zero
         if c.linear_velocity()[e].v[0].abs() <= MIN_SPEED {
@@ -282,7 +282,7 @@ pub fn run_player_movement_input<Components: ComponentManager,
 pub fn line_segment_walls_intersection<'a,
                                        Components: ComponentManager,
                                        Services: ServiceManager>
-                                      (a: math::Vec2, b: math::Vec2,
+                                      (a: Vec2<f32>, b: Vec2<f32>,
                                        wall_aspect: &'a CachedAspect<Components>,
                                        data: &mut DataHelper<Components, Services>)
                                        -> Option<(f32, EntityData<'a, Components>)>

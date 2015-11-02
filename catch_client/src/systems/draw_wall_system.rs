@@ -1,10 +1,11 @@
 use std::f64;
 
 use ecs::{Aspect, System, DataHelper, Process};
+use na::{Vec2, Norm};
 
 use glium::Surface;
 
-use shared::{movement, math};
+use shared::movement;
 use shared::util::CachedAspect;
 
 use components::Components;
@@ -28,7 +29,7 @@ impl DrawWallSystem {
             let p = data.wall_position[entity].clone();
             //let w = p.pos_b[0] - p.pos_a[0];
             //let h = p.pos_b[1] - p.pos_a[1];
-            let w = math::square_len([p.pos_b[0]-p.pos_a[0], p.pos_b[1]-p.pos_a[1]]).sqrt();
+            let w = Vec2::new(p.pos_b[0]-p.pos_a[0], p.pos_b[1]-p.pos_a[1]).norm();
 
             let angle = movement::wall_orientation(&p);
             

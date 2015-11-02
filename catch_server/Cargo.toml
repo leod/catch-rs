@@ -14,6 +14,7 @@ rand = "0.3.11"
 #hprof = "*"
 rustc-serialize = "*"
 bincode = "*"
+nalgebra = "*"
 
 [dependencies.hprof]
 git = "https://github.com/cmr/hprof.git"

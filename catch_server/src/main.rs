@@ -11,6 +11,7 @@ extern crate bincode;
 extern crate time;
 extern crate rand;
 extern crate hprof;
+extern crate nalgebra as na;
 
 pub mod components;
 pub mod entities;
@@ -315,12 +316,14 @@ impl Server {
                         tick: &tick,
                     };
 
-                    encode_into(&Some(last_tick.tick_number), &mut data, SizeLimit::Infinite);
-                    encode_into(&delta_encode_tick, &mut data, SizeLimit::Infinite);
+                    encode_into(&Some(last_tick.tick_number), &mut data, SizeLimit::Infinite)
+                        .unwrap();
+                    encode_into(&delta_encode_tick, &mut data, SizeLimit::Infinite)
+                        .unwrap();
                 } else {
                     let delta_tick: Option<TickNumber> = None;
-                    encode_into(&delta_tick, &mut data, SizeLimit::Infinite);
-                    encode_into(&tick, &mut data, SizeLimit::Infinite);
+                    encode_into(&delta_tick, &mut data, SizeLimit::Infinite).unwrap();
+                    encode_into(&tick, &mut data, SizeLimit::Infinite).unwrap();
                 }
 
                 drop(_g);

@@ -17,6 +17,7 @@ cpal = "*"
 hprof = "*"
 rustc-serialize = "*"
 bincode = "*"
+nalgebra = "*"
 
 [dependencies.rodio]
 git = "https://github.com/tomaka/rodio.git"

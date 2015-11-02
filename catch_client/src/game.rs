@@ -8,13 +8,13 @@ use ecs;
 use rand;
 use time;
 use hprof;
+use na::{Vec2, Norm};
 
 use glium::glutin;
 use glium::{Display, Surface};
 use glium_text::{TextSystem, FontTexture, TextDisplay};
 
 use shared::NUM_ITEM_SLOTS;
-use shared::math;
 use shared::{Item, GameEvent, PlayerId};
 use shared::net::{ClientMessage, TimedPlayerInput};
 use shared::tick::Tick;
@@ -49,7 +49,7 @@ pub struct Game {
     /*text_system: TextSystem,
     font: FontTexture,*/
 
-    cam_pos: math::Vec2,
+    cam_pos: Vec2<f32>,
     fps: f32,
 
     print_prof: bool,
@@ -87,7 +87,7 @@ impl Game {
             particles: Particles::new(),
             sounds: sounds,
 
-            cam_pos: [0.0, 0.0],
+            cam_pos: Vec2::new(0.0, 0.0),
             fps: 0.0,
 
             print_prof: false,
@@ -486,7 +486,7 @@ impl Game {
         if let Some(entity) = self.get_my_player_entity() {
             let speed =
                 self.game_state.world.with_entity_data(&entity, |e, c| {
-                    math::square_len(c.linear_velocity[e].v).sqrt()
+                    c.linear_velocity[e].v.norm()
                 }).unwrap();
 
             let s = &format!("player speed: {:.1}", speed);
@@ -577,7 +577,7 @@ impl Game {
             .get_my_player_entity()
     }
 
-    fn get_my_player_position(&mut self) -> Option<math::Vec2> {
+    fn get_my_player_position(&mut self) -> Option<Vec2<f32>> {
         self.get_my_player_entity().map(|entity| {
             self.game_state.world.with_entity_data(&entity, |e, c| {
                 c.position[e].p

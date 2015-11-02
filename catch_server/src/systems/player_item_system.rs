@@ -1,7 +1,7 @@
 use ecs;
 use ecs::{Process, System, DataHelper};
+use na::{Vec2, Norm};
 
-use shared::math;
 use shared::{ItemSlot, GameEvent, Item, NUM_ITEM_SLOTS};
 use shared::net::TimedPlayerInput;
 use shared::player::PlayerInputKey;
@@ -41,10 +41,10 @@ impl PlayerItemSystem {
                 data.with_entity_data(&projectile_entity, |projectile_e, c| {
                     c.position[projectile_e].p = player_position;
                     c.orientation[projectile_e].angle = player_orientation;
-                    c.linear_velocity[projectile_e].v = [
+                    c.linear_velocity[projectile_e].v = Vec2::new(
                         player_orientation.cos() * PROJECTILE_SPEED,
                         player_orientation.sin() * PROJECTILE_SPEED
-                    ];
+                    );
                 });
 
                 if charges > 1 {
@@ -57,7 +57,7 @@ impl PlayerItemSystem {
                 let orbit_entity = entities::build_net("bouncy_enemy", player_id, data);
 
                 data.with_entity_data(&orbit_entity, |e, c| {
-                    c.position[e].p = math::add(player_position, [10.0, 0.0]);
+                    c.position[e].p = player_position + Vec2::new(10.0, 0.0);
                     c.bouncy_enemy[e].orbit = Some(entity);
                 });
 

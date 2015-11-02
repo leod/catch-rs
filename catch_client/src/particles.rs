@@ -1,8 +1,8 @@
 use rand;
 
-use glium::Surface;
+use na::Vec2;
 
-use shared::math;
+use glium::Surface;
 
 #[derive(Clone, Debug)]
 struct Particle {
@@ -13,9 +13,9 @@ struct Particle {
     color_b: [f32; 3],
     size: f32,
 
-    position: math::Vec2,
+    position: Vec2<f32>,
     orientation: f32,
-    velocity: math::Vec2,
+    velocity: Vec2<f32>,
     ang_velocity: f32,
 
     friction: f32,
@@ -40,9 +40,8 @@ impl Particles {
     pub fn update(&mut self, time_s: f32) {
         for i in 0..self.particles.len() {
             let remove = if let Some(p) = self.particles[i].as_mut() {
-                p.velocity = math::sub(p.velocity, math::scale(p.velocity,
-                                                               p.friction * time_s));
-                p.position = math::add(p.position, math::scale(p.velocity, time_s));
+                p.velocity = p.velocity - p.velocity * p.friction * time_s;
+                p.position = p.position + p.velocity * time_s;
                 p.orientation += p.ang_velocity * time_s;
 
                 let progress = p.progress + p.progress_per_s * time_s;
@@ -90,14 +89,14 @@ impl Particles {
                       color_a: [f32; 3],
                       color_b: [f32; 3],
                       size: f32,
-                      position: math::Vec2,
+                      position: Vec2<f32>,
                       orientation: f32,
                       spread: f32,
                       speed: f32,
                       ang_velocity: f32,
                       friction: f32) {
         let orientation = orientation + spread * (rand::random::<f32>() - 0.5);
-        let velocity = [speed * orientation.cos(), speed * orientation.sin()];
+        let velocity = Vec2::new(speed * orientation.cos(), speed * orientation.sin());
 
         self.add(
             &Particle {

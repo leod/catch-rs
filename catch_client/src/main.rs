@@ -12,6 +12,7 @@ extern crate cpal;
 extern crate hprof;
 extern crate rustc_serialize;
 extern crate bincode;
+extern crate nalgebra as na;
 
 #[macro_use] extern crate catch_shared as shared;
 

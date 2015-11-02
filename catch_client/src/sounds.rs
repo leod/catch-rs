@@ -2,7 +2,7 @@ use std::io::{Read, Cursor};
 use std::fs::File;
 use std::collections::HashMap;
 
-use shared::math;
+use na::Vec2;
 
 use rodio;
 use rodio::Endpoint;
@@ -31,7 +31,7 @@ impl Sounds {
         Ok(s)
     }
 
-    pub fn play(&self, name: &str, p: math::Vec2) {
+    pub fn play(&self, name: &str, p: Vec2<f32>) {
         // TODO: ???
         let input = Cursor::new(self.sounds.get(name).unwrap().clone());
         rodio::play_once(&self.endpoint, input);

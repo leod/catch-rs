@@ -4,8 +4,8 @@ use std::collections::HashMap;
 use ecs;
 use rand;
 use hprof;
+use na::{Vec2, Norm};
 
-use shared::math;
 use shared::{TickNumber, GameInfo, GameEvent, PlayerId, PlayerInfo, Item};
 use shared::map::Map;
 use shared::net::TimedPlayerInput;
@@ -33,8 +33,8 @@ pub struct Player {
 }
 
 pub struct SpawnPoint {
-    position: math::Vec2,
-    size: math::Vec2,
+    position: Vec2<f32>,
+    size: Vec2<f32>,
     last_used_time_s: Option<f32>,
 }
 
@@ -71,8 +71,8 @@ impl GameState {
         let spawn_points = map.objects.iter()
                .filter(|object| &object.type_str == "player_spawn")
                .map(|object| SpawnPoint {
-                        position: [object.x, object.y],
-                        size: [object.width, object.height],
+                        position: Vec2::new(object.x, object.y),
+                        size: Vec2::new(object.width, object.height),
                         last_used_time_s: None,
                     })
                .collect();
@@ -95,12 +95,12 @@ impl GameState {
             if &object.type_str == "item_spawn" {
                 let entity = entities::build_net(&object.type_str, 0, &mut self.world.data);
                 self.world.with_entity_data(&entity, |e, c| {
-                    c.position[e].p = [object.x, object.y];
+                    c.position[e].p = Vec2::new(object.x, object.y);
                 });
             } else if &object.type_str == "bouncy_enemy" {
                 let entity = entities::build_net(&object.type_str, 0, &mut self.world.data);
                 self.world.with_entity_data(&entity, |e, c| {
-                    c.position[e].p = [object.x, object.y];
+                    c.position[e].p = Vec2::new(object.x, object.y);
                     c.orientation[e].angle = rand::random::<f32>() * f32::consts::PI * 2.0;
                 });
             } else if &object.type_str == "player_spawn" {
@@ -160,26 +160,39 @@ impl GameState {
 
             self.world.with_entity_data(&entity, |e, c| {
                 c.wall_position[e] = WallPosition {
-                    pos_a: [ax, ay], pos_b: [bx, by], 
+                    pos_a: Vec2::new(ax, ay),
+                    pos_b: Vec2::new(bx, by), 
                 };
             });
         }
 
         let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
         self.world.with_entity_data(&entity, |e, c| {
-            c.wall_position[e] = WallPosition { pos_a: [0.0, 0.0], pos_b: [width, 0.0] };
+            c.wall_position[e] = WallPosition {
+                pos_a: Vec2::new(0.0, 0.0),
+                pos_b: Vec2::new(width, 0.0)
+            };
         });
         let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
         self.world.with_entity_data(&entity, |e, c| {
-            c.wall_position[e] = WallPosition { pos_a: [0.0, 0.0], pos_b: [0.0, height] };
+            c.wall_position[e] = WallPosition {
+                pos_a: Vec2::new(0.0, 0.0),
+                pos_b: Vec2::new(0.0, height)
+            };
         });
         let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
         self.world.with_entity_data(&entity, |e, c| {
-            c.wall_position[e] = WallPosition { pos_a: [width, 0.0], pos_b: [width, height] };
+            c.wall_position[e] = WallPosition {
+                pos_a: Vec2::new(width, 0.0),
+                pos_b: Vec2::new(width, height)
+            };
         });
         let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
         self.world.with_entity_data(&entity, |e, c| {
-            c.wall_position[e] = WallPosition { pos_a: [0.0, height], pos_b: [width, height] };
+            c.wall_position[e] = WallPosition {
+                pos_a: Vec2::new(0.0, height), 
+                pos_b: Vec2::new(width, height)
+            };
         });
 
         self.world.flush_queue();
@@ -208,8 +221,8 @@ impl GameState {
         let position = {
             let spawn_point = &self.spawn_points[rand::random::<usize>() %
                                                  self.spawn_points.len()];
-            [spawn_point.position[0] + rand::random::<f32>() * spawn_point.size[0],
-             spawn_point.position[1] + rand::random::<f32>() * spawn_point.size[1]]
+            Vec2::new(spawn_point.position[0] + rand::random::<f32>() * spawn_point.size[0],
+                      spawn_point.position[1] + rand::random::<f32>() * spawn_point.size[1])
         };
 
         // If we don't have a catcher right now, this player is lucky
@@ -454,8 +467,7 @@ impl GameState {
                             for &id in player_ids {
                                 if let Some(entity) = self.players[&id].entity {
                                     let d = self.world.with_entity_data(&entity, |e, c| {
-                                        math::square_len(math::sub(position,
-                                                                   c.position[e].p)).sqrt()
+                                        (position - c.position[e].p).norm()
                                     }).unwrap();
                                     if closest.is_none() || closest.unwrap().1 > d {
                                         closest = Some((entity, d));

@@ -1,7 +1,7 @@
 use hprof;
 use ecs::{System, Process, Aspect, EntityData, DataHelper};
+use na::{Vec2, Norm};
 
-use shared::math;
 use shared::util::CachedAspect;
 
 use components::{Components, Shape}; 
@@ -86,22 +86,19 @@ impl InteractionSystem {
                -> bool {
         match (&c.shape[e_a], &c.shape[e_b]) {
             (&Shape::Circle { radius: r_a }, &Shape::Circle { radius: r_b }) => {
-                let d = math::square_len(math::sub(c.position[e_a].p, c.position[e_b].p)).sqrt();
-
+                let d = (c.position[e_a].p - c.position[e_b].p).norm();
                 d <= r_a + r_b
             }
 
             (&Shape::Circle { radius: r }, &Shape::Square { size: s }) => {
                 // TODO
-                let d = math::square_len(math::sub(c.position[e_a].p, c.position[e_b].p)).sqrt();
-
+                let d = (c.position[e_a].p - c.position[e_b].p).norm();
                 d <= r + s * 2.0
             }
 
             (&Shape::Circle { radius: r }, &Shape::Rect { width: w, height: h }) => {
                 // TODO
-                let d = math::square_len(math::sub(c.position[e_a].p, c.position[e_b].p)).sqrt();
-
+                let d = (c.position[e_a].p - c.position[e_b].p).norm();
                 d <= r + w.max(h) * 2.0
             }
 

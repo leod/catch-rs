@@ -1,7 +1,7 @@
+use na::Vec2;
 use ecs::{ComponentManager, ComponentList};
 
 use super::{EntityId, EntityTypeId, PlayerId};
-use math;
 pub use player::{PlayerState, FullPlayerState};
 
 /// Every entity that wants its component state synchronized needs to have this component
@@ -11,9 +11,17 @@ pub struct NetEntity {
     pub owner: PlayerId,
 }
 
-#[derive(PartialEq, Debug, Clone, Default, RustcEncodable, RustcDecodable)]
+#[derive(PartialEq, Debug, Clone, RustcEncodable, RustcDecodable)]
 pub struct Position {
-    pub p: math::Vec2,
+    pub p: Vec2<f32>,
+}
+
+impl Default for Position {
+    fn default() -> Position {
+        Position {
+            p: Vec2::new(0.0, 0.0)
+        }
+    }
 }
 
 #[derive(PartialEq, Debug, Clone, Default, RustcEncodable, RustcDecodable)]
@@ -21,9 +29,17 @@ pub struct Orientation {
     pub angle: f32, // radians
 }
 
-#[derive(PartialEq, Debug, Clone, Default, RustcEncodable, RustcDecodable)]
+#[derive(PartialEq, Debug, Clone, RustcEncodable, RustcDecodable)]
 pub struct LinearVelocity {
-    pub v: math::Vec2,
+    pub v: Vec2<f32>,
+}
+
+impl Default for LinearVelocity {
+    fn default() -> LinearVelocity {
+        LinearVelocity {
+            v: Vec2::new(0.0, 0.0)
+        }
+    }
 }
 
 #[derive(PartialEq, Debug, Clone, Default, RustcEncodable, RustcDecodable)]
@@ -42,6 +58,12 @@ pub enum Shape {
     Rect {
         width: f32,
         height: f32
+    }
+}
+
+impl Default for Shape {
+    fn default() -> Shape {
+        Shape::Circle { radius: 1.0 } // meh
     }
 }
 
@@ -66,15 +88,18 @@ pub struct Wall {
     pub width: f32,
 }
 
-#[derive(PartialEq, Debug, Clone, Default, RustcEncodable, RustcDecodable)]
+#[derive(PartialEq, Debug, Clone, RustcEncodable, RustcDecodable)]
 pub struct WallPosition {
-    pub pos_a: math::Vec2,
-    pub pos_b: math::Vec2,
+    pub pos_a: Vec2<f32>,
+    pub pos_b: Vec2<f32>,
 }
 
-impl Default for Shape {
-    fn default() -> Shape {
-        Shape::Circle { radius: 1.0 } // meh
+impl Default for WallPosition {
+    fn default() -> WallPosition {
+        WallPosition {
+            pos_a: Vec2::new(0.0, 0.0),
+            pos_b: Vec2::new(0.0, 0.0)
+        }
     }
 }
 

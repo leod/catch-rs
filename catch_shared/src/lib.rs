@@ -7,6 +7,7 @@ extern crate bincode;
 #[macro_use] extern crate ecs;
 extern crate tiled;
 extern crate vecmath as vecmath_lib;
+extern crate nalgebra as na;
 
 pub mod net;
 pub mod components;
@@ -51,7 +52,7 @@ pub enum GameEvent {
     PlayerLeave(PlayerId),
     PlayerDied {
         player_id: PlayerId,
-        position: math::Vec2, 
+        position: na::Vec2<f32>, 
         responsible_player_id: PlayerId,
     },
     
@@ -69,30 +70,30 @@ pub enum GameEvent {
     // The following events are sent to the clients so that they can do some graphical display
     PlayerDash {
         player_id: PlayerId,
-        position: math::Vec2,
+        position: na::Vec2<f32>,
         orientation: f32,
     },
     PlayerFlip {
         player_id: PlayerId,
-        position: math::Vec2,
+        position: na::Vec2<f32>,
         orientation: f32,
         speed: f32,
         orientation_wall: f32,
     },
     PlayerTakeItem {
         player_id: PlayerId,
-        position: math::Vec2,
+        position: na::Vec2<f32>,
     },
     PlayerEquipItem {
         player_id: PlayerId,
-        position: math::Vec2,
+        position: na::Vec2<f32>,
         item: Item,
     },
     EnemyDied { // This one might not be necessary
-        position: math::Vec2,
+        position: na::Vec2<f32>,
     },
     ProjectileImpact {
-        position: math::Vec2,
+        position: na::Vec2<f32>,
     },
 
     TakeItem(PlayerId, EntityId),

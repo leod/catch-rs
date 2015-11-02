@@ -1,7 +1,8 @@
 use std::f32;
-use ecs::{EntityData, DataHelper};
 
-use shared::math;
+use ecs::{EntityData, DataHelper};
+use na::Vec2;
+
 use shared::{GameEvent, NEUTRAL_PLAYER_ID};
 use shared::services::HasEvents;
 
@@ -50,16 +51,14 @@ impl Interaction for BouncyEnemyInteraction {
                 ];*/
 
         data.orientation[a].angle = data.orientation[a].angle + f32::consts::PI / 2.0;
-        let direction_a = [data.orientation[a].angle.cos(),
-                           data.orientation[a].angle.sin()];
-        data.linear_velocity[a].v = math::add(data.linear_velocity[a].v,
-                                                math::scale(direction_a, 200.0));
+        let direction_a = Vec2::new(data.orientation[a].angle.cos(),
+                                    data.orientation[a].angle.sin());
+        data.linear_velocity[a].v = data.linear_velocity[a].v + direction_a * 200.0;
 
         data.orientation[b].angle = data.orientation[b].angle + f32::consts::PI / 2.0;
-        let direction_b = [data.orientation[b].angle.cos(),
-                           data.orientation[b].angle.sin()];
-        data.linear_velocity[b].v = math::add(data.linear_velocity[b].v,
-                                                math::scale(direction_b, 200.0));
+        let direction_b = Vec2::new(data.orientation[b].angle.cos(),
+                                    data.orientation[b].angle.sin());
+        data.linear_velocity[b].v = data.linear_velocity[b].v + direction_b * 200.0;
     }
 }
 

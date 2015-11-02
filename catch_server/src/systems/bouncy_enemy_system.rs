@@ -1,7 +1,7 @@
 use hprof;
 use ecs::{Aspect, Process, System, DataHelper};
+use na::{Vec2, Norm};
 
-use shared::math;
 use shared::util::CachedAspect;
 
 use components::{Components};
@@ -31,25 +31,24 @@ impl BouncyEnemySystem {
             let accel = if let Some(orbit) = data.bouncy_enemy[e].orbit {
                 if let Some(orbit_position) =
                         data.with_entity_data(&orbit, |e, c| { c.position[e].p }) {
-                    let w = math::sub(orbit_position, data.position[e].p);
-                    let r = math::square_len(w).sqrt();
+                    let w = orbit_position - data.position[e].p;
+                    let r = w.norm();
                     let f = r;
-                    math::add(math::scale(math::normalized(w), f*ORBIT_SPEED_FACTOR),
-                              math::scale(data.linear_velocity[e].v, -MOVE_FRICTION))
+
+                    w.normalize() * f * ORBIT_SPEED_FACTOR -
+                        data.linear_velocity[e].v * MOVE_FRICTION
                 } else {
                     data.bouncy_enemy[e].orbit = None;
-                    [0.0, 0.0]
+                    Vec2::new(0.0, 0.0)
                 }
             } else {
                 let angle = data.orientation[e].angle;
-                let direction = [angle.cos(), angle.sin()];
+                let direction = Vec2::new(angle.cos(), angle.sin());
 
-                math::add(math::scale(direction, MOVE_ACCEL),
-                          math::scale(data.linear_velocity[e].v, -MOVE_FRICTION))
+                direction * MOVE_ACCEL - data.linear_velocity[e].v * MOVE_FRICTION
             };
 
-            data.linear_velocity[e].v = math::add(data.linear_velocity[e].v,
-                                                  math::scale(accel, dur_s));
+            data.linear_velocity[e].v = data.linear_velocity[e].v + accel * dur_s;
         }
     }
 }

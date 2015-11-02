@@ -1,6 +1,5 @@
 use ecs::ComponentList;
 
-use shared::math;
 use shared::util::PeriodicTimer;
 use shared::components::{HasPosition, HasOrientation, HasLinearVelocity, HasShape, HasPlayerState,
                          HasFullPlayerState, HasWallPosition, HasAngularVelocity, HasWall};
@@ -102,8 +101,7 @@ components! {
 impl Interpolatable for Position {
     fn interpolate(a: &Position, b: &Position, t: f32) -> Position {
         Position {
-            p: math::add(math::scale(a.p, 1.0 - t),
-                         math::scale(b.p, t))
+            p: a.p * (1.0 - t) + b.p * t
         }
     }
 }

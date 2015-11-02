@@ -1,12 +1,11 @@
 use std::f32;
 
 use ecs::{Aspect, System, DataHelper, Process};
-
 use rand;
+use na::Norm;
 
 use glium::Surface;
 
-use shared::math;
 use shared::util::CachedAspect;
 
 use components::{Components, Shape};
@@ -63,7 +62,7 @@ impl DrawPlayerSystem {
             }
 
             let scale_x_target = if data.player_state[entity].dashing.is_some() {
-                math::square_len(data.linear_velocity[entity].v).sqrt() / 400.0 + 1.0
+                data.linear_velocity[entity].v.norm() / 400.0 + 1.0
             } else {
                 1.0
             };
