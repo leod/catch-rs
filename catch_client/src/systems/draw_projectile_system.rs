@@ -1,12 +1,11 @@
 use ecs::{Aspect, System, DataHelper, Process};
 
-use glium::Surface;
-
 use shared::util::CachedAspect;
 
 use components::{Components, Shape};
 use services::Services;
 use particles::Particles;
+use draw::{DrawElement, DrawList, DrawAttributes};
 
 pub struct DrawProjectileSystem {
     aspect: CachedAspect<Components>,
@@ -19,8 +18,7 @@ impl DrawProjectileSystem {
         }
     }
 
-    pub fn draw<S: Surface> (&mut self, data: &mut DataHelper<Components, Services>, _time_s: f32,
-                             _particles: &mut Particles, target: &mut S) {
+    pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, draw_list: &mut DrawList) {
         for entity in self.aspect.iter() {
             let p = data.position[entity].p;
             let angle = data.orientation[entity].angle;

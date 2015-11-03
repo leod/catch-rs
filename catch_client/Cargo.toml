@@ -18,6 +18,7 @@ hprof = "*"
 rustc-serialize = "*"
 bincode = "*"
 nalgebra = "*"
+clock_ticks = "*"
 
 [dependencies.rodio]
 git = "https://github.com/tomaka/rodio.git"

@@ -2,15 +2,14 @@ use std::f32;
 
 use ecs::{Aspect, System, DataHelper, Process};
 use rand;
-use na::Norm;
-
-use glium::Surface;
+use na::{Vec3, Vec4, Mat2, Mat4, Norm};
 
 use shared::util::CachedAspect;
 
 use components::{Components, Shape};
 use services::Services;
 use particles::Particles;
+use draw::{DrawElement, DrawList, DrawAttributes};
 
 pub struct DrawPlayerSystem {
     aspect: CachedAspect<Components>,
@@ -23,18 +22,13 @@ impl DrawPlayerSystem {
         }
     }
 
-    pub fn draw<S: Surface>(&mut self, data: &mut DataHelper<Components, Services>, time_s: f32,
-                            particles: &mut Particles, surface: &mut S) {
+    pub fn spawn_particles(&mut self, data: &mut DataHelper<Components, Services>, time_s: f32,
+                           particles: &mut Particles) {
         for entity in self.aspect.iter() {
             let p = data.position[entity].p;
-            let r = match data.shape[entity] {
-                Shape::Circle { radius } => radius as f64,
-                _ => panic!("player should be circle"),
-            };
 
             if data.player_state[entity].dashing.is_some() {
                 let color = if rand::random::<bool>() {
-                    //[0.9, 0.5, 0.0]
                     [0.2, 0.77, 0.95]
                 } else {
                     [0.2, 0.77, 0.95]
@@ -42,7 +36,7 @@ impl DrawPlayerSystem {
 
                 data.draw_player[entity].dash_particle_timer.add(time_s);
                 while data.draw_player[entity].dash_particle_timer.next() {
-                    for _ in 0..5 {
+                    for _ in 0..30 {
                         let color = [color[0] + (-0.5 + rand::random::<f32>()) * 0.2,
                                      color[1] + (-0.5 + rand::random::<f32>()) * 0.2,
                                      color[2] + (-0.5 + rand::random::<f32>()) * 0.2];
@@ -60,6 +54,16 @@ impl DrawPlayerSystem {
                     }
                 }
             }
+        }
+    }
+
+    pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, draw_list: &mut DrawList) {
+        for entity in self.aspect.iter() {
+            let p = data.position[entity].p;
+            let r = match data.shape[entity] {
+                Shape::Circle { radius } => radius,
+                _ => panic!("player should be circle"),
+            };
 
             let scale_x_target = if data.player_state[entity].dashing.is_some() {
                 data.linear_velocity[entity].v.norm() / 400.0 + 1.0
@@ -84,18 +88,47 @@ impl DrawPlayerSystem {
             data.draw_player[entity].color = color;
 
             let scale_x = data.draw_player[entity].scale_x;
-            /*let transform = c.trans(p[0] as f64, p[1] as f64)
-                             .rot_rad(data.orientation[entity].angle as f64)
-                             .scale(scale_x as f64, 1.0/scale_x as f64)
-                             .transform;
-            graphics::ellipse(color,
-                              [-r, -r, r*2.0, r*2.0],
-                              transform,
-                              gl);
-            graphics::rectangle([0.0, 0.0, 0.0, 1.0],
-                                [0.0, -1.5, r, 3.0],
-                                transform,
-                                gl);*/
+
+            let alpha = data.orientation[entity].angle;
+            let rot_mat = Mat2::new(alpha.cos(), -alpha.sin(),
+                                    alpha.sin(), alpha.cos());
+            /*let rot_mat = Mat2::new(alpha.cos(), alpha.sin(),
+                                    -alpha.sin(), alpha.cos());*/
+            let scale_mat = Mat2::new(scale_x * r, 0.0,
+                                      0.0, 1.0 / scale_x * r);
+            let m = rot_mat * scale_mat;
+            let model_mat = [
+                [m.m11, m.m21, 0.0, 0.0],
+                [m.m12, m.m22, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [p.x, p.y, -0.5, 1.0f32],
+            ];
+            let model_mat = Mat4::new(m.m11, m.m12, 0.0, p.x,
+                                      m.m21, m.m22, 0.0, p.y,
+                                      0.0, 0.0, 1.0, 0.0,
+                                      0.0, 0.0, 0.0, 1.0);
+            draw_list.push((DrawElement::Circle, DrawAttributes {
+                color: Vec4::new(color[0], color[1], color[2], 1.0),
+                model_mat: model_mat,
+            }));
+
+            let scale_mat = Mat2::new(scale_x * r, 0.0,
+                                      0.0, 1.0 / scale_x * 2.0);
+            let m = rot_mat * scale_mat;
+            let model_mat = [
+                [m.m11, m.m21, 0.0, 0.0],
+                [m.m12, m.m22, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [p.x, p.y, 0.0, 1.0f32],
+            ];
+            let model_mat = Mat4::new(m.m11, m.m12, 0.0, p.x,
+                                      m.m21, m.m22, 0.0, p.y,
+                                      0.0, 0.0, 1.0, 0.0,
+                                      0.0, 0.0, 0.0, 1.0);
+            draw_list.push((DrawElement::Square, DrawAttributes {
+                color: Vec4::new(0.0, 0.0, 0.0, 1.0),
+                model_mat: model_mat,
+            }));
         }
     }
 }

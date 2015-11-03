@@ -34,6 +34,5 @@ systems! {
             aspect!(<Components> all: [draw_projectile])),
         draw_wall_system: DrawWallSystem = DrawWallSystem::new(
             aspect!(<Components> all: [draw_wall])),
-
     }
 }

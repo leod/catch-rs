@@ -1,12 +1,12 @@
+use na::{Vec4, Mat4};
 use ecs::{Aspect, System, DataHelper, Process};
-
-use glium::Surface;
 
 use shared::{NEUTRAL_PLAYER_ID};
 use shared::util::CachedAspect;
 
 use components::{Components, Shape};
 use services::Services;
+use draw::{DrawElement, DrawList, DrawAttributes};
 
 pub struct DrawBouncyEnemySystem {
     aspect: CachedAspect<Components>,
@@ -19,25 +19,28 @@ impl DrawBouncyEnemySystem {
         }
     }
 
-    pub fn draw<S: Surface>(&mut self, data: &mut DataHelper<Components, Services>,
-                            target: &mut S) {
+    pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, draw_list: &mut DrawList) {
         for entity in self.aspect.iter() {
             let p = data.position[entity].p;
 
             let r = match data.shape[entity] {
-                Shape::Circle { radius } => radius as f64,
+                Shape::Circle { radius } => radius,
                 _ => panic!("enemy should be circle"),
             };
 
-            //let transform = c.trans(p[0] as f64, p[1] as f64).transform;
-
             let color = if data.net_entity[entity].owner == NEUTRAL_PLAYER_ID {
-                [1.0, 0.0, 0.0, 1.0]
+                Vec4::new(1.0, 0.0, 0.0, 1.0)
             } else {
-                [0.0, 0.0, 1.0, 1.0]
+                Vec4::new(0.0, 0.0, 1.0, 1.0)
             };
-
-            //graphics::ellipse(color, [-r, -r, r*2.0, r*2.0], transform, gl);
+            let model_mat = Mat4::new(r, 0.0, 0.0, p.x,
+                                      0.0, r, 0.0, p.y,
+                                      0.0, 0.0, 1.0, 0.0,
+                                      0.0, 0.0, 0.0, 1.0);
+            draw_list.push((DrawElement::Circle, DrawAttributes {
+                color: color,
+                model_mat: model_mat,
+            }));
         }
     }
 }

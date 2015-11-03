@@ -1,17 +1,15 @@
 use std::f32;
 use std::thread;
-use std::rc::Rc;
-use std::cell::RefCell;
 use std::path::Path;
 
 use ecs;
 use rand;
 use time;
+use clock_ticks;
 use hprof;
-use na::{Vec2, Norm};
+use na::{Vec2, Mat4, Norm, OrthoMat3};
 
-use glium::glutin;
-use glium::{Display, Surface};
+use glium::{self, glutin, Display, Surface};
 use glium_text::{TextSystem, FontTexture, TextDisplay};
 
 use shared::NUM_ITEM_SLOTS;
@@ -25,12 +23,13 @@ use player_input::{PlayerInput, InputMap};
 use draw_map::DrawMap;
 use particles::Particles;
 use sounds::Sounds;
+use draw::{DrawList, DrawDrawList, DrawContext};
 
 pub struct Game {
     quit: bool,
 
     client: Client,
-    game_state: GameState,
+    state: GameState,
 
     player_input_map: InputMap,
     player_input: PlayerInput,
@@ -42,6 +41,8 @@ pub struct Game {
 
     display: Display,
 
+    draw_list: DrawList,
+    draw_draw_list: DrawDrawList,
     draw_map: DrawMap,
     particles: Particles,
     sounds: Sounds,
@@ -60,10 +61,10 @@ impl Game {
     pub fn new(connected_client: Client,
                player_input_map: InputMap,
                display: Display) -> Game {
-        let game_state = GameState::new(connected_client.my_id(),
-                                        connected_client.game_info());
-        let draw_map = DrawMap::load(&game_state.map).unwrap();
-
+        let state = GameState::new(connected_client.my_id(), connected_client.game_info());
+        let draw_draw_list = DrawDrawList::new(&display);
+        let draw_map = DrawMap::load(&state.map).unwrap();
+        let particles = Particles::new(&display);
         let sounds = Sounds::load().unwrap();
 
         Game {
@@ -71,7 +72,7 @@ impl Game {
 
             client: connected_client,
 
-            game_state: game_state,
+            state: state,
 
             player_input_map: player_input_map,
             player_input: PlayerInput::new(),
@@ -83,8 +84,10 @@ impl Game {
 
             display: display,
 
+            draw_list: DrawList::new(),
+            draw_draw_list: draw_draw_list,
             draw_map: draw_map,
-            particles: Particles::new(),
+            particles: particles,
             sounds: sounds,
 
             cam_pos: Vec2::new(0.0, 0.0),
@@ -98,7 +101,7 @@ impl Game {
         self.wait_first_ticks();
 
         let mut simulation_time_s = 0.0;
-        let mut frame_start_s = time::precise_time_s() as f32;
+        let mut frame_start_s = clock_ticks::precise_time_s() as f32;
         while !self.quit {
             hprof::start_frame();
 
@@ -110,7 +113,14 @@ impl Game {
             self.draw(simulation_time_s);
 
             self.fps = 1.0 / simulation_time_s;
-            self.display.get_window().map(|w| w.set_title(&format!("{}", self.fps as usize)));
+            self.display.get_window().map(|w| w.set_title(&format!("{:.2}", self.fps)));
+
+            //println!("{}", simulation_time_s);
+
+            {
+                let _g = hprof::enter("sleep");
+                thread::sleep_ms(5);
+            }
 
             hprof::end_frame();
 
@@ -119,7 +129,7 @@ impl Game {
                 self.print_prof = false;
             }
 
-            let new_frame_start_s = time::precise_time_s() as f32;
+            let new_frame_start_s = clock_ticks::precise_time_s() as f32;
             simulation_time_s = new_frame_start_s - frame_start_s;
             frame_start_s = new_frame_start_s;
         }
@@ -160,8 +170,8 @@ impl Game {
 
         let next_tick = &self.client.get_next_tick().1;
 
-        self.game_state.run_tick(&tick);
-        self.game_state.load_interp_tick_state(&tick, next_tick);
+        self.state.run_tick(&tick);
+        self.state.load_interp_tick_state(&tick, next_tick);
         self.current_tick = Some(tick);
     }
 
@@ -261,7 +271,7 @@ impl Game {
                 responsible_player_id: _
             } => {
                 let entity = self.get_player_entity(player_id).unwrap();
-                let color = self.game_state.world.with_entity_data(&entity, |e, c| {
+                let color = self.state.world.with_entity_data(&entity, |e, c| {
                     [c.draw_player[e].color[0],
                      c.draw_player[e].color[1],
                      c.draw_player[e].color[2]]
@@ -366,43 +376,99 @@ impl Game {
 
         let t = if self.tick_progress >= 1.0 { 1.0 } else { self.tick_progress };
 
-        self.game_state.world.systems.interpolation_system
-            .interpolate(t, &mut self.game_state.world.data);
+        self.state.world.systems.interpolation_system
+            .interpolate(t, &mut self.state.world.data);
     }
 
     fn draw(&mut self, simulation_time_s: f32) {
         let _g = hprof::enter("draw");
 
-        let mut target = self.display.draw();
-        target.clear_color(0.3, 0.3, 0.3, 1.0);
+        let _g = hprof::enter("init");
 
-        target.finish().unwrap();
+        let mut target = self.display.draw();
+
+        target.clear_color(0.3, 0.3, 0.3, 1.0);
+        target.clear_depth(1.0);
+
+        let pos = self.get_my_player_position().unwrap_or(self.cam_pos);
+        self.cam_pos = self.cam_pos + (pos - self.cam_pos) * 0.15;
+
+        let (draw_width, draw_height) = target.get_dimensions();
+        let half_width = draw_width as f32 / 2.0;
+        let half_height = draw_height as f32 / 2.0;
+        let zoom = 3.0;
+
+        // Clip camera position to map size in pixels
+        if self.cam_pos[0] < half_width / zoom {
+            self.cam_pos[0] = half_width / zoom; 
+        } else if self.cam_pos[0] + half_width / zoom >
+                  self.state.map.width_pixels() as f32 {
+            self.cam_pos[0] = self.state.map.width_pixels() as f32 - half_width / zoom;
+        }
+        if self.cam_pos[1] < half_height / zoom {
+            self.cam_pos[1] = half_height / zoom; 
+        } else if self.cam_pos[1] + half_height / zoom >
+                  self.state.map.height_pixels() as f32 {
+            self.cam_pos[1] = self.state.map.height_pixels() as f32 - half_height / zoom;
+        }
+
+        let draw_parameters = glium::DrawParameters {
+            depth: glium::Depth {
+                test: glium::draw_parameters::DepthTest::IfLess,
+                write: true,
+                .. Default::default()
+            },
+            .. Default::default()
+        };
+
+        let draw_context = DrawContext {
+            proj_mat: OrthoMat3::new(draw_width as f32, draw_height as f32, -1.0, 1.0).to_mat(),
+            camera_mat: Mat4::new(zoom, 0.0, 0.0, -self.cam_pos.x * zoom,
+                                  0.0, zoom, 0.0, -self.cam_pos.y * zoom,
+                                  0.0, 0.0, zoom, 0.0, 
+                                  0.0, 0.0, 0.0, 1.0),
+            parameters: draw_parameters,
+        };
+        drop(_g);
+
+        let mut draw_list = Vec::new();
+
+        let _g = hprof::enter("entities");
+
+        let draw_player_system = &mut self.state.world.systems.draw_player_system;
+        draw_player_system.spawn_particles(&mut self.state.world.data, simulation_time_s,
+                                           &mut self.particles);
+        draw_player_system.draw(&mut self.state.world.data, &mut draw_list);
+        self.state.world.systems.draw_wall_system.draw(&mut self.state.world.data, &mut draw_list);
+        self.state.world.systems.draw_projectile_system
+            .draw(&mut self.state.world.data, &mut draw_list);
+        self.state.world.systems.draw_bouncy_enemy_system
+            .draw(&mut self.state.world.data, &mut draw_list);
+
+        drop(_g);
+
+        {
+            let _g = hprof::enter("draw list");
+            self.draw_draw_list.draw(&draw_list, &draw_context, &self.display, &mut target);
+        }
+
+        {
+            let _g = hprof::enter("update particles");
+            self.particles.update(simulation_time_s);
+        }
+        {
+            let _g = hprof::enter("draw particles");
+            self.particles.draw(&draw_context, &mut target);
+        }
+
+        {
+            let _g = hprof::enter("finish");
+            target.finish().unwrap();
+        }
 
         /*gl.draw(viewport, |c, gl| {
             graphics::clear([0.3, 0.3, 0.3, 0.0], gl);
 
-            let pos = self.get_my_player_position().unwrap_or(self.cam_pos);
-            self.cam_pos = math::add(self.cam_pos,
-                                     math::scale(math::sub(pos, self.cam_pos),
-                                     0.15));
-
-            let half_width = draw_width as f32 / 2.0;
-            let half_height = draw_height as f32 / 2.0;
-            let zoom = 3.0;
-
-            // Clip camera position to map size in pixels
-            if self.cam_pos[0] < half_width / zoom {
-                self.cam_pos[0] = half_width / zoom; 
-            } else if self.cam_pos[0] + half_width / zoom >
-                      self.game_state.map.width_pixels() as f32 {
-                self.cam_pos[0] = self.game_state.map.width_pixels() as f32 - half_width / zoom;
-            }
-            if self.cam_pos[1] < half_height / zoom {
-                self.cam_pos[1] = half_height / zoom; 
-            } else if self.cam_pos[1] + half_height / zoom >
-                      self.game_state.map.height_pixels() as f32 {
-                self.cam_pos[1] = self.game_state.map.height_pixels() as f32 - half_height / zoom;
-            }
 
             {
                 let c = c.trans(half_width as f64, half_height as f64)
@@ -411,48 +477,37 @@ impl Game {
 
                 /*// What part of the map is visible?
                 let cam_tx_min = ((self.cam_pos[0]*zoom - half_width) /
-                                   (zoom * self.game_state.map.tile_width() as f32))
+                                   (zoom * self.state.map.tile_width() as f32))
                                  .floor() as isize;
                 let cam_ty_min = ((self.cam_pos[1]*zoom - half_height) /
-                                   (zoom * self.game_state.map.tile_height() as f32))
+                                   (zoom * self.state.map.tile_height() as f32))
                                  .floor() as isize;
                 let cam_tx_size = (draw_width as f32 /
-                                   (zoom * self.game_state.map.tile_width() as f32))
+                                   (zoom * self.state.map.tile_width() as f32))
                                   .ceil() as isize;
                 let cam_ty_size = (draw_height as f32 /
-                                   (zoom * self.game_state.map.tile_height() as f32))
+                                   (zoom * self.state.map.tile_height() as f32))
                                   .ceil() as isize;*/
 
                 {
                     let _g = hprof::enter("map");
 
-                    self.draw_map.draw(&self.game_state.map, c, gl);
+                    self.draw_map.draw(&self.state.map, c, gl);
                 }
                 {
                     let _g = hprof::enter("entities");
 
-                    self.game_state.world.systems.draw_wall_system
-                        .draw(&mut self.game_state.world.data, simulation_time_s,
+                    self.state.world.systems.draw_wall_system
+                        .draw(&mut self.state.world.data, simulation_time_s,
                               &mut self.particles, c, gl);
-                    self.game_state.world.systems.draw_item_system
-                        .draw(&mut self.game_state.world.data, simulation_time_s,
+                    self.state.world.systems.draw_item_system
+                        .draw(&mut self.state.world.data, simulation_time_s,
                               &mut self.particles, c, gl);
-                    self.game_state.world.systems.draw_projectile_system
-                        .draw(&mut self.game_state.world.data, simulation_time_s,
+                    self.state.world.systems.draw_projectile_system
+                        .draw(&mut self.state.world.data, simulation_time_s,
                               &mut self.particles, c, gl);
-                    self.game_state.world.systems.draw_player_system
-                        .draw(&mut self.game_state.world.data, simulation_time_s,
-                              &mut self.particles, c, gl);
-                    self.game_state.world.systems.draw_bouncy_enemy_system
-                        .draw(&mut self.game_state.world.data, c, gl);
-                }
-                {
-                    let _g = hprof::enter("update particles");
-                    self.particles.update(simulation_time_s);
-                }
-                {
-                    let _g = hprof::enter("draw particles");
-                    self.particles.draw(c, gl);
+                    self.state.world.systems.draw_bouncy_enemy_system
+                        .draw(&mut self.state.world.data, c, gl);
                 }
             }
 
@@ -485,7 +540,7 @@ impl Game {
 
         if let Some(entity) = self.get_my_player_entity() {
             let speed =
-                self.game_state.world.with_entity_data(&entity, |e, c| {
+                self.state.world.with_entity_data(&entity, |e, c| {
                     c.linear_velocity[e].v.norm()
                 }).unwrap();
 
@@ -497,7 +552,7 @@ impl Game {
     fn draw_player_text<S: Surface>(&mut self, target: &mut S) {
         if let Some(entity) = self.get_my_player_entity() {
             let (dash_cooldown_s, hidden_item, player_state) =
-                self.game_state.world.with_entity_data(&entity, |e, c| {
+                self.state.world.with_entity_data(&entity, |e, c| {
                     (c.full_player_state[e].dash_cooldown_s,
                      c.full_player_state[e].hidden_item.clone(),
                      c.player_state[e].clone())
@@ -566,20 +621,20 @@ impl Game {
     }
 
     fn get_player_entity(&mut self, player_id: PlayerId) -> Option<ecs::Entity> {
-        self.game_state.world.systems.net_entity_system.inner
+        self.state.world.systems.net_entity_system.inner
             .as_ref().unwrap()
             .get_player_entity(player_id)
     }
     
     fn get_my_player_entity(&mut self) -> Option<ecs::Entity> {
-        self.game_state.world.systems.net_entity_system.inner
+        self.state.world.systems.net_entity_system.inner
             .as_ref().unwrap()
             .get_my_player_entity()
     }
 
     fn get_my_player_position(&mut self) -> Option<Vec2<f32>> {
         self.get_my_player_entity().map(|entity| {
-            self.game_state.world.with_entity_data(&entity, |e, c| {
+            self.state.world.with_entity_data(&entity, |e, c| {
                 c.position[e].p
             }).unwrap()
         })

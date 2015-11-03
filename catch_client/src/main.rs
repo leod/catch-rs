@@ -13,6 +13,7 @@ extern crate hprof;
 extern crate rustc_serialize;
 extern crate bincode;
 extern crate nalgebra as na;
+extern crate clock_ticks;
 
 #[macro_use] extern crate catch_shared as shared;
 
@@ -28,6 +29,7 @@ mod game;
 mod particles;
 mod sounds;
 mod dummy;
+mod draw;
 
 use std::env;
 

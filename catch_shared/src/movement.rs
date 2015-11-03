@@ -235,10 +235,10 @@ pub fn run_player_movement_input<Components: ComponentManager,
             let mut ang_accel = c.angular_velocity()[e].v * -TURN_FRICTION;
 
             if input.has(PlayerInputKey::Left) {
-                ang_accel -= TURN_ACCEL * dur_s;
+                ang_accel += TURN_ACCEL * dur_s;
             }
             if input.has(PlayerInputKey::Right) {
-                ang_accel += TURN_ACCEL * dur_s;
+                ang_accel -= TURN_ACCEL * dur_s;
             }
 
             c.angular_velocity_mut()[e].v += ang_accel;

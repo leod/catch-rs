@@ -1,16 +1,14 @@
-use std::f64;
+use std::f32;
 
 use ecs::{Aspect, System, DataHelper, Process};
-use na::{Vec2, Norm};
-
-use glium::Surface;
+use na::{Vec2, Vec4, Mat2, Mat4, Norm};
 
 use shared::movement;
 use shared::util::CachedAspect;
 
 use components::Components;
 use services::Services;
-use particles::Particles;
+use draw::{DrawElement, DrawList, DrawAttributes};
 
 pub struct DrawWallSystem {
     aspect: CachedAspect<Components>,
@@ -23,17 +21,30 @@ impl DrawWallSystem {
         }
     }
 
-    pub fn draw<S: Surface>(&mut self, data: &mut DataHelper<Components, Services>, _: f32,
-                            _: &mut Particles, target: &mut S) {
+    pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, draw_list: &mut DrawList) {
         for entity in self.aspect.iter() {
             let p = data.wall_position[entity].clone();
             //let w = p.pos_b[0] - p.pos_a[0];
             //let h = p.pos_b[1] - p.pos_a[1];
             let w = Vec2::new(p.pos_b[0]-p.pos_a[0], p.pos_b[1]-p.pos_a[1]).norm();
 
-            let angle = movement::wall_orientation(&p);
+            let alpha = movement::wall_orientation(&p) - f32::consts::PI / 2.0;
             
             let size = 2.0; // TODO
+
+            let rot_mat = Mat2::new(alpha.cos(), -alpha.sin(),
+                                    alpha.sin(), alpha.cos());
+            let scale_mat = Mat2::new(w, 0.0,
+                                      0.0, size);
+            let m = rot_mat * scale_mat;
+            let model_mat = Mat4::new(m.m11, m.m12, 0.0, p.pos_b.x,
+                                      m.m21, m.m22, 0.0, p.pos_b.y,
+                                      0.0, 0.0, 1.0, 0.0,
+                                      0.0, 0.0, 0.5, 1.0);
+            draw_list.push((DrawElement::Square, DrawAttributes {
+                color: Vec4::new(1.0, 1.0, 1.0, 1.0),
+                model_mat: model_mat,
+            }));
 
             /*let transform = c.trans(p.pos_a[0] as f64, p.pos_a[1] as f64)
                              .rot_rad(angle as f64 + f64::consts::PI / 2.0).transform;
