@@ -101,7 +101,7 @@ impl Game {
         self.wait_first_ticks();
 
         let mut simulation_time_s = 0.0;
-        let mut frame_start_s = clock_ticks::precise_time_s() as f32;
+        let mut frame_start_s = clock_ticks::precise_time_ns(); //clock_ticks::precise_time_s() as f32;
         while !self.quit {
             hprof::start_frame();
 
@@ -129,8 +129,9 @@ impl Game {
                 self.print_prof = false;
             }
 
-            let new_frame_start_s = clock_ticks::precise_time_s() as f32;
-            simulation_time_s = new_frame_start_s - frame_start_s;
+            let new_frame_start_s = clock_ticks::precise_time_ns(); //as f32;
+            simulation_time_s = (new_frame_start_s - frame_start_s) as f32 / 1000000000.0;
+            //println!("{} = {}", new_frame_start_s - frame_start_s, simulation_time_s);
             frame_start_s = new_frame_start_s;
         }
     }
@@ -306,7 +307,7 @@ impl Game {
                                               [0.0, 0.0, 0.0],
                                               1.5,
                                               position,
-                                              orientation_wall,
+                                              orientation_wall + f32::consts::PI,
                                               f32::consts::PI,
                                               20.0 + rand::random::<f32>() * 20.0,
                                               0.0,
@@ -390,8 +391,8 @@ impl Game {
         target.clear_color(0.3, 0.3, 0.3, 1.0);
         target.clear_depth(1.0);
 
-        let pos = self.get_my_player_position().unwrap_or(self.cam_pos);
-        self.cam_pos = self.cam_pos + (pos - self.cam_pos) * 0.15;
+        self.cam_pos = self.get_my_player_position().unwrap_or(self.cam_pos);
+        //self.cam_pos = self.cam_pos + (pos - self.cam_pos) * 0.15;
 
         let (draw_width, draw_height) = target.get_dimensions();
         let half_width = draw_width as f32 / 2.0;
@@ -465,59 +466,6 @@ impl Game {
             let _g = hprof::enter("finish");
             target.finish().unwrap();
         }
-
-        /*gl.draw(viewport, |c, gl| {
-            graphics::clear([0.3, 0.3, 0.3, 0.0], gl);
-
-
-            {
-                let c = c.trans(half_width as f64, half_height as f64)
-                         .zoom(zoom as f64)
-                         .trans(-self.cam_pos[0] as f64, -self.cam_pos[1] as f64);
-
-                /*// What part of the map is visible?
-                let cam_tx_min = ((self.cam_pos[0]*zoom - half_width) /
-                                   (zoom * self.state.map.tile_width() as f32))
-                                 .floor() as isize;
-                let cam_ty_min = ((self.cam_pos[1]*zoom - half_height) /
-                                   (zoom * self.state.map.tile_height() as f32))
-                                 .floor() as isize;
-                let cam_tx_size = (draw_width as f32 /
-                                   (zoom * self.state.map.tile_width() as f32))
-                                  .ceil() as isize;
-                let cam_ty_size = (draw_height as f32 /
-                                   (zoom * self.state.map.tile_height() as f32))
-                                  .ceil() as isize;*/
-
-                {
-                    let _g = hprof::enter("map");
-
-                    self.draw_map.draw(&self.state.map, c, gl);
-                }
-                {
-                    let _g = hprof::enter("entities");
-
-                    self.state.world.systems.draw_wall_system
-                        .draw(&mut self.state.world.data, simulation_time_s,
-                              &mut self.particles, c, gl);
-                    self.state.world.systems.draw_item_system
-                        .draw(&mut self.state.world.data, simulation_time_s,
-                              &mut self.particles, c, gl);
-                    self.state.world.systems.draw_projectile_system
-                        .draw(&mut self.state.world.data, simulation_time_s,
-                              &mut self.particles, c, gl);
-                    self.state.world.systems.draw_bouncy_enemy_system
-                        .draw(&mut self.state.world.data, c, gl);
-                }
-            }
-
-            let _g = hprof::enter("text");
-            self.draw_player_text(c, gl);
-            self.draw_debug_text(c, gl);
-        });
-
-        let _g = hprof::enter("swap");
-        self.window.swap_buffers();*/
     }
 
     fn draw_debug_text<S: Surface>(&mut self, target: &mut S) {

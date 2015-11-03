@@ -9,6 +9,7 @@ extern crate libc;
 extern crate rustc_serialize;
 extern crate bincode;
 extern crate time;
+extern crate clock_ticks;
 extern crate rand;
 extern crate hprof;
 extern crate nalgebra as na;
@@ -239,14 +240,11 @@ impl Server {
     }
 
     fn run(&mut self) {
+        let mut start_ns = clock_ticks::precise_time_ns();
+
         loop {
-            let start_time_s = time::precise_time_s() as f32;
-
-
-            {
-                // Is this how DDOS happens?
-                while self.service() {};
-            }
+            // Is this how DDOS happens?
+            while self.service() {}
 
             {
                 // Start ticks
@@ -275,10 +273,11 @@ impl Server {
 
             thread::sleep_ms(0);
 
-            let end_time_s = time::precise_time_s() as f32;
-            let delta_s = end_time_s - start_time_s;
+            let new_start_ns = clock_ticks::precise_time_ns();
+            let delta_s = (new_start_ns - start_ns) as f32 / 1000000000.0;
             self.tick_timer.add(delta_s);
             self.print_prof_timer.add(delta_s);
+            start_ns = new_start_ns;
         }
     }
 
@@ -353,7 +352,7 @@ fn main() {
     let game_info = GameInfo {
         map_name: "data/maps/desert.tmx".to_string(),
         entity_types: entity_types,
-        ticks_per_second: 30,
+        ticks_per_second: 64,
     };
 
     match Server::start(&game_info, 9988, 32).as_mut() {

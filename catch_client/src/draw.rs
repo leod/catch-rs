@@ -156,6 +156,9 @@ impl DrawDrawList {
         surface.draw((&self.circle_vertex_buffer,
                       circle_sprite_buffer.slice(0..circle_i).unwrap().per_instance().unwrap()),
                      &indices, &self.program, &uniforms, &context.parameters);
+
+        self.sprite_vertex_buffers.push(circle_sprite_buffer);
+        self.sprite_vertex_buffers.push(square_sprite_buffer);
     }
 }
 
