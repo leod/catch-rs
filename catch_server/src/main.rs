@@ -22,7 +22,6 @@ pub mod state;
 
 use std::collections::HashMap;
 use std::thread;
-use std::mem;
 use time::{Duration, Timespec};
 
 use bincode::SizeLimit;
@@ -314,6 +313,9 @@ impl Server {
                         last_tick: last_tick,
                         tick: &tick,
                     };
+
+                    trace!("encoding delta from {} to {} for {}", tick_number,
+                           last_tick.tick_number, player_id);
 
                     encode_into(&Some(last_tick.tick_number), &mut data, SizeLimit::Infinite)
                         .unwrap();

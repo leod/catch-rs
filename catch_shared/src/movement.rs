@@ -28,7 +28,7 @@ pub trait WallInteraction<Components: ComponentManager,
                           Services: ServiceManager> {
     /// Makes something happen when the entity hits a wall. Returns the action to be taken at the
     /// wall (i.e., flip entity at wall or just slide at the wall)
-    fn apply(&self,
+    fn apply(&self, p: Vec2<f32>,
              entity: EntityData<Components>, wall: EntityData<Components>,
              data: &mut DataHelper<Components, Services>)
              -> WallInteractionType;
@@ -64,7 +64,7 @@ pub fn move_entity<Components: ComponentManager,
     c.position_mut()[e].p = match line_segment_walls_intersection(a, b, wall_aspect, c) {
         Some((t, wall)) => {
             // We hit a wall, ask `interaction` what to do
-            match interaction.apply(e, wall, c) {
+            match interaction.apply(a + delta * t, e, wall, c) {
                 WallInteractionType::Slide => {
                     // We walked into a surface with normal n.
                     // Find parts of delta parallel and orthogonal to n
@@ -129,17 +129,25 @@ impl<Components: ComponentManager,
     where Components: HasPosition + HasOrientation + HasLinearVelocity +
                       HasPlayerState + HasFullPlayerState + HasWallPosition,
           Services: HasEvents {
-    fn apply(&self,
+    fn apply(&self, p: Vec2<f32>,
              player: EntityData<Components>, wall: EntityData<Components>,
              data: &mut DataHelper<Components, Services>)
              -> WallInteractionType {
         if data.full_player_state()[player].wall_flip {
+            let wall_n = wall_normal(&data.wall_position()[wall]);
+            let orientation =
+                if wall_n.dot(&data.linear_velocity()[player].v) < 0.0 {
+                    wall_orientation(&data.wall_position()[wall])
+                } else {
+                    2.0 * f32::consts::PI - wall_orientation(&data.wall_position()[wall])
+                };
+
             let event = GameEvent::PlayerFlip {
                 player_id: self.0,
-                position: data.position()[player].p,
+                position: p,
                 orientation: data.orientation()[player].angle,
                 speed: data.linear_velocity()[player].v.norm(),
-                orientation_wall: wall_orientation(&data.wall_position()[wall]),
+                orientation_wall: orientation,
             };
             data.services.add_event(&event);
 
@@ -229,7 +237,7 @@ pub fn run_player_movement_input<Components: ComponentManager,
         } else if input.has(PlayerInputKey::StrafeRight) {
             c.angular_velocity_mut()[e].v = 0.0;
             let strafe_direction = Vec2::new(direction[1], -direction[0]);
-            accel = -strafe_direction * -STRAFE_ACCEL + accel;
+            accel = -strafe_direction * STRAFE_ACCEL + accel;
         } else {
             // Turn left/right
             let mut ang_accel = c.angular_velocity()[e].v * -TURN_FRICTION;
@@ -249,7 +257,7 @@ pub fn run_player_movement_input<Components: ComponentManager,
             accel = direction * MOVE_ACCEL + accel;
         }
         if input.has(PlayerInputKey::Back) {
-            accel = -direction * MOVE_ACCEL + accel;
+            accel = -direction * BACK_ACCEL + accel;
         }
 
         c.linear_velocity_mut()[e].v = c.linear_velocity()[e].v + accel * dur_s;
@@ -269,12 +277,12 @@ pub fn run_player_movement_input<Components: ComponentManager,
             c.full_player_state_mut()[e].dash_cooldown_s = Some(5.0);
             c.angular_velocity_mut()[e].v = 0.0;
 
-            /*let event = GameEvent::PlayerDash {
+            let event = GameEvent::PlayerDash {
                 player_id: owner,
                 position: c.position()[e].p,
                 orientation: c.orientation()[e].angle,
             };
-            c.services.add_event(&event);*/
+            c.services.add_event(&event);
         }
     }
 }

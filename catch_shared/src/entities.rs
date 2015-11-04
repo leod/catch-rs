@@ -28,7 +28,7 @@ pub fn build_shared<T: ComponentManager +
         data.shape_mut().add(&entity, Shape::Square { size: 5.0 });
     } else if type_name == "item_spawn" {
     } else if type_name == "bullet" {
-        data.shape_mut().add(&entity, Shape::Rect { width: 5.0, height: 2.0 });
+        data.shape_mut().add(&entity, Shape::Rect { width: 8.0, height: 4.0 });
     } else if type_name == "wall_wood" {
         data.wall_mut().add(&entity, Wall { 
             wall_type: WallType::Wood,

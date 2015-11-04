@@ -1,10 +1,10 @@
 use ecs::{Aspect, System, DataHelper, Process};
+use na::{Vec4, Mat2, Mat4};
 
 use shared::util::CachedAspect;
 
 use components::{Components, Shape};
 use services::Services;
-use particles::Particles;
 use draw::{DrawElement, DrawList, DrawAttributes};
 
 pub struct DrawProjectileSystem {
@@ -21,20 +21,26 @@ impl DrawProjectileSystem {
     pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, draw_list: &mut DrawList) {
         for entity in self.aspect.iter() {
             let p = data.position[entity].p;
-            let angle = data.orientation[entity].angle;
+            let alpha = data.orientation[entity].angle;
 
-            let (w, h) = match data.shape[entity] {
-                Shape::Rect { width, height } => (width as f64, height as f64),
+            let (width, height) = match data.shape[entity] {
+                Shape::Rect { width, height } => (width, height),
                 _ => panic!("projectile should be rect"),
             };
 
-            /*let transform = c.trans(p[0] as f64, p[1] as f64)
-                             .rot_rad(angle as f64).transform;
-
-            graphics::rectangle([0.4, 0.4, 0.4, 1.0],
-                                [-w/2.0, -h/2.0, w, h],
-                                transform,
-                                gl);*/
+            let rot_mat = Mat2::new(alpha.cos(), -alpha.sin(),
+                                    alpha.sin(), alpha.cos());
+            let scale_mat = Mat2::new(width, 0.0,
+                                      0.0, height);
+            let m = rot_mat * scale_mat;
+            let model_mat = Mat4::new(m.m11, m.m12, 0.0, p.x,
+                                      m.m21, m.m22, 0.0, p.y,
+                                      0.0, 0.0, 1.0, 0.0,
+                                      0.0, 0.0, 0.0, 1.0);
+            draw_list.push((DrawElement::Square, DrawAttributes {
+                color: Vec4::new(0.4, 0.4, 0.4, 1.0),
+                model_mat: model_mat,
+            }));
         }
     }
 }

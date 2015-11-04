@@ -281,7 +281,7 @@ impl Game {
 
                 let num = 100;
                 for _ in 0..num {
-                    self.particles.spawn_cone(0.6, color, color, 3.5 * rand::random::<f32>() + 2.0,
+                    self.particles.spawn_cone(0.75, color, color, 3.5 * rand::random::<f32>() + 2.0,
                                               position, 0.0, f32::consts::PI * 2.0,
                                               70.0 + rand::random::<f32>() * 40.0,
                                               rand::random::<f32>() * 8.0, 1.0);
@@ -321,12 +321,12 @@ impl Game {
             } => {
                 self.sounds.play("take_item", position);
 
-                let num = 100;
-                let color = [0.05, 0.5, 1.0];
+                let num = 500;
+                let color = [0.0, 1.0, 0.0];
                 for _ in 0..num {
-                    self.particles.spawn_cone(0.4, color, color, 1.5, position, 0.0,
+                    self.particles.spawn_cone(0.25, color, color, 2.0, position, 0.0,
                                               f32::consts::PI * 2.0,
-                                              200.0 + rand::random::<f32>() * 20.0, 0.0, 1.0);
+                                              100.0 + rand::random::<f32>() * 40.0, 2.0, 1.0);
                 }
             }
             &GameEvent::PlayerEquipItem {
@@ -389,7 +389,7 @@ impl Game {
 
         let mut target = self.display.draw();
 
-        target.clear_color(0.3, 0.3, 0.3, 1.0);
+        target.clear_color(0.1, 0.1, 0.1, 1.0);
         target.clear_depth(1.0);
 
         self.cam_pos = self.get_my_player_position().unwrap_or(self.cam_pos);
@@ -445,6 +445,8 @@ impl Game {
         self.state.world.systems.draw_projectile_system
             .draw(&mut self.state.world.data, &mut draw_list);
         self.state.world.systems.draw_bouncy_enemy_system
+            .draw(&mut self.state.world.data, &mut draw_list);
+        self.state.world.systems.draw_item_system
             .draw(&mut self.state.world.data, &mut draw_list);
 
         drop(_g);

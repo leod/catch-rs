@@ -75,7 +75,7 @@ impl DrawDrawList {
             }
         "#;
 
-        let (square_vertex_buffer, square_index_buffer) = new_square_y_centered(display);
+        let (square_vertex_buffer, square_index_buffer) = new_square(display);
         let sprite_vertex_buffer =
             glium::VertexBuffer::empty_dynamic(display, SPRITE_VERTEX_BUFFER_SIZE).unwrap();
 
@@ -151,11 +151,12 @@ impl DrawDrawList {
 
         surface.draw((&self.square_vertex_buffer,
                       square_sprite_buffer.slice(0..square_i).unwrap().per_instance().unwrap()),
-                     &self.square_index_buffer, &self.program, &uniforms, &context.parameters);
+                     &self.square_index_buffer, &self.program, &uniforms,
+                     &context.parameters).unwrap();
         let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan);
         surface.draw((&self.circle_vertex_buffer,
                       circle_sprite_buffer.slice(0..circle_i).unwrap().per_instance().unwrap()),
-                     &indices, &self.program, &uniforms, &context.parameters);
+                     &indices, &self.program, &uniforms, &context.parameters).unwrap();
 
         self.sprite_vertex_buffers.push(circle_sprite_buffer);
         self.sprite_vertex_buffers.push(square_sprite_buffer);

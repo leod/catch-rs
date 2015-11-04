@@ -53,13 +53,13 @@ impl TickState {
     }
 
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        s.emit_seq(self.entities.len(), |s| {
+        try!(s.emit_seq(self.entities.len(), |s| {
             for &(id, ref e) in &self.entities {
                 try!(s.emit_u32(id));
                 try!(e.encode(s));
             }
             Ok(())
-        });
+        }));
 
         self.forced_components.encode(s)
     }
@@ -86,7 +86,7 @@ impl TickState {
         // Check which components changed between this tick and the last
         let mut neq_components = Vec::new();
         let mut len = 0;
-        for (id, pair) in last_state.iter_pairs(self) {
+        for (_, pair) in last_state.iter_pairs(self) {
             match pair {
                 EntityPair::OnlyB(_) => {
                     len += 1;
@@ -102,21 +102,24 @@ impl TickState {
             }
         }
 
-        s.emit_seq(len, |s| {
+        try!(s.emit_seq(len, |s| {
             let mut index = 0;
             for (id, pair) in last_state.iter_pairs(self) {
                 match pair {
                     EntityPair::OnlyA(_) => {
-                        // Entity stopped existing
+                        // Entity stopped existing (or being relevant to the client)
+                        trace!("delta encode: lost {}", id);
                     }
                     EntityPair::OnlyB(e) => {
                         // New entity
+                        trace!("delta encode: new entity {}", id);
                         try!(s.emit_u32(id));
                         try!(e.encode(s));
                     }
-                    EntityPair::Both(e_last, e) => {
+                    EntityPair::Both(_e_last, e) => {
                         // Delta encode
                         if neq_components[index] > 0 {
+                            //trace!("delta encode {}", id);
                             try!(s.emit_u32(id));
                             try!(e.delta_encode(neq_components[index], s));
                         }
@@ -125,7 +128,7 @@ impl TickState {
                 }
             }
             Ok(())
-        });
+        }));
 
         self.forced_components.encode(s)
     }
@@ -140,6 +143,7 @@ impl TickState {
                 EntityPairMut::OnlyA(_) => {
                 }
                 EntityPairMut::OnlyB(components) => {
+                    trace!("adding entity {}", id);
                     // New entity, add it after this loop
                     to_add.push((id, components.clone()));
                 }
@@ -170,6 +174,8 @@ impl Tick {
     }
 
     pub fn load_delta(&mut self, new_tick: &Tick) {
+        trace!("loading delta from {} to {}", new_tick.tick_number, self.tick_number);
+
         self.tick_number = new_tick.tick_number;
         self.events = new_tick.events.clone();
         self.state.load_delta(&new_tick.state);
@@ -177,9 +183,23 @@ impl Tick {
         for event in &self.events {
             match event {
                 &GameEvent::RemoveEntity(remove_id) => {
+                    debug!("removing entity {}", remove_id);
                     let index =
-                        self.state.entities.iter().position(|&(id, _)| id == remove_id).unwrap();
-                    self.state.entities.remove(index);
+                        self.state.entities.iter().position(|&(id, _)| id == remove_id);
+                    if let Some(index) = index {
+                        self.state.entities.remove(index);
+                    } else {
+                        // We don't have an entity with this id in our storage.
+                        // This should only happen when an entity is removed in the same tick that
+                        // it is created. The server will see no need to send us data for that
+                        // entity, so our self.state.entities list has no entry for it.
+                        assert!(self.events.iter().find(|&event| {
+                            match event {
+                                &GameEvent::CreateEntity(id, _, _) => id == remove_id,
+                                _ => false
+                            }
+                        }).is_some());
+                    }
                 }
                 _ => {}
             }

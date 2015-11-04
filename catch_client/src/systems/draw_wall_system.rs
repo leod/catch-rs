@@ -37,8 +37,9 @@ impl DrawWallSystem {
             let scale_mat = Mat2::new(w, 0.0,
                                       0.0, size);
             let m = rot_mat * scale_mat;
-            let model_mat = Mat4::new(m.m11, m.m12, 0.0, p.pos_b.x,
-                                      m.m21, m.m22, 0.0, p.pos_b.y,
+            let o = m * Vec2::new(0.5, 0.0);
+            let model_mat = Mat4::new(m.m11, m.m12, 0.0, p.pos_b.x + o.x,
+                                      m.m21, m.m22, 0.0, p.pos_b.y + o.y,
                                       0.0, 0.0, 1.0, 0.0,
                                       0.0, 0.0, 0.5, 1.0);
             draw_list.push((DrawElement::Square, DrawAttributes {

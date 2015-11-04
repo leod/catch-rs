@@ -1,6 +1,5 @@
 pub mod net_entity_system;
 pub mod player_controller_system;
-pub mod player_item_system;
 pub mod bouncy_enemy_system;
 pub mod item_spawn_system;
 pub mod rotate_system;
@@ -14,7 +13,6 @@ use super::components::{Components};
 use super::services::Services;
 pub use self::net_entity_system::NetEntitySystem;
 pub use self::player_controller_system::PlayerControllerSystem;
-pub use self::player_item_system::PlayerItemSystem;
 pub use self::bouncy_enemy_system::BouncyEnemySystem;
 pub use self::item_spawn_system::ItemSpawnSystem;
 pub use self::rotate_system::RotateSystem;
@@ -29,7 +27,6 @@ systems! {
         player_controller_system: PlayerControllerSystem = PlayerControllerSystem::new(
             aspect!(<Components> all: [player_controller]),
             aspect!(<Components> all: [wall])),
-        player_item_system: PlayerItemSystem = PlayerItemSystem::new(),
         bouncy_enemy_system: BouncyEnemySystem = BouncyEnemySystem::new(
             aspect!(<Components> all: [bouncy_enemy])),
         item_spawn_system: ItemSpawnSystem = ItemSpawnSystem::new(

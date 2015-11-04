@@ -1,6 +1,6 @@
 use hprof;
 use ecs::{System, Process, Aspect, EntityData, DataHelper};
-use na::{Vec2, Norm};
+use na::Norm;
 
 use shared::util::CachedAspect;
 

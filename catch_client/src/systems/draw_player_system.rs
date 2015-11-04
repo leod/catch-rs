@@ -2,7 +2,7 @@ use std::f32;
 
 use ecs::{Aspect, System, DataHelper, Process};
 use rand;
-use na::{Vec3, Vec4, Mat2, Mat4, Norm};
+use na::{Vec2, Vec4, Mat2, Mat4, Norm};
 
 use shared::util::CachedAspect;
 
@@ -92,17 +92,9 @@ impl DrawPlayerSystem {
             let alpha = data.orientation[entity].angle;
             let rot_mat = Mat2::new(alpha.cos(), -alpha.sin(),
                                     alpha.sin(), alpha.cos());
-            /*let rot_mat = Mat2::new(alpha.cos(), alpha.sin(),
-                                    -alpha.sin(), alpha.cos());*/
             let scale_mat = Mat2::new(scale_x * r, 0.0,
                                       0.0, 1.0 / scale_x * r);
             let m = rot_mat * scale_mat;
-            let model_mat = [
-                [m.m11, m.m21, 0.0, 0.0],
-                [m.m12, m.m22, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [p.x, p.y, -0.5, 1.0f32],
-            ];
             let model_mat = Mat4::new(m.m11, m.m12, 0.0, p.x,
                                       m.m21, m.m22, 0.0, p.y,
                                       0.0, 0.0, 1.0, 0.0,
@@ -115,14 +107,9 @@ impl DrawPlayerSystem {
             let scale_mat = Mat2::new(scale_x * r, 0.0,
                                       0.0, 1.0 / scale_x * 2.0);
             let m = rot_mat * scale_mat;
-            let model_mat = [
-                [m.m11, m.m21, 0.0, 0.0],
-                [m.m12, m.m22, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [p.x, p.y, 0.0, 1.0f32],
-            ];
-            let model_mat = Mat4::new(m.m11, m.m12, 0.0, p.x,
-                                      m.m21, m.m22, 0.0, p.y,
+            let o = m * Vec2::new(0.5, 0.0);
+            let model_mat = Mat4::new(m.m11, m.m12, 0.0, p.x + o.x,
+                                      m.m21, m.m22, 0.0, p.y + o.y,
                                       0.0, 0.0, 1.0, 0.0,
                                       0.0, 0.0, 0.0, 1.0);
             draw_list.push((DrawElement::Square, DrawAttributes {
