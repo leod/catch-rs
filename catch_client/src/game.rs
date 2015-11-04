@@ -233,25 +233,25 @@ impl Game {
         if self.tick_progress < 1.0 {
             self.time_factor = {
                 if self.client.num_ticks() > 2 {
-                    debug!("speeding up playback (num queued ticks: {}, progress: {})",
-                           self.client.num_ticks(), self.tick_progress);
-
-                    1.25 
+                    1.05 + (1.0 - (self.client.num_ticks() as f32 / -20.0).exp())
                 } else if self.client.num_ticks() < 2 && self.tick_progress > 0.5 {
-                    debug!("slowing down tick playback (num queued ticks: {}, progress: {})",
-                           self.client.num_ticks(), self.tick_progress);
                     0.75 // Is this a stupid idea?
                 } else {
                     1.0
                 }
             };
 
+            if self.time_factor != 1.0 {
+                debug!("time factor {}, queued {} ticks, progress {}",
+                       self.time_factor, self.client.num_ticks(), self.tick_progress);
+            }
+
             self.tick_progress += self.time_factor * 
                                   simulation_time_s *
                                   self.client.game_info().ticks_per_second as f32;
         }
 
-        if self.tick_progress >= 1.0 {
+        while self.tick_progress >= 1.0 {
             // Load the next tick state if we can interpolate into the following tick
             if self.client.num_ticks() >= 2 {
                 self.start_tick();
@@ -259,6 +259,7 @@ impl Game {
             } else {
                 debug!("waiting to receive next tick (num queued ticks: {})",
                        self.client.num_ticks());
+                break;
             }
         }
     }

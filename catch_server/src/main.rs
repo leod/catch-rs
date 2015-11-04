@@ -352,7 +352,7 @@ fn main() {
     let game_info = GameInfo {
         map_name: "data/maps/desert.tmx".to_string(),
         entity_types: entity_types,
-        ticks_per_second: 64,
+        ticks_per_second: 30,
     };
 
     match Server::start(&game_info, 9988, 32).as_mut() {
