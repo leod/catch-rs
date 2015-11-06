@@ -142,7 +142,7 @@ impl GameState {
             });
         }*/
         
-        let num_walls = 100;
+        let num_walls = 30;
         let width = self.map.width_pixels() as f32;
         let height = self.map.height_pixels() as f32;
 
@@ -235,6 +235,7 @@ impl GameState {
 
             // We'll equip a gun for now
             c.player_state[e].equip(0, Item::Weapon { charges: 20 }); 
+            c.player_state[e].equip(1, Item::BallSpawner { charges: 5 }); 
         });
 
         /*// Spawn a complementary orbit ball

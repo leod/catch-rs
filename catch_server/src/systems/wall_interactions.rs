@@ -12,7 +12,7 @@ use entities;
 /// Bouncy enemy interaction with wall
 pub struct BouncyEnemyWallInteraction;
 impl WallInteraction<Components, Services> for BouncyEnemyWallInteraction {
-    fn apply(&self, p: Vec2<f32>,
+    fn apply(&self, _p: Vec2<f32>,
              _enemy: EntityData<Components>, _wall: EntityData<Components>,
              _data: &mut DataHelper<Components, Services>)
              -> WallInteractionType {

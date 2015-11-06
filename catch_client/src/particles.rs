@@ -55,7 +55,6 @@ pub struct Particles {
     num: usize,
     num_used_indices: usize,
 
-    square_no_indices_vertex_buffer: glium::VertexBuffer<Vertex>,
     square_vertex_buffer: glium::VertexBuffer<Vertex>,
     square_index_buffer: glium::IndexBuffer<u16>,
     particles_vertex_buffer: glium::VertexBuffer<Particle>,
@@ -144,7 +143,6 @@ impl Particles {
             }
         "#;
 
-        let square_no_indices_vertex_buffer = draw::new_square_no_indices(display);
         let (square_vertex_buffer, square_index_buffer) = draw::new_square(display);
         let particles_vertex_buffer = glium::VertexBuffer::empty_dynamic(display, MAX_PARTICLES).unwrap();
 
@@ -153,7 +151,6 @@ impl Particles {
             free_indices: BinaryHeap::new(),
             num: 0,
             num_used_indices: 0,
-            square_no_indices_vertex_buffer: square_no_indices_vertex_buffer,
             square_vertex_buffer: square_vertex_buffer,
             square_index_buffer: square_index_buffer,
             particles_vertex_buffer: particles_vertex_buffer,
@@ -211,7 +208,6 @@ impl Particles {
             .. draw_context.parameters.clone()
         };
 
-        let indices = glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList);
         target.draw((&self.square_vertex_buffer,
                      self.particles_vertex_buffer.slice(0..self.num_used_indices)
                          .unwrap().per_instance().unwrap()),

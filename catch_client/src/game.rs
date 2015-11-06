@@ -331,9 +331,10 @@ impl Game {
                 let num = 500;
                 let color = [0.0, 1.0, 0.0];
                 for _ in 0..num {
-                    self.particles.spawn_cone(0.25, color, color, 2.0, position, 0.0,
+                    let t = rand::random::<f32>() * 0.25 + 0.25;
+                    self.particles.spawn_cone(t, color, color, 2.0, position, 0.0,
                                               f32::consts::PI * 2.0,
-                                              40.0 + rand::random::<f32>() * 40.0, 2.0, 1.0);
+                                              45.0 + rand::random::<f32>() * 40.0, 2.0, 1.0);
                 }
             }
             &GameEvent::PlayerEquipItem {
@@ -587,12 +588,7 @@ impl Game {
                               0.0, 0.0, r, 0.0,
                               0.0, 0.0, 0.0, 1.0);
         let m = *proj_mat * trans * scale;
-        /*let m = Mat4::new(1.0, 0.0, 0.0, 0.0,
-                          0.0, 1.0, 0.0, 0.0,
-                          0.0, 0.0, 1.0, 0.0,
-                          0.0, 0.0, 0.0, 1.0);*/
-
-        let text = glium_text::TextDisplay::new(&self.text_system, &self.font, s);
+        let text = glium_text::TextDisplay::new(&self.text_system, &self.font, s); // TODO
         glium_text::draw(&text, &self.text_system, target, *m.as_array(), color);
     }
 

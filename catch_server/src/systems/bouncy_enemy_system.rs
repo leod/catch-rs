@@ -4,12 +4,13 @@ use na::{Vec2, Norm};
 
 use shared::util::CachedAspect;
 
-use components::{Components};
+use components::{Components, Shape};
 use services::Services;
 
 const MOVE_ACCEL: f32 = 150.0;
 const MOVE_FRICTION: f32 = 4.0;
-const ORBIT_SPEED_FACTOR: f32 = 20.0;
+const ORBIT_SPEED_FACTOR: f32 = 10.0;
+const ORBIT_BUFFER: f32 = 10.0;
 
 pub struct BouncyEnemySystem {
     aspect: CachedAspect<Components>,
@@ -29,14 +30,22 @@ impl BouncyEnemySystem {
 
         for e in self.aspect.iter() {
             let accel = if let Some(orbit) = data.bouncy_enemy[e].orbit {
-                if let Some(orbit_position) =
-                        data.with_entity_data(&orbit, |e, c| { c.position[e].p }) {
+                if let Some((orbit_position, orbit_shape)) =
+                        data.with_entity_data(&orbit, |e, c| {
+                            (c.position[e].p, c.shape[e].clone())
+                        }) {
                     let w = orbit_position - data.position[e].p;
-                    let r = w.norm();
-                    let f = r;
-
-                    w.normalize() * f * ORBIT_SPEED_FACTOR -
-                        data.linear_velocity[e].v * MOVE_FRICTION
+                    let f = w.norm();
+                    let r = match orbit_shape {
+                        Shape::Circle { radius } => radius,
+                        _ => panic!("not implemented")
+                    };
+                    let d = if f >= r + ORBIT_BUFFER {
+                        w * ORBIT_SPEED_FACTOR * f
+                    } else {
+                        -w * ORBIT_SPEED_FACTOR * f
+                    };
+                    d - data.linear_velocity[e].v * MOVE_FRICTION
                 } else {
                     data.bouncy_enemy[e].orbit = None;
                     Vec2::new(0.0, 0.0)
