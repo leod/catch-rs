@@ -136,10 +136,10 @@ impl<Components: ComponentManager,
         if data.full_player_state()[player].wall_flip {
             let wall_n = wall_normal(&data.wall_position()[wall]);
             let orientation =
-                if wall_n.dot(&data.linear_velocity()[player].v) < 0.0 {
+                if wall_n.dot(&data.linear_velocity()[player].v) > 0.0 {
                     wall_orientation(&data.wall_position()[wall])
                 } else {
-                    2.0 * f32::consts::PI - wall_orientation(&data.wall_position()[wall])
+                    f32::consts::PI + wall_orientation(&data.wall_position()[wall])
                 };
 
             let event = GameEvent::PlayerFlip {

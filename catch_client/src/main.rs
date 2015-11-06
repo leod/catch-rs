@@ -75,7 +75,7 @@ fn main() {
 
     if !dummy {
         let display = glium::glutin::WindowBuilder::new()
-            .with_dimensions(1024, 768)
+            .with_dimensions(640, 480)
             .with_title(format!("Catching game"))
             .build_glium()
             .unwrap();

@@ -1,5 +1,6 @@
 use std::f32;
 use std::thread;
+use std::fs::File;
 use std::path::Path;
 
 use ecs;
@@ -10,7 +11,7 @@ use hprof;
 use na::{Vec2, Mat4, Norm, OrthoMat3};
 
 use glium::{self, glutin, Display, Surface};
-use glium_text::{TextSystem, FontTexture, TextDisplay};
+use glium_text;
 
 use shared::NUM_ITEM_SLOTS;
 use shared::{Item, GameEvent, PlayerId};
@@ -47,8 +48,8 @@ pub struct Game {
     particles: Particles,
     sounds: Sounds,
 
-    /*text_system: TextSystem,
-    font: FontTexture,*/
+    text_system: glium_text::TextSystem,
+    font: glium_text::FontTexture,
 
     cam_pos: Vec2<f32>,
     fps: f32,
@@ -66,6 +67,9 @@ impl Game {
         let draw_map = DrawMap::load(&state.map).unwrap();
         let particles = Particles::new(&display);
         let sounds = Sounds::load().unwrap();
+        let text_system = glium_text::TextSystem::new(&display);
+        let font_file = File::open(&Path::new("data/ProggyClean.ttf"));
+        let font = glium_text::FontTexture::new(&display, font_file.unwrap(), 70).unwrap();
 
         Game {
             quit: false,
@@ -89,6 +93,9 @@ impl Game {
             draw_map: draw_map,
             particles: particles,
             sounds: sounds,
+
+            text_system: text_system,
+            font: font,
 
             cam_pos: Vec2::new(0.0, 0.0),
             fps: 0.0,
@@ -326,7 +333,7 @@ impl Game {
                 for _ in 0..num {
                     self.particles.spawn_cone(0.25, color, color, 2.0, position, 0.0,
                                               f32::consts::PI * 2.0,
-                                              100.0 + rand::random::<f32>() * 40.0, 2.0, 1.0);
+                                              40.0 + rand::random::<f32>() * 40.0, 2.0, 1.0);
                 }
             }
             &GameEvent::PlayerEquipItem {
@@ -435,21 +442,27 @@ impl Game {
 
         let mut draw_list = Vec::new();
 
-        let _g = hprof::enter("entities");
+        {
+            let _g = hprof::enter("entities");
 
-        let draw_player_system = &mut self.state.world.systems.draw_player_system;
-        draw_player_system.spawn_particles(&mut self.state.world.data, simulation_time_s,
-                                           &mut self.particles);
-        draw_player_system.draw(&mut self.state.world.data, &mut draw_list);
-        self.state.world.systems.draw_wall_system.draw(&mut self.state.world.data, &mut draw_list);
-        self.state.world.systems.draw_projectile_system
-            .draw(&mut self.state.world.data, &mut draw_list);
-        self.state.world.systems.draw_bouncy_enemy_system
-            .draw(&mut self.state.world.data, &mut draw_list);
-        self.state.world.systems.draw_item_system
-            .draw(&mut self.state.world.data, &mut draw_list);
+            self.state.world.systems.draw_player_system
+                .spawn_particles(&mut self.state.world.data, simulation_time_s,
+                                 &mut self.particles);
+            self.state.world.systems.draw_item_system
+                .spawn_particles(&mut self.state.world.data, simulation_time_s,
+                                 &mut self.particles);
 
-        drop(_g);
+            self.state.world.systems.draw_player_system
+                .draw(&mut self.state.world.data, &mut draw_list);
+            self.state.world.systems.draw_wall_system
+                .draw(&mut self.state.world.data, &mut draw_list);
+            self.state.world.systems.draw_projectile_system
+                .draw(&mut self.state.world.data, &mut draw_list);
+            self.state.world.systems.draw_bouncy_enemy_system
+                .draw(&mut self.state.world.data, &mut draw_list);
+            self.state.world.systems.draw_item_system
+                .draw(&mut self.state.world.data, &mut draw_list);
+        }
 
         {
             let _g = hprof::enter("draw list");
@@ -464,6 +477,11 @@ impl Game {
             let _g = hprof::enter("draw particles");
             self.particles.draw(&draw_context, &mut target);
         }
+        {
+            let _g = hprof::enter("text");
+            self.draw_debug_text(&draw_context.proj_mat, &mut target);
+            self.draw_player_text(&draw_context.proj_mat, &mut target);
+        }
 
         {
             let _g = hprof::enter("finish");
@@ -471,23 +489,23 @@ impl Game {
         }
     }
 
-    fn draw_debug_text<S: Surface>(&mut self, target: &mut S) {
-        let color = [1.0, 0.0, 1.0, 1.0];
+    fn draw_debug_text<S: Surface>(&mut self, proj_mat: &Mat4<f32>, target: &mut S) {
+        let color = (1.0, 0.0, 1.0, 1.0);
 
         let s = &format!("fps: {:.1}", self.fps);
-        self.draw_text(color, 10.0, 30.0, s, target);
+        self.draw_text(color, 10.0, 30.0, s, proj_mat, target);
 
         let s = &format!("# queued ticks: {}", self.client.num_ticks());
-        self.draw_text(color, 10.0, 65.0, s, target);
+        self.draw_text(color, 10.0, 65.0, s, proj_mat, target);
 
         let s = &format!("tick progress: {:.1}", self.tick_progress);
-        self.draw_text(color, 10.0, 100.0, s, target);
+        self.draw_text(color, 10.0, 100.0, s, proj_mat, target);
 
         let s = &format!("time factor: {:.1}", self.time_factor);
-        self.draw_text(color, 10.0, 135.0, s, target);
+        self.draw_text(color, 10.0, 135.0, s, proj_mat, target);
 
         let s = &format!("num particles: {}", self.particles.num());
-        self.draw_text(color, 10.0, 170.0, s, target);
+        self.draw_text(color, 10.0, 170.0, s, proj_mat, target);
 
         if let Some(entity) = self.get_my_player_entity() {
             let speed =
@@ -496,11 +514,11 @@ impl Game {
                 }).unwrap();
 
             let s = &format!("player speed: {:.1}", speed);
-            self.draw_text(color, 10.0, 205.0, s, target);
+            self.draw_text(color, 10.0, 205.0, s, proj_mat, target);
         }
     }
 
-    fn draw_player_text<S: Surface>(&mut self, target: &mut S) {
+    fn draw_player_text<S: Surface>(&mut self, proj_mat: &Mat4<f32>, target: &mut S) {
         if let Some(entity) = self.get_my_player_entity() {
             let (dash_cooldown_s, hidden_item, player_state) =
                 self.state.world.with_entity_data(&entity, |e, c| {
@@ -509,16 +527,17 @@ impl Game {
                      c.player_state[e].clone())
                 }).unwrap();
 
-            let y1 = 900.0; //self.window.draw_size().height as f32 - 100.0;
+            let (w, h) = target.get_dimensions();
+            let y1 = h as f32 - 100.0;
             let y2 = y1 + 35.0; 
             let y3 = y2 + 35.0;
-            let color1 = [0.0, 0.0, 1.0, 1.0];
-            let color2 = [0.3, 0.3, 0.3, 1.0];
+            let color1 = (0.0, 0.0, 1.0, 1.0);
+            let color2 = (0.3, 0.3, 0.3, 1.0);
 
             self.draw_text(if dash_cooldown_s.is_none() { color1 } else { color2 },
-                           20.0, y1, "dash", target);
+                           20.0, y1, "dash", proj_mat, target);
             if let Some(t) = dash_cooldown_s {
-                self.draw_text(color1, 25.0, y2, &format!("{:.1}", t), target);
+                self.draw_text(color1, 25.0, y2, &format!("{:.1}", t), proj_mat, target);
             }
 
             let slot_names = vec!["Q", "W", "E"]; // TODO
@@ -530,32 +549,51 @@ impl Game {
                 if let Some(equipped_item) = player_state.get_item(item_slot) {
                     let color = if equipped_item.cooldown_s.is_none() { color1 } else { color2 };
 
-                    self.draw_text(color, cursor_x, y1, slot_name, target);
+                    self.draw_text(color, cursor_x, y1, slot_name, proj_mat, target);
 
                     let text = &self.item_text(&equipped_item.item);
-                    self.draw_text(color, cursor_x, y2, &text, target);
+                    self.draw_text(color, cursor_x, y2, &text, proj_mat, target);
 
                     if let Some(t) = equipped_item.cooldown_s {
                         self.draw_text(color1, cursor_x + 5.0, y3, &format!("{:.1}", t),
-                                       target);
+                                       proj_mat, target);
                     }
                 } else {
-                    self.draw_text(color2, cursor_x, y1, slot_name, target);
+                    self.draw_text(color2, cursor_x, y1, slot_name, proj_mat, target);
                 }
             }
 
             if let Some(item) = hidden_item {
                 let text = self.item_text(&item);
-                self.draw_text(color1, 200.0, y1, "item", target);
-                self.draw_text(color1, 200.0, y2, &text, target);
+                self.draw_text(color1, 200.0, y1, "item", proj_mat, target);
+                self.draw_text(color1, 200.0, y2, &text, proj_mat, target);
             } else {
-                self.draw_text(color2, 200.0, y1, "item", target);
+                self.draw_text(color2, 200.0, y1, "item", proj_mat, target);
             }
         }
     }
 
-    fn draw_text<S: Surface>(&mut self, color: [f32; 4], x: f32, y: f32, s: &str,
+    fn draw_text<S: Surface>(&mut self, color: (f32, f32, f32, f32),
+                             x: f32, y: f32, s: &str, proj_mat: &Mat4<f32>,
                              target: &mut S) {
+        let (w, h) = target.get_dimensions();
+        let trans = Mat4::new(1.0, 0.0, 0.0, -(w as f32) / 2.0 + x,
+                              0.0, 1.0, 0.0, h as f32 / 2.0 - 5.0 - y,
+                              0.0, 0.0, 1.0, -0.5,
+                              0.0, 0.0, 0.0, 1.0);
+        let r = 10.0;
+        let scale = Mat4::new(r, 0.0, 0.0, 0.0,
+                              0.0, r, 0.0, 0.0,
+                              0.0, 0.0, r, 0.0,
+                              0.0, 0.0, 0.0, 1.0);
+        let m = *proj_mat * trans * scale;
+        /*let m = Mat4::new(1.0, 0.0, 0.0, 0.0,
+                          0.0, 1.0, 0.0, 0.0,
+                          0.0, 0.0, 1.0, 0.0,
+                          0.0, 0.0, 0.0, 1.0);*/
+
+        let text = glium_text::TextDisplay::new(&self.text_system, &self.font, s);
+        glium_text::draw(&text, &self.text_system, target, *m.as_array(), color);
     }
 
     fn item_text(&self, item: &Item) -> String {

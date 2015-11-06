@@ -206,30 +206,17 @@ impl Particles {
             time_s: self.time_s,
         };
 
+        let parameters = glium::DrawParameters {
+            blend: glium::Blend::alpha_blending(),
+            .. draw_context.parameters.clone()
+        };
+
         let indices = glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList);
         target.draw((&self.square_vertex_buffer,
                      self.particles_vertex_buffer.slice(0..self.num_used_indices)
                          .unwrap().per_instance().unwrap()),
-                    &self.square_index_buffer, &self.program, &uniforms, &draw_context.parameters)
+                    &self.square_index_buffer, &self.program, &uniforms, &parameters)
               .unwrap();
-
-        /*for p in self.particles.iter() {
-            if let &Some(ref p) = p {
-                //let alpha = 1.0 - p.progress;
-                /*let transform = c.trans(p.position[0] as f64, p.position[1] as f64)
-                                 .rot_rad(p.orientation as f64)
-                                 .transform;*/
-                //let t = p.progress as f32;
-                /*let color = [p.color_a[0] * (1.0-t) + p.color_b[0] * t,
-                             p.color_a[1] * (1.0-t) + p.color_b[1] * t,
-                             p.color_a[2] * (1.0-t) + p.color_b[2] * t];*/
-                /*graphics::rectangle([color[0], color[1], color[2], alpha as f32],
-                                    [(-p.size/2.0) as f64, (-p.size/2.0) as f64,
-                                     p.size as f64, p.size as f64],
-                                    transform,
-                                    gl);*/
-            }
-        }*/
     }
 
     pub fn spawn_cone(&mut self,

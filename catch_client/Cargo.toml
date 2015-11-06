@@ -9,8 +9,8 @@ authors = [
 log = "*"
 env_logger = "*"
 time = "0.1.32"
-glium = "*"
-glium_text = "*"
+glium = "0.10"
+#glium_text = "*"
 getopts = "0.2.14"
 rand = "0.3.11"
 cpal = "*"
@@ -19,6 +19,9 @@ rustc-serialize = "*"
 bincode = "*"
 nalgebra = "*"
 clock_ticks = "*"
+
+[dependencies.glium_text]
+git = "https://github.com/jagan-veeraraghavan/glium_text.git"
 
 [dependencies.rodio]
 git = "https://github.com/tomaka/rodio.git"
