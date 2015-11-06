@@ -60,8 +60,9 @@ impl ItemSpawnSystem {
             if data.item_spawn[e].spawned_entity.is_none() && !have_cooldown {
                 let item_entity = entities::build_net_custom("item", 0, data,
                     |item_e: BuildData<Components>, c: &mut Components| {
-                        let choices = vec![Item::Weapon { charges: 10 },
-                                           //Item::BallSpawner { charges: 3 },
+                        let choices = vec![
+                                           Item::Weapon { charges: 10 },
+                                           Item::BallSpawner { charges: 3 },
                                           ];
                         let item = choices[rand::random::<usize>() % choices.len()].clone();
 

@@ -2,6 +2,7 @@ use hprof;
 use ecs::{System, Process, Aspect, EntityData, DataHelper};
 use na::Norm;
 
+use shared::math;
 use shared::util::CachedAspect;
 
 use components::{Components, Shape}; 
@@ -84,22 +85,22 @@ impl InteractionSystem {
                e_b: EntityData<Components>,
                c: &Components)
                -> bool {
+        let p_a = c.position[e_a].p;
+        let p_b = c.position[e_b].p;
+
         match (&c.shape[e_a], &c.shape[e_b]) {
             (&Shape::Circle { radius: r_a }, &Shape::Circle { radius: r_b }) => {
-                let d = (c.position[e_a].p - c.position[e_b].p).norm();
+                let d = (p_a - p_b).norm();
                 d <= r_a + r_b
             }
-
             (&Shape::Circle { radius: r }, &Shape::Square { size: s }) => {
                 // TODO
-                let d = (c.position[e_a].p - c.position[e_b].p).norm();
-                d <= r + s * 2.0
+                let angle = c.orientation[e_b].angle;
+                math::rect_sphere_overlap(p_b, s, s, angle, p_a, r)
             }
-
             (&Shape::Circle { radius: r }, &Shape::Rect { width: w, height: h }) => {
-                // TODO
-                let d = (c.position[e_a].p - c.position[e_b].p).norm();
-                d <= r + w.max(h) * 2.0
+                let angle = c.orientation[e_b].angle;
+                math::rect_sphere_overlap(p_b, w, h, angle, p_a, r)
             }
 
             // Try the other way around...

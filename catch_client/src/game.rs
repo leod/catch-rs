@@ -5,7 +5,6 @@ use std::path::Path;
 
 use ecs;
 use rand;
-use time;
 use clock_ticks;
 use hprof;
 use na::{Vec2, Mat4, Norm, OrthoMat3};
