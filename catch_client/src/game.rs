@@ -2,6 +2,7 @@ use std::f32;
 use std::thread;
 use std::fs::File;
 use std::path::Path;
+use std::collections::VecDeque;
 
 use ecs;
 use rand;
@@ -12,8 +13,7 @@ use na::{Vec2, Mat4, Norm, OrthoMat3};
 use glium::{self, glutin, Display, Surface};
 use glium_text;
 
-use shared::NUM_ITEM_SLOTS;
-use shared::{Item, GameEvent, PlayerId};
+use shared::{NEUTRAL_PLAYER_ID, NUM_ITEM_SLOTS, Item, GameEvent, PlayerId, DeathReason};
 use shared::net::{ClientMessage, TimedPlayerInput};
 use shared::tick::Tick;
 
@@ -24,6 +24,8 @@ use draw_map::DrawMap;
 use particles::Particles;
 use sounds::Sounds;
 use draw::{DrawList, DrawDrawList, DrawContext};
+
+pub const MAX_DEATH_MESSAGES: usize = 4;
 
 pub struct Game {
     quit: bool,
@@ -38,6 +40,8 @@ pub struct Game {
     current_tick: Option<Tick>,
     tick_progress: f32,
     time_factor: f32,
+
+    death_messages: VecDeque<(String, (f32, f32, f32))>,
 
     display: Display,
 
@@ -85,6 +89,8 @@ impl Game {
             tick_progress: 0.0,
             time_factor: 0.0,
 
+            death_messages: VecDeque::new(),
+
             display: display,
 
             draw_list: DrawList::new(),
@@ -125,7 +131,7 @@ impl Game {
 
             {
                 let _g = hprof::enter("sleep");
-                thread::sleep_ms(5);
+                //thread::sleep_ms(5);
             }
 
             hprof::end_frame();
@@ -278,9 +284,11 @@ impl Game {
             &GameEvent::PlayerDied {
                 player_id,
                 position,
-                responsible_player_id: _,
+                responsible_player_id,
                 reason,
             } => {
+                self.add_death_message(player_id, responsible_player_id, reason);
+
                 let entity = self.get_player_entity(player_id).unwrap();
                 let color = self.state.world.with_entity_data(&entity, |e, c| {
                     [c.draw_player[e].color[0],
@@ -399,8 +407,10 @@ impl Game {
 
         let mut target = self.display.draw();
 
-        target.clear_color(0.1, 0.1, 0.1, 1.0);
-        target.clear_depth(1.0);
+        {
+            let _g = hprof::enter("clear");
+            target.clear_color_and_depth((0.1, 0.1, 0.1, 1.0), 1.0);
+        }
 
         self.cam_pos = self.get_my_player_position().unwrap_or(self.cam_pos);
         //self.cam_pos = self.cam_pos + (pos - self.cam_pos) * 0.15;
@@ -484,6 +494,7 @@ impl Game {
             let _g = hprof::enter("text");
             self.draw_debug_text(&draw_context.proj_mat, &mut target);
             self.draw_player_text(&draw_context.proj_mat, &mut target);
+            self.draw_death_messages(&draw_context.proj_mat, &mut target);
         }
 
         {
@@ -492,23 +503,71 @@ impl Game {
         }
     }
 
+    fn add_death_message(&mut self, player_id: PlayerId, responsible_player_id: PlayerId,
+                         reason: DeathReason) {
+        if self.death_messages.len() == MAX_DEATH_MESSAGES {
+            self.death_messages.pop_front();
+        }
+
+        let name = self.state.players()[&player_id].name.clone();
+
+        let message =
+            if reason == DeathReason::Caught {
+                assert!(responsible_player_id != NEUTRAL_PLAYER_ID);
+                let responsible_name = self.state.players()[&responsible_player_id].name.clone();
+                (format!("{} caught {}!", name, responsible_name), (0.0, 1.0, 0.0))
+            } else {
+                let reason_string = match reason {
+                    DeathReason::Projectile => "a projectile".to_string(),
+                    DeathReason::BouncyBall => "a ball".to_string(),
+                    _ => panic!("nope")
+                };
+                if responsible_player_id != NEUTRAL_PLAYER_ID {
+                    let responsible_name =
+                        self.state.players()[&responsible_player_id].name.clone();
+                    (format!("{} killed {} with {}", name, responsible_name, reason_string),
+                     (1.0, 1.0, 1.0))
+                } else {
+                    (format!("{} got killed by {}", name, reason_string),
+                     (0.75, 0.75, 0.75))
+                }
+            };
+
+        debug!("kill message: {}", message.0);
+        self.death_messages.push_back(message);
+    }
+
+    fn draw_death_messages<S: Surface>(&mut self, proj_mat: &Mat4<f32>, target: &mut S) {
+        let (w, _) = target.get_dimensions();
+
+        for i in 0..self.death_messages.len() {
+            let s = self.death_messages[i].0.clone();
+            let (r, g, b) = self.death_messages[i].1;
+            self.draw_text_sub_width((r, g, b, 1.0),
+                                     w as f32 - 10.0, 10.0 + 25.0 * i as f32, 
+                                     &s, proj_mat, 12.0, target);
+        }
+    }
+
     fn draw_debug_text<S: Surface>(&mut self, proj_mat: &Mat4<f32>, target: &mut S) {
         let color = (1.0, 0.0, 1.0, 1.0);
 
+        let size = 10.0;
+        let r = 20.0;
         let s = &format!("fps: {:.1}", self.fps);
-        self.draw_text(color, 10.0, 30.0, s, proj_mat, target);
+        self.draw_text(color, 10.0, 10.0, s, proj_mat, size, target);
 
         let s = &format!("# queued ticks: {}", self.client.num_ticks());
-        self.draw_text(color, 10.0, 65.0, s, proj_mat, target);
+        self.draw_text(color, 10.0, 10.0 + r, s, proj_mat, size, target);
 
         let s = &format!("tick progress: {:.1}", self.tick_progress);
-        self.draw_text(color, 10.0, 100.0, s, proj_mat, target);
+        self.draw_text(color, 10.0, 10.0 + 2.0*r, s, proj_mat, size, target);
 
         let s = &format!("time factor: {:.1}", self.time_factor);
-        self.draw_text(color, 10.0, 135.0, s, proj_mat, target);
+        self.draw_text(color, 10.0, 10.0 + 3.0*r, s, proj_mat, size, target);
 
         let s = &format!("num particles: {}", self.particles.num());
-        self.draw_text(color, 10.0, 170.0, s, proj_mat, target);
+        self.draw_text(color, 10.0, 10.0 + 4.0*r, s, proj_mat, size, target);
 
         if let Some(entity) = self.get_my_player_entity() {
             let speed =
@@ -517,7 +576,7 @@ impl Game {
                 }).unwrap();
 
             let s = &format!("player speed: {:.1}", speed);
-            self.draw_text(color, 10.0, 205.0, s, proj_mat, target);
+            self.draw_text(color, 10.0, 10.0 + 5.0*r, s, proj_mat, size, target);
         }
     }
 
@@ -536,74 +595,98 @@ impl Game {
             let y3 = y2 + 35.0;
             let color1 = (0.0, 0.0, 1.0, 1.0);
             let color2 = (0.3, 0.3, 0.3, 1.0);
+            let size = 10.0;
 
             self.draw_text(if dash_cooldown_s.is_none() { color1 } else { color2 },
-                           20.0, y1, "dash", proj_mat, target);
+                           20.0, y1, "dash", proj_mat, size, target);
             if let Some(t) = dash_cooldown_s {
-                self.draw_text(color1, 25.0, y2, &format!("{:.1}", t), proj_mat, target);
+                self.draw_text(color1, 25.0, y2, &format!("{:.1}", t), proj_mat, size, target);
             }
 
             let slot_names = vec!["Q", "W", "E"]; // TODO
-            let mut cursor_x = 200.0;
+            let mut cursor_x = 150.0;
 
             for (item_slot, slot_name) in (0..NUM_ITEM_SLOTS).zip(slot_names.iter()) {
-                cursor_x += 180.0;
+                cursor_x += 150.0;
 
                 if let Some(equipped_item) = player_state.get_item(item_slot) {
                     let color = if equipped_item.cooldown_s.is_none() { color1 } else { color2 };
 
-                    self.draw_text(color, cursor_x, y1, slot_name, proj_mat, target);
+                    self.draw_text(color, cursor_x, y1, slot_name, proj_mat, size, target);
 
                     let text = &self.item_text(&equipped_item.item);
-                    self.draw_text(color, cursor_x, y2, &text, proj_mat, target);
+                    self.draw_text(color, cursor_x, y2, &text, proj_mat, size, target);
 
                     if let Some(t) = equipped_item.cooldown_s {
-                        self.draw_text(color1, cursor_x + 5.0, y3, &format!("{:.1}", t),
-                                       proj_mat, target);
+                        self.draw_text(color1, cursor_x, y3, &format!("{:.1}", t),
+                                       proj_mat, size, target);
                     }
                 } else {
-                    self.draw_text(color2, cursor_x, y1, slot_name, proj_mat, target);
+                    self.draw_text(color2, cursor_x, y1, slot_name, proj_mat, size, target);
                 }
             }
 
             if let Some(item) = hidden_item {
                 let text = self.item_text(&item);
-                self.draw_text(color1, 200.0, y1, "item", proj_mat, target);
-                self.draw_text(color1, 200.0, y2, &text, proj_mat, target);
+                self.draw_text(color1, 150.0, y1, "item", proj_mat, size, target);
+                self.draw_text(color1, 150.0, y2, &text, proj_mat, size, target);
             } else {
-                self.draw_text(color2, 200.0, y1, "item", proj_mat, target);
+                self.draw_text(color2, 150.0, y1, "item", proj_mat, size, target);
             }
         }
     }
 
-    fn draw_text<S: Surface>(&mut self, color: (f32, f32, f32, f32),
-                             x: f32, y: f32, s: &str, proj_mat: &Mat4<f32>,
-                             target: &mut S) {
+    fn draw_text<S: Surface>(&mut self, color: (f32, f32, f32, f32), x: f32, y: f32,
+                             s: &str, proj_mat: &Mat4<f32>, size: f32, target: &mut S) {
         let (w, h) = target.get_dimensions();
+        let sub_trans = Mat4::new(1.0, 0.0, 0.0, 0.0,
+                                  0.0, 1.0, 0.0, -1.0,
+                                  0.0, 0.0, 1.0, 0.0,
+                                  0.0, 0.0, 0.0, 1.0);
         let trans = Mat4::new(1.0, 0.0, 0.0, -(w as f32) / 2.0 + x,
-                              0.0, 1.0, 0.0, h as f32 / 2.0 - 5.0 - y,
+                              0.0, 1.0, 0.0, h as f32 / 2.0 - y,
+                              0.0, 0.0, 1.0, -0.5,
+                              0.0, 0.0, 0.0, 1.0);
+        let scale = Mat4::new(size, 0.0, 0.0, 0.0,
+                              0.0, size, 0.0, 0.0,
+                              0.0, 0.0, size, 0.0,
+                              0.0, 0.0, 0.0, 1.0);
+        let m = *proj_mat * trans * scale * sub_trans;
+        let text = glium_text::TextDisplay::new(&self.text_system, &self.font, s); // TODO
+        glium_text::draw(&text, &self.text_system, target, *m.as_array(), color);
+    }
+
+    fn draw_text_sub_width<S: Surface>(&mut self, color: (f32, f32, f32, f32), x: f32, y: f32,
+                                       s: &str, proj_mat: &Mat4<f32>, size: f32, target: &mut S) {
+        let (w, h) = target.get_dimensions();
+        let text = glium_text::TextDisplay::new(&self.text_system, &self.font, s); // TODO
+        let sub_trans = Mat4::new(1.0, 0.0, 0.0, -text.get_width(),
+                                  0.0, 1.0, 0.0, -1.0,
+                                  0.0, 0.0, 1.0, 0.0,
+                                  0.0, 0.0, 0.0, 1.0);
+        let trans = Mat4::new(1.0, 0.0, 0.0, -(w as f32) / 2.0 + x,
+                              0.0, 1.0, 0.0, h as f32 / 2.0 - y,
                               0.0, 0.0, 1.0, -0.5,
                               0.0, 0.0, 0.0, 1.0);
         let r = 10.0;
-        let scale = Mat4::new(r, 0.0, 0.0, 0.0,
-                              0.0, r, 0.0, 0.0,
-                              0.0, 0.0, r, 0.0,
+        let scale = Mat4::new(size, 0.0, 0.0, 0.0,
+                              0.0, size, 0.0, 0.0,
+                              0.0, 0.0, size, 0.0,
                               0.0, 0.0, 0.0, 1.0);
-        let m = *proj_mat * trans * scale;
-        let text = glium_text::TextDisplay::new(&self.text_system, &self.font, s); // TODO
+        let m = *proj_mat * trans * scale * sub_trans;
         glium_text::draw(&text, &self.text_system, target, *m.as_array(), color);
     }
 
     fn item_text(&self, item: &Item) -> String {
         match item {
             &Item::Weapon { charges } =>
-                format!("weapon {}", charges),
-            &Item::SpeedBoost { duration_s: _ } =>
-                format!("speed boost"),
-            &Item::BlockPlacer { charges: _ } =>
-                format!("block placer"),
-            &Item::BallSpawner { charges: _ } =>
-                format!("ball spawner"),
+                format!("weapon ({})", charges),
+            &Item::SpeedBoost { duration_s: s } =>
+                format!("speed boost ({})", s),
+            &Item::BlockPlacer { charges: charges } =>
+                format!("block placer ({})", charges),
+            &Item::BallSpawner { charges: charges } =>
+                format!("ball spawner ({})", charges),
         }
     }
 

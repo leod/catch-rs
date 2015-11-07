@@ -46,7 +46,7 @@ pub struct GameInfo {
     pub ticks_per_second: u32,
 }
 
-#[derive(Debug, Clone, Copy, RustcEncodable, RustcDecodable)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, RustcEncodable, RustcDecodable)]
 pub enum DeathReason {
     Projectile,
     Caught,

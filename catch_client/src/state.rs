@@ -54,7 +54,7 @@ impl GameState {
             // Add or remove players, update player stats
             for i in 0..tick.events.len() {
                 let event = tick.events[i].clone();
-                self.process_event(event);
+                self.process_game_event(event);
             }
 
             // Create new entities, remove dead ones
@@ -91,7 +91,7 @@ impl GameState {
         self.players.remove(&id);
     }
 
-    fn process_event(&mut self, event: GameEvent) {
+    fn process_game_event(&mut self, event: GameEvent) {
         match event { 
             GameEvent::InitialPlayerList(players) => {
                 info!("received initial player list: {:?}", players);

@@ -66,15 +66,6 @@ impl DrawItemSystem {
                 color: Vec4::new(0.0, 1.0, 0.0, 1.0),
                 model_mat: model_mat,
             }));
-
-            /*let transform = c.trans(p[0] as f64, p[1] as f64)
-                             .rot_rad(data.orientation[entity].angle as f64)
-                             .transform;
-
-            graphics::rectangle([0.0, 1.0, 0.0, 1.0],
-                                [-size/2.0, -size/2.0, size, size],
-                                transform,
-                                gl);*/
         }
     }
 }
