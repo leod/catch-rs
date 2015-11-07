@@ -29,18 +29,18 @@ impl DrawPlayerSystem {
 
             if data.player_state[entity].dashing.is_some() {
                 let color = if rand::random::<bool>() {
-                    [0.2, 0.77, 0.95]
+                    [0.2, 0.2, 1.0]
                 } else {
-                    [0.2, 0.77, 0.95]
+                    [0.2, 0.2, 1.0]
                 };
 
                 data.draw_player[entity].dash_particle_timer.add(time_s);
                 while data.draw_player[entity].dash_particle_timer.next() {
-                    for _ in 0..30 {
-                        let color = [color[0] + (-0.5 + rand::random::<f32>()) * 0.2,
-                                     color[1] + (-0.5 + rand::random::<f32>()) * 0.2,
-                                     color[2] + (-0.5 + rand::random::<f32>()) * 0.2];
-                        particles.spawn_cone(1.0, // duration in seconds
+                    for _ in 0..20 {
+                        let color = [color[0] + (-0.5 + rand::random::<f32>()) * 0.1,
+                                     color[1] + (-0.5 + rand::random::<f32>()) * 0.1,
+                                     color[2] + (-0.5 + rand::random::<f32>()) * 0.1];
+                        particles.spawn_cone(0.5, // duration in seconds
                                              color, color,
                                              2.5, // size
                                              p, // position

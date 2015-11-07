@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use ecs;
 use hprof;
 
-use shared::{GameInfo, TickNumber, PlayerId, PlayerInfo, PlayerInput, Tick, Map};
+use shared::{GameEvent, GameInfo, TickNumber, PlayerId, PlayerInfo, PlayerInput, Tick, Map};
 use systems::{Systems, NetEntitySystem};
 use components::Components;
 
@@ -33,19 +33,12 @@ impl GameState {
         }
     }
 
-    pub fn add_player(&mut self, info: PlayerInfo) {
-        let id = info.id;
-        assert!(self.players.get(&id).is_none());
-        self.players.insert(id, info);
-    }
-
-    pub fn remove_player(&mut self, id: PlayerId) {
-        assert!(self.players.get(&id).is_some());
-        self.players.remove(&id);
-    }
-
     pub fn get_player_info(&self, id: PlayerId) -> &PlayerInfo {
         &self.players[&id]
+    }
+
+    pub fn players(&self) -> &HashMap<PlayerId, PlayerInfo> {
+        &self.players
     }
 
     pub fn on_local_player_input(&mut self, _input: &PlayerInput) {
@@ -58,33 +51,74 @@ impl GameState {
         {
             let _g = hprof::enter("entity events");
 
-            let net_entity_system = self.world.systems.net_entity_system
-                                        .inner.as_mut().unwrap();
+            // Add or remove players, update player stats
+            for i in 0..tick.events.len() {
+                let event = tick.events[i].clone();
+                self.process_event(event);
+            }
 
             // Create new entities, remove dead ones
-            net_entity_system.process_entity_events(tick, &mut self.world.data);
-        }
+            self.world.systems.net_entity_system.inner.as_mut().unwrap()
+                .process_entity_events(tick, &mut self.world.data);
 
-        // Let all the systems know about any new ecs entities
-        self.world.flush_queue();
+            // Let all the systems know about any new ecs entities
+            self.world.flush_queue();
+        }
 
         {
             let _g = hprof::enter("load tick state");
 
-            let net_entity_system = self.world.systems.net_entity_system
-                                        .inner.as_mut().unwrap();
-
             // Load net state
-            net_entity_system.load_tick_state(tick, &mut self.world.data);
+            self.world.systems.net_entity_system.inner.as_mut().unwrap()
+                .load_tick_state(tick, &mut self.world.data);
         }
     }
 
     pub fn load_interp_tick_state(&mut self, tick_a: &Tick, tick_b: &Tick) {
         let _g = hprof::enter("load interp");
 
-        let net_entity_system = self.world.systems.net_entity_system
-                                    .inner.as_mut().unwrap();
+        self.world.systems.net_entity_system.inner.as_mut().unwrap()
+            .load_interp_tick_state(tick_a, tick_b, &mut self.world.data);
+    }
 
-        net_entity_system.load_interp_tick_state(tick_a, tick_b, &mut self.world.data);
+    fn add_player(&mut self, id: PlayerId, info: PlayerInfo) {
+        assert!(self.players.get(&id).is_none());
+        self.players.insert(id, info);
+    }
+
+    fn remove_player(&mut self, id: PlayerId) {
+        assert!(self.players.get(&id).is_some());
+        self.players.remove(&id);
+    }
+
+    fn process_event(&mut self, event: GameEvent) {
+        match event { 
+            GameEvent::InitialPlayerList(players) => {
+                info!("received initial player list: {:?}", players);
+
+                if !self.players.is_empty() {
+                    warn!("received superfluous inital player list, ignoring");
+                    return;
+                }
+
+                for (id, info) in players {
+                    self.add_player(id, info);
+                }
+            }
+            GameEvent::PlayerJoin(id, info) => {
+                info!("player {} joined: {:?}", id, info);
+                self.add_player(id, info);
+            }
+            GameEvent::PlayerLeave(id) => {
+                info!("player {} left", id);
+                self.remove_player(id);
+            }
+            GameEvent::UpdatePlayerStats(stats_list) => {
+                for (id, stats) in stats_list {
+                    self.players.get_mut(&id).unwrap().stats = stats;
+                }
+            }
+            _ => ()
+        }
     }
 }

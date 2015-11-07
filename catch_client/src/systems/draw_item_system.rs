@@ -5,8 +5,6 @@ use na::{Vec4, Mat2, Mat4};
 
 use rand;
 
-use glium::Surface;
-
 use shared::util::CachedAspect;
 
 use components::{Components, Shape};

@@ -194,35 +194,3 @@ pub fn new_square(display: &glium::Display) -> (glium::VertexBuffer<Vertex>,
     (glium::VertexBuffer::new(display, &vertices).unwrap(),
      glium::IndexBuffer::new(display, glium::index::PrimitiveType::TrianglesList, &indices).unwrap())
 }
-
-/// Returns a centered 1x1 square
-pub fn new_square_no_indices(display: &glium::Display) -> glium::VertexBuffer<Vertex> {
-    let vertices = vec![
-        Vertex { position: [-0.5, -0.5] },
-        Vertex { position: [-0.5, 0.5] },
-        Vertex { position: [0.5, 0.5] },
-
-        Vertex { position: [0.5, 0.5] },
-        Vertex { position: [0.5, -0.5] },
-        Vertex { position: [-0.5, -0.5] },
-    ];
-    
-    glium::VertexBuffer::new(display, &vertices).unwrap()
-}
-
-/// Returns a centered 1x1 square
-pub fn new_square_y_centered(display: &glium::Display) -> (glium::VertexBuffer<Vertex>,
-                                                           glium::IndexBuffer<u16>) {
-    let vertices = vec![
-        Vertex { position: [0.0, -0.5] },
-        Vertex { position: [0.0, 0.5] },
-        Vertex { position: [1.0, 0.5] },
-        Vertex { position: [1.0, -0.5] },
-    ];
-    let indices = vec![0, 1, 2,
-                       0, 2, 3];
-    
-    (glium::VertexBuffer::new(display, &vertices).unwrap(),
-     glium::IndexBuffer::new(display, glium::index::PrimitiveType::TrianglesList, &indices).unwrap())
-}
-

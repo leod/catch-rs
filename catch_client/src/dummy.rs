@@ -31,13 +31,9 @@ impl DummyClient {
         loop {
             let frame_start_s = time::precise_time_s() as f32;
 
-            loop {
-                match self.client.service().unwrap() {
-                    Some(_) => continue,
-                    None => break
-                }
+            self.client.service().unwrap();
+            while let Some(_) = self.client.pop_message() {
             }
-
             while self.client.num_ticks() > 0 {
                 self.client.pop_next_tick();
             }

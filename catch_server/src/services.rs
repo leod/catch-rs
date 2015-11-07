@@ -25,7 +25,7 @@ pub struct Services {
 }
 
 impl HasEvents for Services {
-    /// Queue event for every player and also execute it on the server.
+    /// Queue event for every player and also execute it on the server
     fn add_event(&mut self, event: &GameEvent) {
         let player_ids = self.next_player_events.keys().map(|k| *k)
                              .collect::<Vec<_>>();
@@ -92,8 +92,8 @@ impl Services {
     }*/*/
     
     /// Queue an event only for one specific player
-    pub fn add_player_event(&mut self, player_id: PlayerId, event: GameEvent) {
-        self.next_player_events.get_mut(&player_id).unwrap().push(event);
+    pub fn add_player_event(&mut self, player_id: PlayerId, event: &GameEvent) {
+        self.next_player_events.get_mut(&player_id).unwrap().push(event.clone());
     }
 
     pub fn entity_type_id(&self, type_name: &str) -> EntityTypeId {

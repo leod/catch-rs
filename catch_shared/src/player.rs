@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::{PlayerId, ItemSlot, NUM_ITEM_SLOTS};
+use super::{ItemSlot, NUM_ITEM_SLOTS};
 
 #[derive(PartialEq, Clone, Debug, RustcEncodable, RustcDecodable)]
 pub enum Item {
@@ -160,19 +160,22 @@ impl PlayerInput {
 
 #[derive(Debug, Clone, RustcEncodable, RustcDecodable)]
 pub struct PlayerInfo {
-    pub id: PlayerId,
     pub name: String,
-    pub score: i32,
+    pub stats: PlayerStats,
+}
+
+#[derive(Debug, Clone, Default, RustcEncodable, RustcDecodable)]
+pub struct PlayerStats {
+    pub score: u32,
+    pub deaths: u32,
     pub ping_ms: Option<u32>,
 }
 
 impl PlayerInfo {
-    pub fn new(id: PlayerId, name: String) -> PlayerInfo {
+    pub fn new(name: String) -> PlayerInfo {
         PlayerInfo {
-            id: id,
             name: name,
-            score: 0,
-            ping_ms: None,
+            stats: PlayerStats::default(),
         }
     }
 }

@@ -37,8 +37,7 @@ use state::GameState;
 #[derive(PartialEq, Eq, Clone, Copy)]
 enum ClientState {
     Connecting,
-    Normal,
-    Disconnected
+    Connected,
 }
 
 struct Client {
@@ -130,16 +129,12 @@ impl Server {
 
                 info!("client {} disconnected", player_id);
 
-                if client_state == ClientState::Normal {
-                    // The client was already fully connected, so tell the other
-                    // clients about the disconnection
-                    self.broadcast(&ServerMessage::PlayerDisconnect {
-                        id: player_id
-                    });
-                }
-
                 self.clients.remove(&player_id);
-                self.game_state.remove_player(player_id);
+
+                if client_state == ClientState::Connected {
+                    // At the start of the next tick, broadcast PlayerLeave game events
+                    self.game_state.remove_player(player_id);
+                }
 
                 return true;
             }
@@ -168,19 +163,9 @@ impl Server {
         }
     }
 
-    fn broadcast(&self, message: &ServerMessage) {
-        for (_, client) in &self.clients {
-            if client.state == ClientState::Normal {
-                let data = encode(message, SizeLimit::Infinite).unwrap();
-                client.peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE,
-                                 net::Channel::Messages as u8);
-            }
-        }
-    }
-
     fn send(&self, client: &Client, message: &ServerMessage) {
         //print!("sending message {:?}", message);
-        assert!(client.state == ClientState::Normal);
+        assert!(client.state == ClientState::Connected);
 
         let data = encode(message, SizeLimit::Infinite).unwrap();
         client.peer.send(&data, enet::ffi::ENET_PACKET_FLAG_RELIABLE,
@@ -214,20 +199,18 @@ impl Server {
 
                 info!("player {} connected with name {}", player_id, name);
 
-                self.broadcast(&ServerMessage::PlayerConnect {
-                    id: player_id,
-                    name: name.clone()
-                });
-
-                self.clients.get_mut(&player_id).unwrap().state = ClientState::Normal;
+                self.clients.get_mut(&player_id).unwrap().state = ClientState::Connected;
                 self.send(&self.clients[&player_id],
                           &ServerMessage::AcceptConnect {
                               your_id: player_id,
                               game_info: self.game_info.clone(),
                           });
 
-                let player_info = PlayerInfo::new(player_id, name.clone());
-                self.game_state.add_player(player_info);
+                let player_info = PlayerInfo::new(name.clone());
+
+                // This officially adds the player to the game state.
+                // At the beginning of the next tick, PlayerJoin messages will be sent out.
+                self.game_state.add_player(player_id, player_info);
             }
             &ClientMessage::PlayerInput(ref input)  => {
                 self.game_state.on_player_input(player_id, input);
@@ -257,7 +240,7 @@ impl Server {
                 hprof::end_frame();
 
                 if r && self.print_prof_timer.next_reset() {
-                    hprof::profiler().print_timing();  
+                    //hprof::profiler().print_timing();  
 
                     if self.samples_tick_size > 0 {
                         info!("average tick size over last {} ticks: {:.2} bytes, {:.2} kb/s",
@@ -290,7 +273,7 @@ impl Server {
 
         let mut data = Vec::new();
         for &player_id in &self.clients.keys().map(|k| *k).collect::<Vec<_>>() {
-            if self.clients[&player_id].state == ClientState::Normal {
+            if self.clients[&player_id].state == ClientState::Connected {
                 // Build tick for each client separately. This makes it possible to do
                 // delta encoding and stuff.
                 let _g = hprof::enter("store");

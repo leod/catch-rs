@@ -23,7 +23,7 @@ pub mod net_components;
 
 pub use map::Map;
 pub use tick::{TickState, Tick};
-pub use player::{Item, PlayerInputKey, PlayerInput, PlayerInfo};
+pub use player::{Item, PlayerInputKey, PlayerInput, PlayerInfo, PlayerStats};
 pub use entities::{EntityType, EntityTypes};
 
 pub type EntityId = u32;
@@ -46,28 +46,33 @@ pub struct GameInfo {
     pub ticks_per_second: u32,
 }
 
+#[derive(Debug, Clone, Copy, RustcEncodable, RustcDecodable)]
+pub enum DeathReason {
+    Projectile,
+    Caught,
+    BouncyBall,
+}
+
 #[derive(Debug, Clone, RustcEncodable, RustcDecodable)]
 pub enum GameEvent {
-    PlayerJoin(PlayerId, String),
+    // Player list replication
+    InitialPlayerList(Vec<(PlayerId, PlayerInfo)>),
+    PlayerJoin(PlayerId, PlayerInfo),
     PlayerLeave(PlayerId),
+    UpdatePlayerStats(Vec<(PlayerId, PlayerStats)>),
+
     PlayerDied {
         player_id: PlayerId,
         position: na::Vec2<f32>, 
         responsible_player_id: PlayerId,
+        reason: DeathReason,
     },
     
+    // Entity replication
     CreateEntity(EntityId, EntityTypeId, PlayerId),
     RemoveEntity(EntityId),
 
-    PlaySound(String),
-
-    // This event is only sent to specific players, to indicate
-    // that this tick contains the server-side state for the player state
-    // after some input by the player was processed on the server
-    // Not yet used, since we haven't implemented client-side prediction so far
-    CorrectState(TickNumber),
-
-    // The following events are sent to the clients so that they can do some graphical display
+    // Events for graphical display by the clients
     PlayerDash {
         player_id: PlayerId,
         position: na::Vec2<f32>,
@@ -89,13 +94,10 @@ pub enum GameEvent {
         position: na::Vec2<f32>,
         item: Item,
     },
-    EnemyDied { // This one might not be necessary
+    EnemyDied {
         position: na::Vec2<f32>,
     },
     ProjectileImpact {
         position: na::Vec2<f32>,
     },
-
-    TakeItem(PlayerId, EntityId),
-    //UseItem(PlayerId, ItemType),
 }

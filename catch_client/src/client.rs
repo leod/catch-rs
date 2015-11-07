@@ -19,6 +19,9 @@ pub struct Client {
 
     game_info: Option<GameInfo>,
 
+    // Received messages
+    message_deque: VecDeque<ServerMessage>,
+
     // Ticks received from the server together with the time at which they were received
     tick_deque: VecDeque<(time::Timespec, Tick)>,
 
@@ -44,6 +47,7 @@ impl Client {
             my_name: my_name,
             my_id: None,
             game_info: None,
+            message_deque: VecDeque::new(),
             tick_deque: VecDeque::new(),
             last_tick: None,
         })
@@ -60,6 +64,10 @@ impl Client {
 
     pub fn game_info(&self) -> &GameInfo {
         self.game_info.as_ref().unwrap()
+    }
+
+    pub fn pop_message(&mut self) -> Option<ServerMessage> {
+        self.message_deque.pop_front()
     }
 
     pub fn num_ticks(&self) -> usize {
@@ -117,57 +125,58 @@ impl Client {
         }
     }
 
-    pub fn service(&mut self) -> Result<Option<ServerMessage>, String> {
+    pub fn service(&mut self) -> Result<(), String> {
         assert!(self.connected);
 
-        match self.host.service(0) {
-            Err(error) => Err(error),
-            Ok(enet::Event::None) => Ok(None),
-            Ok(enet::Event::Connect(_)) =>
-                Err("Unexpected enet connect event (already connected)".to_string()),
-            Ok(enet::Event::Disconnect(_)) => {
-                self.connected = false;
-                Err("Got disconnected".to_string())
-            }
-            Ok(enet::Event::Receive(_, channel_id, packet)) => {
-                if channel_id == net::Channel::Messages as u8 {
-                    match decode(&packet.data()) {
-                        Ok(message) => {
-                            //println!("Received message {:?}", message);
-                            Ok(Some(message))
-                        }
-                        Err(_) =>
-                            Err("Received invalid message".to_string())
-                    }
-                } else if channel_id == net::Channel::Ticks as u8 {
-                    //println!("Received tick of size {}: {:?}", data.len(), &data);
-
-                    let mut data = packet.data().clone(); // TODO: clone
-                    let delta_tick: Option<TickNumber> =
-                        decode_from(&mut data, SizeLimit::Infinite).unwrap();
-
-                    match decode_from(&mut data, SizeLimit::Infinite) {
-                        Ok(tick) => {
-                            if let Some(delta_tick) = delta_tick {
-                                assert!(self.last_tick.as_ref().unwrap().tick_number == delta_tick);
-                                self.last_tick.as_mut().unwrap().load_delta(&tick);
-                            } else {
-                                self.last_tick = Some(tick); // TODO: clone
+        'service: loop {
+            match self.host.service(0) {
+                Err(error) => return Err(error),
+                Ok(enet::Event::None) => break 'service,
+                Ok(enet::Event::Connect(_)) =>
+                    return Err("Unexpected enet connect event (already connected)".to_string()),
+                Ok(enet::Event::Disconnect(_)) => {
+                    self.connected = false;
+                    return Err("Got disconnected".to_string())
+                }
+                Ok(enet::Event::Receive(_, channel_id, packet)) => {
+                    if channel_id == net::Channel::Messages as u8 {
+                        let message: Result<ServerMessage, _> = decode(&packet.data());
+                        match message {
+                            Ok(message) => {
+                                self.message_deque.push_back(message.clone());
+                                continue 'service;
                             }
-                            self.tick_deque.push_back((time::get_time(),
-                                                       self.last_tick.clone().unwrap()));
-
+                            Err(_) =>
+                                return Err("Received invalid message".to_string())
                         }
-                        Err(_) =>
-                            return Err("Received invalid tick".to_string())
-                    };
-                    
-                    // We received a tick, but still need a Option<ServerMessage>... kind of awkward
-                    self.service()
-                } else {
-                    Err("Invalid channel id".to_string())
+                    } else if channel_id == net::Channel::Ticks as u8 {
+                        //println!("Received tick of size {}: {:?}", data.len(), &data);
+
+                        let mut data = packet.data().clone(); // TODO: clone
+                        let delta_tick: Option<TickNumber> =
+                            decode_from(&mut data, SizeLimit::Infinite).unwrap();
+
+                        match decode_from(&mut data, SizeLimit::Infinite) {
+                            Ok(tick) => {
+                                if let Some(delta_tick) = delta_tick {
+                                    assert!(self.last_tick.as_ref().unwrap().tick_number == delta_tick);
+                                    self.last_tick.as_mut().unwrap().load_delta(&tick);
+                                } else {
+                                    self.last_tick = Some(tick);
+                                }
+                                self.tick_deque.push_back((time::get_time(),
+                                                           self.last_tick.clone().unwrap()));
+
+                            }
+                            Err(_) =>
+                                return Err("Received invalid tick".to_string())
+                        };
+                    } else {
+                        return Err("Invalid channel id".to_string())
+                    }
                 }
             }
         }
+        Ok(())
     }
 }

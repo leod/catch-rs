@@ -32,13 +32,4 @@ pub enum ServerMessage {
         your_id: PlayerId,
         game_info: GameInfo,
     },
-
-    // Broadcast messages
-    PlayerConnect {
-        id: PlayerId,
-        name: String,
-    },
-    PlayerDisconnect {
-        id: PlayerId,
-    },
 }

@@ -3,7 +3,7 @@ use std::f32;
 use ecs::{EntityData, DataHelper};
 use na::Vec2;
 
-use shared::{GameEvent, NEUTRAL_PLAYER_ID};
+use shared::{GameEvent, DeathReason, NEUTRAL_PLAYER_ID};
 use shared::services::HasEvents;
 
 use entities;
@@ -28,7 +28,8 @@ impl Interaction for PlayerBouncyEnemyInteraction {
         data.services.add_event(&GameEvent::PlayerDied {
             player_id: owner,
             position: position,
-            responsible_player_id: NEUTRAL_PLAYER_ID
+            responsible_player_id: NEUTRAL_PLAYER_ID,
+            reason: DeathReason::BouncyBall,
         });
     }
 }
@@ -127,6 +128,7 @@ impl Interaction for ProjectilePlayerInteraction {
             player_id: player_id,
             position: position,
             responsible_player_id: responsible_player_id,
+            reason: DeathReason::Projectile,
         });
 
         let position = data.position[projectile].p;
@@ -167,6 +169,7 @@ impl Interaction for PlayerPlayerInteraction {
             player_id: player_id,
             position: position,
             responsible_player_id: responsible_player_id,
+            reason: DeathReason::Caught,
         });
     }
 }

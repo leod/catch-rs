@@ -170,7 +170,7 @@ impl Game {
             let _g = hprof::enter("events");
 
             for event in tick.events.iter() {
-                debug!("tick {}: {:?}", tick.tick_number, event);
+                trace!("tick {}: {:?}", tick.tick_number, event);
                 self.process_game_event(event);
             }
         }
@@ -185,11 +185,13 @@ impl Game {
     fn client_service(&mut self) {
         let _g = hprof::enter("client service");
 
-        loop {
-            match self.client.service().unwrap() {
-                Some(_) => continue,
-                None => break
-            };
+        if let Err(error) = self.client.service() {
+            warn!("error while servicing: {}", error);
+            // TODO: handle disconnect etc.
+        }
+
+        while let Some(_message) = self.client.pop_message() {
+            // TODO
         }
     }
 
@@ -276,7 +278,8 @@ impl Game {
             &GameEvent::PlayerDied {
                 player_id,
                 position,
-                responsible_player_id: _
+                responsible_player_id: _,
+                reason,
             } => {
                 let entity = self.get_player_entity(player_id).unwrap();
                 let color = self.state.world.with_entity_data(&entity, |e, c| {
@@ -290,7 +293,7 @@ impl Game {
                     self.particles.spawn_cone(0.75, color, color, 3.5 * rand::random::<f32>() + 2.0,
                                               position, 0.0, f32::consts::PI * 2.0,
                                               70.0 + rand::random::<f32>() * 40.0,
-                                              rand::random::<f32>() * 8.0, 1.0);
+                                              rand::random::<f32>() * 24.0, 1.0);
                 }
             }
             &GameEvent::PlayerDash {
@@ -527,7 +530,7 @@ impl Game {
                      c.player_state[e].clone())
                 }).unwrap();
 
-            let (w, h) = target.get_dimensions();
+            let (_, h) = target.get_dimensions();
             let y1 = h as f32 - 100.0;
             let y2 = y1 + 35.0; 
             let y3 = y2 + 35.0;

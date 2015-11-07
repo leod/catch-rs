@@ -7,6 +7,7 @@ use hprof;
 use na::{Vec2, Norm};
 
 use shared::{TickNumber, GameInfo, GameEvent, PlayerId, PlayerInfo, Item};
+use shared::services::HasEvents;
 use shared::map::Map;
 use shared::net::TimedPlayerInput;
 
@@ -35,7 +36,6 @@ pub struct Player {
 pub struct SpawnPoint {
     position: Vec2<f32>,
     size: Vec2<f32>,
-    last_used_time_s: Option<f32>,
 }
 
 impl Player {
@@ -73,7 +73,6 @@ impl GameState {
                .map(|object| SpawnPoint {
                         position: Vec2::new(object.x, object.y),
                         size: Vec2::new(object.width, object.height),
-                        last_used_time_s: None,
                     })
                .collect();
 
@@ -202,11 +201,14 @@ impl GameState {
         self.tick_number 
     }
 
-    pub fn add_player(&mut self, info: PlayerInfo) {
-        let id = info.id;
+    pub fn add_player(&mut self, id: PlayerId, info: PlayerInfo) {
         assert!(self.players.get(&id).is_none());
-
         self.players.insert(id, Player::new(info));
+    }
+
+    pub fn remove_player(&mut self, id: PlayerId) {
+        // The player will be removed at the start of the next tick
+        self.players.get_mut(&id).unwrap().remove = true;
     }
 
     fn spawn_player(&mut self, id: PlayerId) -> ecs::Entity {
@@ -238,19 +240,7 @@ impl GameState {
             c.player_state[e].equip(1, Item::BallSpawner { charges: 5 }); 
         });
 
-        /*// Spawn a complementary orbit ball
-        let orbit_entity = entities::build_net("bouncy_enemy", id, &mut self.world.data);
-
-        self.world.with_entity_data(&orbit_entity, |e, c| {
-            c.position[e].p = math::add(position, [10.0, 0.0]);
-            c.bouncy_enemy[e].orbit = Some(entity);
-        });*/
-        
         entity
-    }
-
-    pub fn remove_player(&mut self, id: PlayerId) {
-        self.players.get_mut(&id).unwrap().remove = true;
     }
 
     pub fn get_player_info(&self, id: PlayerId) -> &PlayerInfo {
@@ -260,13 +250,6 @@ impl GameState {
     pub fn on_player_input(&mut self,
                            id: PlayerId,
                            input: &TimedPlayerInput) {
-        /*if self.players[&id].next_input.len() > 0 {
-            println!("Already have player input for {}, queuing", id);
-        }
-
-        self.players.get_mut(&id).as_mut().unwrap()
-            .next_input.push(input.clone());*/
-
         if let Some(entity) = self.players.get_mut(&id).unwrap().entity {
             self.world.data.with_entity_data(&entity, |player, c| {
                 c.player_controller[player].inputs.push(input.clone()); 
@@ -293,18 +276,43 @@ impl GameState {
 
         self.tick_number += 1;
         self.world.services.tick_dur_s = 1.0 / (self.game_info.ticks_per_second as f32); 
+
+        // The order of the following operations is important, in order to avoid sending
+        // invalid or duplicate events to players.
+        // Note that game events should only be created in the scope of this tick function.
+        
+        // Initialize the event queue of each player to be empty
         self.world.services.prepare_for_tick(self.tick_number, self.players.keys().map(|i| *i));
 
-        self.tick_replicate_entities_to_new_players();
-        if self.tick_number == 1 { self.init_first_tick(); }
-        self.tick_spawn_player_entities_if_needed();
+        // First, handle adding new players. Send out events to new players to replicate our state
+        // and entities. This means queueing up InitialPlayerList and CreateEntity events.
+        // We also send out PlayerJoin events to non-new players.
+        self.tick_add_new_players();
+        
+        // Remove any players that disconnected this tick.
+        // This means broadcasting PlayerLeave and RemoveEntity events.
         self.tick_remove_disconnected_players();
+
+        // Send out a table of player stats (we probably don't need to do this every frame)
+        self.tick_replicate_player_stats();
+
+        // Create some initial entities, e.g. from the map specified in self.game_info
+        if self.tick_number == 1 {
+            self.init_first_tick();
+        }
+
+        // Check if we can respawn some players
+        self.tick_respawn_players();
+
+        // Finally, run the input queued up for every player (via ClientMessage::PlayerInput).
+        // This is the only place where the time of player-controlled entities is advanced.
+        // If we don't receive any input from a player, their entity does not move.
         self.tick_run_player_input();
 
-        // Let all the systems know about any new/removed ecs entities
+        // Let all the systems know about any new or removed ecs entities
         self.world.flush_queue();
-
-        // Let server entities have their time
+ 
+        // Advance the state of server-controlled entities
         {
             let _g = hprof::enter("entities");
 
@@ -318,53 +326,48 @@ impl GameState {
         
         // Process events generated in this tick
         for i in 0..self.world.services.next_events.len() {
-            // TODO: There might be a subtle problem with orderings here
-            // (events might be processed in a different order on some clients)
-
             let event = self.world.services.next_events[i].clone();
             self.tick_process_event(event);
         }
         self.world.services.next_events.clear();
+
         self.world.flush_queue();
 
         self.time_s += self.world.services.tick_dur_s;
     }
 
-    fn tick_replicate_entities_to_new_players(&mut self) {
-        let mut new_players = Vec::new();
-        for (player_id, player) in self.players.iter_mut() {
+    fn tick_add_new_players(&mut self) {
+        // Find new and non-new players
+        let mut new_players = vec![];
+        let mut non_new_players = vec![];
+        for (&player_id, player) in self.players.iter_mut() {
             if player.is_new {
-                info!("replicating net state to player {}", player_id);
-                new_players.push(*player_id);
+                new_players.push(player_id);
                 player.is_new = false;
+            } else {
+                non_new_players.push(player_id);
             }
         }
-        for player_id in new_players {
+
+        // Replicate the game state to the new clients
+        for new_player_id in new_players {
+            info!("replicating net state to player {}", new_player_id);
+
+            // First, tell them about the player list (note: this already includes themselves!)
+            let players = self.players.iter().map(|(k, v)| (*k, v.info.clone())).collect();
+            let event = GameEvent::InitialPlayerList(players);
+            self.world.services.add_player_event(new_player_id, &event);
+
+            // Now we can create entities
             self.world.systems.net_entity_system
-                .replicate_entities(player_id, &mut self.world.data);
-        }
-    }
+                .replicate_entities(new_player_id, &mut self.world.data);
 
-    fn tick_spawn_player_entities_if_needed(&mut self) {
-        let mut respawn = Vec::new();
-        for (player_id, player) in self.players.iter_mut() {
-            if !player.alive() {
-                if let Some(time) = player.respawn_time {
-                    let time = time - self.world.services.tick_dur_s;
-
-                    player.respawn_time = if time <= 0.0 {
-                        respawn.push(*player_id);
-                        None   
-                    } else {
-                        Some(time)
-                    };
-                }
-
+            // Tell any non-new players about this new player
+            let new_player_info = self.players[&new_player_id].info.clone();
+            let event = GameEvent::PlayerJoin(new_player_id, new_player_info);
+            for &player_id in &non_new_players {
+                self.world.services.add_player_event(player_id, &event);
             }
-        }
-
-        for player_id in respawn {
-            self.spawn_player(player_id); 
         }
     }
 
@@ -387,9 +390,9 @@ impl GameState {
                 false
             };
 
-            self.world.systems.net_entity_system
-                .remove_player_entities(id, &mut self.world.data);
+            self.world.systems.net_entity_system.remove_player_entities(id, &mut self.world.data);
             self.players.remove(&id); 
+            self.world.services.add_event(&GameEvent::PlayerLeave(id));
 
             // If the disconnected player was the catcher, choose a random new alive one as catcher
             let alive_players = self.players.iter()
@@ -406,26 +409,43 @@ impl GameState {
             }
         }
 
+        // Allow systems to remove references to newly-removed entities
+        self.world.flush_queue();
     }
 
-    fn tick_run_player_input(&mut self) {
-        /*let mut input = Vec::new();
-        for (player_id, player) in self.players.iter() {
-            if let Some(entity) = player.entity {
-                for player_input in &player.next_input {
-                    input.push((*player_id, entity, player_input.clone()));
+    fn tick_replicate_player_stats(&mut self) {
+        let stats = self.players.iter().map(|(&id, p)| (id, p.info.stats.clone())).collect();
+        let event = GameEvent::UpdatePlayerStats(stats);
+        self.world.services.add_event(&event);
+    }
+
+    fn tick_respawn_players(&mut self) {
+        let mut respawn = Vec::new();
+        for (&player_id, player) in self.players.iter_mut() {
+            if !player.alive() {
+                if let Some(time) = player.respawn_time {
+                    let time = time - self.world.services.tick_dur_s;
+
+                    player.respawn_time = if time <= 0.0 {
+                        respawn.push(player_id);
+                        None
+                    } else {
+                        Some(time)
+                    };
                 }
+
             }
         }
 
-        for (player_id, entity, player_input) in input {
-            self.run_player_input(player_id, entity, &player_input);
+        for player_id in respawn {
+            self.spawn_player(player_id); 
         }
 
-        for (_, player) in self.players.iter_mut() {
-            player.next_input.clear();
-        }*/
+        // Allow systems to add references to new entities
+        self.world.flush_queue();
+    }
 
+    fn tick_run_player_input(&mut self) {
         self.world.systems.player_controller_system
             .run_queued_inputs(&mut self.world.data);
     }
@@ -436,71 +456,77 @@ impl GameState {
                 player_id,
                 position,
                 responsible_player_id,
+                reason: _,
             } => {
-                info!("killing player {}", player_id);
+                self.on_player_died(player_id, position, responsible_player_id);
+            }
+            _ => ()
+        }
+    }
 
-                if !self.players[&player_id].alive() {
-                    info!("killing a dead player! HAH!");
+    fn on_player_died(&mut self, player_id: PlayerId, position: Vec2<f32>,
+                      responsible_player_id: PlayerId) {
+        info!("killing player {}", player_id);
+
+        if !self.players[&player_id].alive() {
+            debug!("killing a dead player! hah!");
+        } else {
+            let player_entity = self.players[&player_id].entity.unwrap();
+
+            // If this player is the catcher, we need to determine a new catcher
+            let is_catcher = self.world.with_entity_data(&player_entity, |e, c| {
+                let is_catcher = c.player_state[e].is_catcher;
+                c.player_state[e].is_catcher = false;
+                is_catcher
+            }).unwrap();
+
+            if is_catcher {
+                let responsible_entity = 
+                    self.players.get(&responsible_player_id).map(|player| player.entity);
+
+                if let Some(Some(responsible_entity)) = responsible_entity {
+                    // If we were killed by another player, that one becomes the catcher
+                    self.world.with_entity_data(&responsible_entity, |e, c| {
+                        c.player_state[e].is_catcher = true;
+                    });
                 } else {
-                    let player_entity = self.players[&player_id].entity.unwrap();
+                    // Otherwise, find the player that is the closest to the dead catcher
+                    let player_ids = self.players.keys().filter(|id| **id != player_id);
 
-                    // If this player is the catcher, we need to determine a new catcher
-                    let is_catcher = self.world.with_entity_data(&player_entity, |e, c| {
-                        let is_catcher = c.player_state[e].is_catcher;
-                        c.player_state[e].is_catcher = false;
-                        is_catcher
-                    }).unwrap();
-
-                    if is_catcher {
-                        let responsible_entity = 
-                            self.players.get(&responsible_player_id).map(|player| player.entity);
-
-                        if let Some(Some(responsible_entity)) = responsible_entity {
-                            // If we were killed by another player, that one becomes the catcher
-                            self.world.with_entity_data(&responsible_entity, |e, c| {
-                                c.player_state[e].is_catcher = true;
-                            });
-                        } else {
-                            // Otherwise, find the player that is the closest to the dead catcher
-                            let player_ids = self.players.keys().filter(|id| **id != player_id);
-
-                            let mut closest: Option<(ecs::Entity, f32)> = None; 
-                            for &id in player_ids {
-                                if let Some(entity) = self.players[&id].entity {
-                                    let d = self.world.with_entity_data(&entity, |e, c| {
-                                        (position - c.position[e].p).norm()
-                                    }).unwrap();
-                                    if closest.is_none() || closest.unwrap().1 > d {
-                                        closest = Some((entity, d));
-                                    }
-                                }
-                            }
-                            
-                            if let Some((closest_player_entity, _)) = closest {
-                                self.world.with_entity_data(&closest_player_entity, |e, c| {
-                                    assert!(!c.player_state[e].is_catcher);
-                                    c.player_state[e].is_catcher = true;
-                                });
-                            } else {
-                                // If we are here, this should mean that nobody is alive
-                                for (id, player) in self.players.iter() {
-                                    assert!(*id == player_id || player.entity.is_none());
-                                }
+                    let mut closest: Option<(ecs::Entity, f32)> = None; 
+                    for &id in player_ids {
+                        if let Some(entity) = self.players[&id].entity {
+                            let d = self.world.with_entity_data(&entity, |e, c| {
+                                (position - c.position[e].p).norm()
+                            }).unwrap();
+                            if closest.is_none() || closest.unwrap().1 > d {
+                                closest = Some((entity, d));
                             }
                         }
                     }
-
-                    // Kill the player
-                    {
-                        let player = self.players.get_mut(&player_id).unwrap();
-                        player.entity = None;
-                        player.respawn_time = Some(RESPAWN_TIME_S);
-                    };
-
-                    entities::remove_net(player_entity, &mut self.world.data);
+                    
+                    if let Some((closest_player_entity, _)) = closest {
+                        self.world.with_entity_data(&closest_player_entity, |e, c| {
+                            assert!(!c.player_state[e].is_catcher);
+                            c.player_state[e].is_catcher = true;
+                        });
+                    } else {
+                        // If we are here, this should mean that nobody is alive
+                        for (id, player) in self.players.iter() {
+                            assert!(*id == player_id || player.entity.is_none());
+                        }
+                    }
                 }
-            },
-            _ => (),
+            }
+
+            // Kill the player
+            {
+                let player = self.players.get_mut(&player_id).unwrap();
+                player.entity = None;
+                player.respawn_time = Some(RESPAWN_TIME_S);
+            };
+
+            entities::remove_net(player_entity, &mut self.world.data);
         }
     }
 
