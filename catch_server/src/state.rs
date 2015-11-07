@@ -6,7 +6,8 @@ use rand;
 use hprof;
 use na::{Vec2, Norm};
 
-use shared::{TickNumber, GameInfo, GameEvent, PlayerId, PlayerInfo, Item};
+use shared::{NEUTRAL_PLAYER_ID, TickNumber, GameInfo, DeathReason, GameEvent, PlayerId, PlayerInfo,
+             Item};
 use shared::services::HasEvents;
 use shared::map::Map;
 use shared::net::TimedPlayerInput;
@@ -456,22 +457,41 @@ impl GameState {
                 player_id,
                 position,
                 responsible_player_id,
-                reason: _,
+                reason,
             } => {
-                self.on_player_died(player_id, position, responsible_player_id);
+                self.on_player_died(player_id, position, responsible_player_id, reason);
             }
             _ => ()
         }
     }
 
     fn on_player_died(&mut self, player_id: PlayerId, position: Vec2<f32>,
-                      responsible_player_id: PlayerId) {
+                      responsible_player_id: PlayerId, reason: DeathReason) {
         info!("killing player {}", player_id);
+
+        assert!(self.players.get(&player_id).is_some());
+        assert!(responsible_player_id == NEUTRAL_PLAYER_ID ||
+                self.players.get(&responsible_player_id).is_some(),
+                "disconnected players shouldn't be able to kill (yet?)");
 
         if !self.players[&player_id].alive() {
             debug!("killing a dead player! hah!");
         } else {
             let player_entity = self.players[&player_id].entity.unwrap();
+
+            // Update the score
+            {
+                let player = self.players.get_mut(&player_id).unwrap();
+                player.info.stats.deaths += 1;
+            }
+            if responsible_player_id != NEUTRAL_PLAYER_ID {
+                let responsible_player = self.players.get_mut(&responsible_player_id).unwrap();
+                responsible_player.info.stats.score +=
+                    match reason {
+                        DeathReason::Caught => 10,
+                        _ => 1,
+                    };
+            }
 
             // If this player is the catcher, we need to determine a new catcher
             let is_catcher = self.world.with_entity_data(&player_entity, |e, c| {

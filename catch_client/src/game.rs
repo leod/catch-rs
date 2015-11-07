@@ -41,9 +41,10 @@ pub struct Game {
     tick_progress: f32,
     time_factor: f32,
 
-    death_messages: VecDeque<(String, (f32, f32, f32))>,
-
     display: Display,
+
+    death_messages: VecDeque<(String, (f32, f32, f32))>,
+    draw_player_stats: bool,
 
     draw_list: DrawList,
     draw_draw_list: DrawDrawList,
@@ -89,9 +90,10 @@ impl Game {
             tick_progress: 0.0,
             time_factor: 0.0,
 
-            death_messages: VecDeque::new(),
-
             display: display,
+
+            death_messages: VecDeque::new(),
+            draw_player_stats: false,
 
             draw_list: DrawList::new(),
             draw_draw_list: draw_draw_list,
@@ -217,6 +219,14 @@ impl Game {
                             continue;
                         } else if key == glutin::VirtualKeyCode::P {
                             self.print_prof = true;
+                            continue;
+                        } else if key == glutin::VirtualKeyCode::Tab {
+                            self.draw_player_stats = true;
+                            continue;
+                        }
+                    } else if state == glutin::ElementState::Released {
+                        if key == glutin::VirtualKeyCode::Tab {
+                            self.draw_player_stats = false;
                             continue;
                         }
                     }
@@ -495,6 +505,9 @@ impl Game {
             self.draw_debug_text(&draw_context.proj_mat, &mut target);
             self.draw_player_text(&draw_context.proj_mat, &mut target);
             self.draw_death_messages(&draw_context.proj_mat, &mut target);
+            if self.draw_player_stats {
+                self.draw_player_stats(&draw_context.proj_mat, &mut target);
+            }
         }
 
         {
@@ -549,6 +562,28 @@ impl Game {
         }
     }
 
+    fn draw_player_stats<S: Surface>(&mut self, proj_mat: &Mat4<f32>, target: &mut S) {
+        let (w, h) = target.get_dimensions();
+        let x1 = w as f32 / 2.0 - 200.0;
+        let mut y = h as f32 / 2.0 - 200.0;
+        let x2 = x1 + 100.0;
+        let x3 = x2 + 100.0;
+
+        let color = (1.0, 1.0, 1.0, 1.0);
+        let size = 12.0;
+
+        let players = self.state.players().clone();
+
+        for (_, info) in players.iter() {
+            self.draw_text(color, x1, y, &info.name, proj_mat, size, target);
+            self.draw_text(color, x2, y, &format!("{}", info.stats.score), proj_mat, size,
+                           target);
+            self.draw_text(color, x3, y, &format!("{}", info.stats.deaths), proj_mat, size,
+                          target);
+            y += 30.0;
+        }
+    }
+
     fn draw_debug_text<S: Surface>(&mut self, proj_mat: &Mat4<f32>, target: &mut S) {
         let color = (1.0, 0.0, 1.0, 1.0);
 
@@ -557,7 +592,7 @@ impl Game {
         let s = &format!("fps: {:.1}", self.fps);
         self.draw_text(color, 10.0, 10.0, s, proj_mat, size, target);
 
-        let s = &format!("# queued ticks: {}", self.client.num_ticks());
+        let s = &format!("queued ticks: {}", self.client.num_ticks());
         self.draw_text(color, 10.0, 10.0 + r, s, proj_mat, size, target);
 
         let s = &format!("tick progress: {:.1}", self.tick_progress);
