@@ -44,6 +44,7 @@ systems! {
                   Box::new(wall_interactions::ProjectileWallInteraction)),
                 ]),
         interaction_system: InteractionSystem = InteractionSystem::new(
+            aspect!(<Components> all: [wall]),
             vec![
                  (aspect!(<Components> all: [player_state]),
                   aspect!(<Components> all: [bouncy_enemy]),

@@ -1,7 +1,7 @@
 use std::f32;
 
 use ecs::{EntityData, DataHelper};
-use na::Vec2;
+use na::{Norm, Vec2};
 
 use shared::{GameEvent, DeathReason, NEUTRAL_PLAYER_ID};
 use shared::services::HasEvents;
@@ -9,28 +9,41 @@ use shared::services::HasEvents;
 use entities;
 use components::Components;
 use services::Services;
-use systems::interaction_system::Interaction;
+use systems::interaction_system::{InteractionResponse, Interaction};
 
-/// Kill player on hitting enemy
+/// Kill player on hitting enemy, or kill enemy if player is dashing
 pub struct PlayerBouncyEnemyInteraction;
 impl Interaction for PlayerBouncyEnemyInteraction {
     fn condition(&self,
                  player: EntityData<Components>, enemy: EntityData<Components>,
                  data: &mut DataHelper<Components, Services>) -> bool {
         data.net_entity[player].owner != data.net_entity[enemy].owner &&
-        data.player_state[player].vulnerable()
+        (data.player_state[player].vulnerable() ||
+         data.player_state[player].dashing.is_some())
     }
     fn apply(&self,
-             player: EntityData<Components>, _enemy: EntityData<Components>,
-             data: &mut DataHelper<Components, Services>) {
-        let owner = data.net_entity[player].owner;
-        let position = data.position[player].p;
-        data.services.add_event(&GameEvent::PlayerDied {
-            player_id: owner,
-            position: position,
-            responsible_player_id: NEUTRAL_PLAYER_ID,
-            reason: DeathReason::BouncyBall,
-        });
+             player: EntityData<Components>, enemy: EntityData<Components>,
+             data: &mut DataHelper<Components, Services>) -> InteractionResponse {
+        if data.player_state[player].vulnerable() {
+            let owner = data.net_entity[player].owner;
+            let position = data.position[player].p;
+            data.services.add_event(&GameEvent::PlayerDied {
+                player_id: owner,
+                position: position,
+                responsible_player_id: NEUTRAL_PLAYER_ID,
+                reason: DeathReason::BouncyBall,
+            });
+        } else {
+            assert!(data.player_state[player].dashing.is_some());
+
+            let event = GameEvent::EnemyDied {
+                position: data.position[enemy].p
+            };
+            data.services.add_event(&event);
+
+            entities::remove_net(**enemy, data);
+        }
+        InteractionResponse::None
     }
 }
 
@@ -39,27 +52,32 @@ pub struct BouncyEnemyInteraction;
 impl Interaction for BouncyEnemyInteraction {
     fn apply(&self,
              a: EntityData<Components>, b: EntityData<Components>,
-             data: &mut DataHelper<Components, Services>) {
-        // Flip orientations of both entities and add some velocity in the new direction
-                /*data.orientation[e].angle = f32::consts::PI + n_angle - (angle - n_angle);
-                data.server_net_entity[e].force(ComponentType::Orientation);
+             c: &mut DataHelper<Components, Services>) -> InteractionResponse {
+        /*let n = (c.linear_velocity[a].v + c.linear_velocity[b].v).normalize();
+        let n_angle = n[1].atan2(n[0]);
+        c.orientation[a].angle = 2.0 * n_angle - c.orientation[a].angle;
+        c.orientation[b].angle = 2.0 * n_angle - c.orientation[b].angle;*/
 
-                let v = data.linear_velocity[e].v;
-                let speed = math::square_len(v).sqrt();
-                data.linear_velocity[e].v = [
-                    data.orientation[e].angle.cos() * (speed + 1.0),
-                    data.orientation[e].angle.sin() * (speed + 1.0),
-                ];*/
+        let delta = c.position[b].p - c.position[a].p;
+        let alpha = delta[1].atan2(delta[0]);
 
-        data.orientation[a].angle = data.orientation[a].angle + f32::consts::PI / 2.0;
-        let direction_a = Vec2::new(data.orientation[a].angle.cos(),
-                                    data.orientation[a].angle.sin());
-        data.linear_velocity[a].v = data.linear_velocity[a].v + direction_a * 200.0;
+        /*c.orientation[a].angle = alpha;
+        c.orientation[b].angle = f32::consts::PI + alpha;*/
 
-        data.orientation[b].angle = data.orientation[b].angle + f32::consts::PI / 2.0;
-        let direction_b = Vec2::new(data.orientation[b].angle.cos(),
-                                    data.orientation[b].angle.sin());
-        data.linear_velocity[b].v = data.linear_velocity[b].v + direction_b * 200.0;
+        c.orientation[a].angle = f32::consts::PI + alpha;
+        c.orientation[b].angle = alpha;
+
+        let direction_a = Vec2::new(c.orientation[a].angle.cos(),
+                                    c.orientation[a].angle.sin());
+        let direction_b = Vec2::new(c.orientation[b].angle.cos(),
+                                    c.orientation[b].angle.sin());
+        c.linear_velocity[a].v = direction_a * c.linear_velocity[a].v.norm();
+        c.linear_velocity[b].v = direction_b * c.linear_velocity[b].v.norm();
+        
+        /*c.linear_velocity[b].v = c.linear_velocity[b].v + direction_b;
+        c.linear_velocity[a].v = c.linear_velocity[a].v + direction_a;*/
+
+        InteractionResponse::DisplaceNoOverlap
     }
 }
 
@@ -68,7 +86,7 @@ pub struct PlayerItemInteraction;
 impl Interaction for PlayerItemInteraction {
     fn apply(&self,
              player: EntityData<Components>, item: EntityData<Components>,
-             data: &mut DataHelper<Components, Services>) {
+             data: &mut DataHelper<Components, Services>) -> InteractionResponse {
         data.full_player_state[player].hidden_item = Some(data.item[item].clone());
         entities::remove_net(**item, data);
 
@@ -78,6 +96,8 @@ impl Interaction for PlayerItemInteraction {
            player_id: owner,
            position: position,
         });
+
+        InteractionResponse::None
     }
 }
 
@@ -92,7 +112,7 @@ impl Interaction for ProjectileBouncyEnemyInteraction {
 
     fn apply(&self,
              projectile: EntityData<Components>, enemy: EntityData<Components>,
-             data:  &mut DataHelper<Components, Services>) {
+             data:  &mut DataHelper<Components, Services>) -> InteractionResponse {
         let position = data.position[enemy].p;
         data.services.add_event(&GameEvent::EnemyDied {
             position: position,
@@ -105,6 +125,8 @@ impl Interaction for ProjectileBouncyEnemyInteraction {
 
         entities::remove_net(**projectile, data);
         entities::remove_net(**enemy, data);
+
+        InteractionResponse::None
     }
 }
 
@@ -120,7 +142,7 @@ impl Interaction for ProjectilePlayerInteraction {
 
     fn apply(&self,
              projectile: EntityData<Components>, player: EntityData<Components>,
-             data: &mut DataHelper<Components, Services>) {
+             data: &mut DataHelper<Components, Services>) -> InteractionResponse {
         let player_id = data.net_entity[player].owner;
         let position = data.position[player].p;
         let responsible_player_id = data.net_entity[projectile].owner;
@@ -137,6 +159,8 @@ impl Interaction for ProjectilePlayerInteraction {
         });
 
         entities::remove_net(**projectile, data); 
+
+        InteractionResponse::None
     }
 }
 
@@ -152,7 +176,7 @@ impl Interaction for PlayerPlayerInteraction {
 
     fn apply(&self,
              player1: EntityData<Components>, player2: EntityData<Components>,
-             data: &mut DataHelper<Components, Services>) {
+             data: &mut DataHelper<Components, Services>) -> InteractionResponse {
         let (catcher, catchee) = if data.player_state[player1].is_catcher {
             (player1, player2)
         } else {
@@ -171,5 +195,7 @@ impl Interaction for PlayerPlayerInteraction {
             responsible_player_id: responsible_player_id,
             reason: DeathReason::Caught,
         });
+
+        InteractionResponse::None
     }
 }

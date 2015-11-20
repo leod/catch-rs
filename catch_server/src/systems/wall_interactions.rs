@@ -9,6 +9,16 @@ use components::Components;
 use services::Services;
 use entities;
 
+pub struct ConstWallInteraction(pub WallInteractionType);
+impl WallInteraction<Components, Services> for ConstWallInteraction {
+    fn apply(&self, _p: Vec2<f32>,
+             _enemy: EntityData<Components>, _wall: EntityData<Components>,
+             _data: &mut DataHelper<Components, Services>)
+             -> WallInteractionType {
+        self.0
+    }
+}
+
 /// Bouncy enemy interaction with wall
 pub struct BouncyEnemyWallInteraction;
 impl WallInteraction<Components, Services> for BouncyEnemyWallInteraction {

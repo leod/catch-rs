@@ -12,6 +12,7 @@ use components::{HasPosition, HasLinearVelocity, HasOrientation, HasAngularVeloc
                  HasPlayerState, HasFullPlayerState, HasShape, HasWallPosition, WallPosition};
 
 /// What to do when an entity hits a wall while moving
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WallInteractionType {
     /// Slide at wall
     Slide, 
@@ -51,13 +52,12 @@ const STEPBACK: f32 = 0.05;
 pub fn move_entity<Components: ComponentManager,
                    Services: ServiceManager>
                   (e: EntityData<Components>,
-                   dur_s: f32,
+                   delta: Vec2<f32>,
                    interaction: &WallInteraction<Components, Services>,
                    wall_aspect: &CachedAspect<Components>,
                    c: &mut DataHelper<Components, Services>)
         where Components: HasPosition + HasLinearVelocity + HasShape +
                           HasOrientation + HasWallPosition {
-    let delta = c.linear_velocity()[e].v * dur_s;
     let a = c.position()[e].p;
     let b = a + delta;
 
@@ -99,8 +99,7 @@ pub fn move_entity<Components: ComponentManager,
 
                     //data.server_net_entity[e].force(ComponentType::Orientation);
 
-                    let v = c.linear_velocity()[e].v;
-                    let speed = v.norm();
+                    let speed = c.linear_velocity()[e].v.norm();
                     c.linear_velocity_mut()[e].v = Vec2::new(
                         c.orientation()[e].angle.cos() * (speed + 1.0),
                         c.orientation()[e].angle.sin() * (speed + 1.0),
@@ -207,7 +206,8 @@ pub fn run_player_movement_input<Components: ComponentManager,
 
     // Before changing velocities, move
     let interaction = PlayerWallInteraction(owner);
-    move_entity(e, dur_s, &interaction, wall_aspect, c);
+    let delta = c.linear_velocity()[e].v * dur_s;
+    move_entity(e, delta, &interaction, wall_aspect, c);
 
     let angle = c.orientation()[e].angle;
     let direction = Vec2::new(angle.cos(), angle.sin());

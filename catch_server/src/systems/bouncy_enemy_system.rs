@@ -7,6 +7,7 @@ use shared::util::CachedAspect;
 use components::{Components, Shape};
 use services::Services;
 
+const MAX_SPEED: f32 = 300.0;
 const MOVE_ACCEL: f32 = 150.0;
 const MOVE_FRICTION: f32 = 4.0;
 const ORBIT_SPEED_FACTOR: f32 = 10.0;
@@ -58,6 +59,11 @@ impl BouncyEnemySystem {
             };
 
             data.linear_velocity[e].v = data.linear_velocity[e].v + accel * dur_s;
+
+            let speed = data.linear_velocity[e].v.norm();
+            if speed > MAX_SPEED {
+                data.linear_velocity[e].v = data.linear_velocity[e].v / speed * MAX_SPEED;
+            }
         }
     }
 }

@@ -94,13 +94,17 @@ impl DrawDrawList {
         if let Some(vertex_buffer) = self.sprite_vertex_buffers.pop() {
             vertex_buffer
         } else {
+            info!("creating new vertex buffer for draw list");
             glium::VertexBuffer::empty_dynamic(display, SPRITE_VERTEX_BUFFER_SIZE).unwrap()
         }
     }
 
     pub fn draw<'a, S: glium::Surface>(&mut self, list: &DrawList, context: &DrawContext<'a>,
                                        display: &glium::Display, surface: &mut S) {
-        // TODO
+        // TODO: This stops working as soon as we require more than one buffer of a type,
+        // which is when more than SPRITE_VERTEX_BUFFER_SIZE many objects of one type are being
+        // drawn in a frame. Borrowing rules seem to make it hard to map different buffers
+        // of a vec at a time.
 
         let mut circle_sprite_buffers: Vec<glium::VertexBuffer<DrawAttributes>> = Vec::new();
         let mut square_sprite_buffers: Vec<glium::VertexBuffer<DrawAttributes>> = Vec::new();
@@ -158,6 +162,7 @@ impl DrawDrawList {
                       circle_sprite_buffer.slice(0..circle_i).unwrap().per_instance().unwrap()),
                      &indices, &self.program, &uniforms, &context.parameters).unwrap();
 
+        // Allow buffers to be reused next frame
         self.sprite_vertex_buffers.push(circle_sprite_buffer);
         self.sprite_vertex_buffers.push(square_sprite_buffer);
     }

@@ -4,9 +4,16 @@ use na::Norm;
 
 use shared::math;
 use shared::util::CachedAspect;
+use shared::movement::{self, WallInteractionType};
 
 use components::{Components, Shape}; 
 use services::Services;
+use systems::wall_interactions::ConstWallInteraction;
+
+pub enum InteractionResponse {
+    None,
+    DisplaceNoOverlap,  
+}
 
 /// Defines a conditional interaction between two entities
 pub trait Interaction {
@@ -18,10 +25,13 @@ pub trait Interaction {
 
     fn apply(&self,
              a: EntityData<Components>, b: EntityData<Components>,
-             data: &mut DataHelper<Components, Services>);
+             data: &mut DataHelper<Components, Services>) -> InteractionResponse;
 }
 
 pub struct InteractionSystem {
+    /// Walls in the map
+    wall_aspect: CachedAspect<Components>,
+
     /// Interactions between two different entity types
     interactions: Vec<(CachedAspect<Components>, CachedAspect<Components>, Box<Interaction>)>,
 
@@ -31,10 +41,12 @@ pub struct InteractionSystem {
 
 impl InteractionSystem {
     pub fn new(
+            wall_aspect: Aspect<Components>,
             interactions: Vec<(Aspect<Components>, Aspect<Components>, Box<Interaction>)>,
             self_interactions: Vec<(Aspect<Components>, Box<Interaction>)>)
             -> InteractionSystem {
         InteractionSystem {
+            wall_aspect: CachedAspect::new(wall_aspect),
             interactions:
                 interactions.into_iter()
                             .map(|(a, b, i)| (CachedAspect::new(a), CachedAspect::new(b), i))
@@ -54,10 +66,8 @@ impl InteractionSystem {
         for &(ref aspect_a, ref aspect_b, ref interaction) in self.interactions.iter() {
             for entity_a in aspect_a.iter() {
                 for entity_b in aspect_b.iter() {
-                    if interaction.condition(entity_a, entity_b, data) &&
-                       self.overlap(entity_a, entity_b, &data.components) {
-                        interaction.apply(entity_a, entity_b, data);
-                    }
+                    InteractionSystem::try_interaction(&**interaction, entity_a, entity_b,
+                                                       &self.wall_aspect, data);
                 }
             }
         }
@@ -69,10 +79,40 @@ impl InteractionSystem {
                         // Don't perform interactions twice
                         continue;
                     }
-                    if interaction.condition(entity_a, entity_b, data) &&
-                       self.overlap(entity_a, entity_b, &data.components) {
-                        interaction.apply(entity_a, entity_b, data);
-                    }
+
+                    InteractionSystem::try_interaction(&**interaction, entity_a, entity_b,
+                                                       &self.wall_aspect, data);
+                }
+            }
+        }
+    }
+
+    fn try_interaction(interaction: &Interaction,
+                       e_a: EntityData<Components>,
+                       e_b: EntityData<Components>,
+                       wall_aspect: &CachedAspect<Components>,
+                       c: &mut DataHelper<Components, Services>) {
+        if interaction.condition(e_a, e_b, c) &&
+           InteractionSystem::overlap(e_a, e_b, &c.components) {
+            let response = interaction.apply(e_a, e_b, c);
+
+            match response {
+                InteractionResponse::None => {
+                }
+                InteractionResponse::DisplaceNoOverlap => {
+                    // Displace the shapes so they no longer overlap
+                    let p1 = c.position[e_a].p;
+                    let p2 = c.position[e_b].p;
+                    let delta = p2 - p1;
+                    let cur_dist = delta.norm();
+                    let min_dist_no_overlap = c.shape[e_a].radius() + c.shape[e_b].radius() + 0.05;
+                    assert!(min_dist_no_overlap > cur_dist); // otherwise why are we here?
+                    let delta_no_overlap = delta.normalize() * (min_dist_no_overlap - cur_dist);
+                    let interaction = ConstWallInteraction(WallInteractionType::Stop);
+                    movement::move_entity(e_a, delta_no_overlap * -0.5, &interaction,
+                                          &wall_aspect, c);
+                    movement::move_entity(e_b, delta_no_overlap * 0.5, &interaction,
+                                          &wall_aspect, c);
                 }
             }
         }
@@ -80,8 +120,7 @@ impl InteractionSystem {
 
     /// Checks if two entities can interact right now. We simply do this by checking if they
     /// currently overlap. In the future, it might be necessary to consider movement, though.
-    fn overlap(&self,
-               e_a: EntityData<Components>,
+    fn overlap(e_a: EntityData<Components>,
                e_b: EntityData<Components>,
                c: &Components)
                -> bool {
@@ -105,9 +144,9 @@ impl InteractionSystem {
 
             // Try the other way around...
             (&Shape::Square { size: _ }, &Shape::Circle { radius: _ }) =>
-                self.overlap(e_b, e_a, c),
+                InteractionSystem::overlap(e_b, e_a, c),
             (&Shape::Rect { width: _, height: _ }, &Shape::Circle { radius: _ }) =>
-                self.overlap(e_b, e_a, c),
+                InteractionSystem::overlap(e_b, e_a, c),
 
             (shape_a, shape_b) =>
                 panic!("shape interaction not implemented: {:?}, {:?}", shape_a, shape_b),
@@ -121,6 +160,7 @@ impl System for InteractionSystem {
 
     fn activated(&mut self, entity: &EntityData<Components>, components: &Components,
                  _: &mut Services) {
+        self.wall_aspect.activated(entity, components);
         for &mut (ref mut aspect_a, ref mut aspect_b, _) in self.interactions.iter_mut() {
             aspect_a.activated(entity, components);
             aspect_b.activated(entity, components);
@@ -132,6 +172,7 @@ impl System for InteractionSystem {
 
     fn reactivated(&mut self, entity: &EntityData<Components>, components: &Components,
                    _: &mut Services) {
+        self.wall_aspect.reactivated(entity, components);
         for &mut (ref mut aspect_a, ref mut aspect_b, _) in self.interactions.iter_mut() {
             aspect_a.reactivated(entity, components);
             aspect_b.reactivated(entity, components);
@@ -143,6 +184,7 @@ impl System for InteractionSystem {
 
     fn deactivated(&mut self, entity: &EntityData<Components>, components: &Components,
                    _: &mut Services) {
+        self.wall_aspect.deactivated(entity, components);
         for &mut (ref mut aspect_a, ref mut aspect_b, _) in self.interactions.iter_mut() {
             aspect_a.deactivated(entity, components);
             aspect_b.deactivated(entity, components);

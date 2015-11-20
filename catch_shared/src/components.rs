@@ -67,6 +67,16 @@ impl Default for Shape {
     }
 }
 
+impl Shape {
+    pub fn radius(&self) -> f32 {
+        match *self {
+            Shape::Circle { radius } => radius,
+            Shape::Square { size } => size / 2.0,
+            Shape::Rect { width, height } => width.max(height) / 2.0,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct Projectile;
 

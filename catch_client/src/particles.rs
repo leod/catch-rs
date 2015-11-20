@@ -10,6 +10,9 @@ use draw::{self, DrawContext, Vertex};
 
 pub const MAX_PARTICLES: usize = 100000;
 
+/// Contains the *initial* state of a particle and the time at which it was created. 
+/// Given the current time, the GPU can calculate the current state of the particle using this
+/// initial state.
 #[derive(Copy, Clone, Debug)]
 struct Particle {
     start_time_s: f32,
@@ -260,13 +263,14 @@ impl Particles {
         match self.free_indices.pop() {
             Some(Index(i)) => {
                 assert!(self.particles[i].is_none());
-                self.particles[i] = Some(info)
+                self.particles[i] = Some(info);
             }
             None => {
                 if self.particles.len() < MAX_PARTICLES { 
                     self.particles.push(Some(info));
                 } else {
                     // TODO
+                    warn!("reached maximal number of particles, what do");
                 }
             }
         };

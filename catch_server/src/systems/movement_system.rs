@@ -32,7 +32,8 @@ impl MovementSystem {
 
         for &(ref aspect, ref interaction) in self.aspects.iter() {
             for e in aspect.iter() {
-                movement::move_entity(e, data.services.tick_dur_s, &**interaction,
+                let delta = data.linear_velocity[e].v * data.services.tick_dur_s;
+                movement::move_entity(e, delta, &**interaction,
                                       &self.wall_aspect, data);
             }
         }
