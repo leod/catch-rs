@@ -38,6 +38,7 @@ impl PlayerControllerSystem {
 
             for input in &inputs {
                 movement::run_player_movement_input(player, owner, input, &self.wall_aspect, data);
+
                 self.run_item_input(input, player, data);
             }
         }
@@ -80,6 +81,7 @@ impl PlayerControllerSystem {
 
                     c.player_state[e].equip(slot, hidden_item.clone());
                     c.full_player_state[e].hidden_item = None;
+
                     let player_id = c.net_entity[e].owner;
                     let p = c.position[e].p;
                     c.services.add_event(&GameEvent::PlayerEquipItem {
@@ -181,7 +183,6 @@ impl PlayerControllerSystem {
             self.use_item(slot, e, c);
         }
     }
-
 }
 
 impl_cached_system!(Components, Services, PlayerControllerSystem, player_aspect, wall_aspect);

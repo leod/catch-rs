@@ -505,6 +505,7 @@ impl Game {
             self.draw_debug_text(&draw_context.proj_mat, &mut target);
             self.draw_player_text(&draw_context.proj_mat, &mut target);
             self.draw_death_messages(&draw_context.proj_mat, &mut target);
+            self.draw_player_names(&draw_context.proj_mat, &mut target);
             if self.draw_player_stats {
                 self.draw_player_stats(&draw_context.proj_mat, &mut target);
             }
@@ -562,6 +563,30 @@ impl Game {
         }
     }
 
+    fn draw_player_names<S: Surface>(&mut self, proj_mat: &Mat4<f32>, target: &mut S) {
+        let color = (1.0, 1.0, 1.0, 1.0);
+        let size = 11.0;
+        let draw_size = Vec2::new(target.get_dimensions().0 as f32,
+                                  target.get_dimensions().1 as f32);
+        let half_size = draw_size / 2.0;
+        let top_left = self.cam_pos - half_size / 3.0;
+
+        let players = self.state.players().clone();
+        for (&id, info) in players.iter() {
+            let entity = self.state.world.systems.net_entity_system.inner.as_ref().unwrap()
+                             .get_player_entity(id);
+            if let Some(entity) = entity {
+                let p = self.state.world.with_entity_data(&entity, |e, c| {
+                    c.position[e].p
+                }).unwrap();
+
+                let p_rel = Vec2::new(p.x - self.cam_pos.x, self.cam_pos.y - p.y) * 3.0 + half_size + Vec2::new(0.0, 20.0);
+                self.draw_text_sub_width(color, p_rel.x, p_rel.y, &info.name, proj_mat, size,
+                                         target);
+            }
+        }
+    }
+
     fn draw_player_stats<S: Surface>(&mut self, proj_mat: &Mat4<f32>, target: &mut S) {
         let (w, h) = target.get_dimensions();
         let x1 = w as f32 / 2.0 - 200.0;
@@ -573,7 +598,6 @@ impl Game {
         let size = 12.0;
 
         let players = self.state.players().clone();
-
         for (_, info) in players.iter() {
             self.draw_text(color, x1, y, &info.name, proj_mat, size, target);
             self.draw_text(color, x2, y, &format!("{}", info.stats.score), proj_mat, size,
