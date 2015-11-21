@@ -135,11 +135,11 @@ impl InteractionSystem {
             (&Shape::Circle { radius: r }, &Shape::Square { size: s }) => {
                 // TODO
                 let angle = c.orientation[e_b].angle;
-                math::rect_sphere_overlap(p_b, s, s, angle, p_a, r)
+                math::rect_circle_overlap(p_b, s, s, angle, p_a, r)
             }
             (&Shape::Circle { radius: r }, &Shape::Rect { width: w, height: h }) => {
                 let angle = c.orientation[e_b].angle;
-                math::rect_sphere_overlap(p_b, w, h, angle, p_a, r)
+                math::rect_circle_overlap(p_b, w, h, angle, p_a, r)
             }
 
             // Try the other way around...
