@@ -742,9 +742,9 @@ impl Game {
                 format!("weapon ({})", charges),
             &Item::SpeedBoost { duration_s: s } =>
                 format!("speed boost ({})", s),
-            &Item::BlockPlacer { charges: charges } =>
+            &Item::BlockPlacer { charges } =>
                 format!("block placer ({})", charges),
-            &Item::BallSpawner { charges: charges } =>
+            &Item::BallSpawner { charges } =>
                 format!("ball spawner ({})", charges),
         }
     }

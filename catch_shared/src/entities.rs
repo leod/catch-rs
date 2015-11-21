@@ -23,7 +23,7 @@ pub fn build_shared<T: ComponentManager +
     if type_name == "player" {
         data.shape_mut().add(&entity, Shape::Circle { radius: 6.0 });
     } else if type_name == "bouncy_enemy" {
-        data.shape_mut().add(&entity, Shape::Circle { radius: 5.0 });
+        data.shape_mut().add(&entity, Shape::Circle { radius: 10.0 });
     } else if type_name == "item" {
         data.shape_mut().add(&entity, Shape::Square { size: 5.0 });
     } else if type_name == "item_spawn" {

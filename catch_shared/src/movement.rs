@@ -61,6 +61,9 @@ pub fn move_entity<Components: ComponentManager,
     let a = c.position()[e].p;
     let b = a + delta;
 
+    // TODO: Proper wall collision
+    let min_r = c.shape[e].radius();
+
     c.position_mut()[e].p = match line_segment_walls_intersection(a, b, wall_aspect, c) {
         Some((t, wall)) => {
             // We hit a wall, ask `interaction` what to do
@@ -175,7 +178,7 @@ pub fn run_player_movement_input<Components: ComponentManager,
                       HasPlayerState + HasFullPlayerState +
                       HasShape + HasWallPosition,
           Services: HasEvents {
-    const TURN_ACCEL: f32 = 1.5;
+    const TURN_ACCEL: f32 = 1.25;
     const TURN_FRICTION: f32 = 0.25;
     const MOVE_ACCEL: f32 = 1000.0;
     const MOVE_FRICTION: f32 = 10.0;

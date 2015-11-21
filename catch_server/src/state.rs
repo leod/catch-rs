@@ -102,6 +102,7 @@ impl GameState {
                 self.world.with_entity_data(&entity, |e, c| {
                     c.position[e].p = Vec2::new(object.x, object.y);
                     c.orientation[e].angle = rand::random::<f32>() * f32::consts::PI * 2.0;
+                    c.bouncy_enemy[e].attract = rand::random::<bool>();
                 });
             } else if &object.type_str == "player_spawn" {
             } else {

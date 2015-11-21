@@ -108,7 +108,7 @@ impl InteractionSystem {
                     let min_dist_no_overlap = c.shape[e_a].radius() + c.shape[e_b].radius() + 0.05;
                     assert!(min_dist_no_overlap > cur_dist); // otherwise why are we here?
                     let delta_no_overlap = delta.normalize() * (min_dist_no_overlap - cur_dist);
-                    let interaction = ConstWallInteraction(WallInteractionType::Stop);
+                    let interaction = ConstWallInteraction(WallInteractionType::Flip);
                     movement::move_entity(e_a, delta_no_overlap * -0.5, &interaction,
                                           &wall_aspect, c);
                     movement::move_entity(e_b, delta_no_overlap * 0.5, &interaction,

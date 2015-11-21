@@ -71,7 +71,7 @@ pub fn solve_second_deg(u: f32, v: f32, w: f32) -> SecondDegZero {
     }
 }
 
-/// Solve ux^2 + vx + w = 0 for the smallest x in a range
+/// Solve ux^2 + vx + w = 0 for the smallest x in [min,max]
 pub fn solve_second_deg_min_in_range(u: f32, v: f32, w: f32, min: f32, max: f32) -> Option<f32> { 
     match solve_second_deg(u, v, w) {
         SecondDegZero::One(s) => {

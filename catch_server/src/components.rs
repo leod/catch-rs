@@ -35,6 +35,7 @@ pub struct PlayerController {
 #[derive(Default)]
 pub struct BouncyEnemy {
     pub orbit: Option<ecs::Entity>,
+    pub attract: bool,    
 }
 
 /// Tag component for InteractionSystem

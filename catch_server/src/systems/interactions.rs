@@ -53,29 +53,28 @@ impl Interaction for BouncyEnemyInteraction {
     fn apply(&self,
              a: EntityData<Components>, b: EntityData<Components>,
              c: &mut DataHelper<Components, Services>) -> InteractionResponse {
-        /*let n = (c.linear_velocity[a].v + c.linear_velocity[b].v).normalize();
-        let n_angle = n[1].atan2(n[0]);
-        c.orientation[a].angle = 2.0 * n_angle - c.orientation[a].angle;
-        c.orientation[b].angle = 2.0 * n_angle - c.orientation[b].angle;*/
-
         let delta = c.position[b].p - c.position[a].p;
         let alpha = delta[1].atan2(delta[0]);
 
-        /*c.orientation[a].angle = alpha;
-        c.orientation[b].angle = f32::consts::PI + alpha;*/
-
-        c.orientation[a].angle = f32::consts::PI + alpha;
-        c.orientation[b].angle = alpha;
+        if c.bouncy_enemy[a].attract != c.bouncy_enemy[b].attract {
+            /*c.orientation[b].angle = f32::consts::PI + alpha;
+            c.orientation[a].angle = alpha;*/
+            c.orientation[a].angle = f32::consts::PI + alpha;
+            c.orientation[b].angle = alpha;
+        } else {
+            c.orientation[a].angle = f32::consts::PI + alpha;
+            c.orientation[b].angle = alpha;
+        }
 
         let direction_a = Vec2::new(c.orientation[a].angle.cos(),
                                     c.orientation[a].angle.sin());
         let direction_b = Vec2::new(c.orientation[b].angle.cos(),
                                     c.orientation[b].angle.sin());
-        c.linear_velocity[a].v = direction_a * c.linear_velocity[a].v.norm();
-        c.linear_velocity[b].v = direction_b * c.linear_velocity[b].v.norm();
+        /*c.linear_velocity[a].v = direction_a * c.linear_velocity[a].v.norm();
+        c.linear_velocity[b].v = direction_b * c.linear_velocity[b].v.norm();*/
         
-        /*c.linear_velocity[b].v = c.linear_velocity[b].v + direction_b;
-        c.linear_velocity[a].v = c.linear_velocity[a].v + direction_a;*/
+        c.linear_velocity[b].v = c.linear_velocity[b].v + direction_b * 5.0;
+        c.linear_velocity[a].v = c.linear_velocity[a].v + direction_a * 5.0;
 
         InteractionResponse::DisplaceNoOverlap
     }
