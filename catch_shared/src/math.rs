@@ -50,7 +50,56 @@ pub fn line_segments_intersection(a: Vec2<f32>, b: Vec2<f32>, p: Vec2<f32>, q: V
     }
 }
 
-pub fn line_segment_sphere_intersection(a: Vec2<f32>, b: Vec2<f32>,
+pub enum SecondDegZero {
+    One(f32),
+    Two(f32, f32),
+    None,
+}
+
+/// Solve ux^2 + vx + w = 0 for x
+pub fn solve_second_deg(u: f32, v: f32, w: f32) -> SecondDegZero {
+    let det = v*v - 4.0*u*w;
+
+    if det == 0.0 { // TODO: Epsilon?
+        SecondDegZero::One(-v / (2.0 * u))
+    } else if det > 0.0 {
+        let det_sqrt = det.sqrt();
+        SecondDegZero::Two((-v + det_sqrt) / (2.0 * u),
+                           (-v - det_sqrt) / (2.0 * u))
+    } else {
+        SecondDegZero::None
+    }
+}
+
+/// Solve ux^2 + vx + w = 0 for the smallest x in a range
+pub fn solve_second_deg_min_in_range(u: f32, v: f32, w: f32, min: f32, max: f32) -> Option<f32> { 
+    match solve_second_deg(u, v, w) {
+        SecondDegZero::One(s) => {
+            if s >= min && s <= max {
+                Some(s)
+            } else {
+                None
+            }
+        }
+        SecondDegZero::Two(s1, s2) => { 
+            let s1_in_range = s1 >= min && s1 <= max;
+            let s2_in_range = s2 >= min && s2 <= max;
+
+            if s1_in_range && s2_in_range {
+                Some(s1.min(s2))
+            } else if s1_in_range {
+                Some(s1) 
+            } else if s2_in_range {
+                Some(s2)
+            } else {
+                None
+            }
+        }
+        SecondDegZero::None => None
+    }
+}
+
+pub fn line_segment_circle_intersection(a: Vec2<f32>, b: Vec2<f32>,
                                         c: Vec2<f32>, r: f32)
                                         -> Option<f32> {
     // We are looking for points on the line from a to b,
@@ -62,43 +111,29 @@ pub fn line_segment_sphere_intersection(a: Vec2<f32>, b: Vec2<f32>,
     //     (b_1^2+b_2^2)s^2 + 2((a_1-c_1)b_1 + (a_2-c_2)b_2)s + (a_1-c_1)^2 + (a_2-c_2)^2 - r^2 = 0
 
     let d = a - c;
+
     let u = b.sqnorm();
     let v = d.dot(&b);
     let w = d.sqnorm() - r*r;
 
-    // Solve us^2 + vs + w = 0
-    let det = v*v - 4.0*u*w;
-
-    if det == 0.0 { // TODO: Epsilon?
-        let s = -v / (2.0 * u);
-        if s >= 0.0 && s <= 1.0 {
-            Some(s)
-        } else {
-            None
-        }
-    } else if det > 0.0 {
-        let det_sqrt = det.sqrt();
-        let s1 = (-v + det_sqrt) / (2.0 * u);
-        let s2 = (-v - det_sqrt) / (2.0 * u);
-        let s1_in_range = s1 >= 0.0 && s1 <= 1.0;
-        let s2_in_range = s2 >= 0.0 && s2 <= 1.0;
-
-        if s1_in_range && s2_in_range {
-            Some(s1.min(s2))
-        } else if s1_in_range {
-            Some(s1) 
-        } else if s2_in_range {
-            Some(s2)
-        } else {
-            None
-        }
-    } else {
-        None
-    }
+    // Solve us^2 + vs + w = 0 for the smallest s with 0 <= s <= 1
+    solve_second_deg_min_in_range(u, v, w, 0.0, 1.0)
 }
 
-pub fn rect_sphere_overlap(p_rect: Vec2<f32>, w: f32, h: f32, angle: f32,
-                           p_sphere: Vec2<f32>, r: f32)
+pub fn moving_circles_intersection(a1: Vec2<f32>, v1: Vec2<f32>, r1: f32,
+                                   a2: Vec2<f32>, v2: Vec2<f32>, r2: f32) -> Option<f32> {
+    let b1 = a1 + v1;
+    let b2 = a2 + v2;
+
+    let u = b1.dot(&b1) + b2.dot(&b2);
+    let v = 2.0 * (b1.dot(&a1) + b2.dot(&a2) - b2.dot(&a1) - b1.dot(&a2));
+    let w = a1.dot(&a1) + a2.dot(&a2) - (r1 + r2) * (r1 + r2);
+
+    solve_second_deg_min_in_range(u, v, w, 0.0, 1.0)
+}
+
+pub fn rect_circle_overlap(p_rect: Vec2<f32>, w: f32, h: f32, angle: f32,
+                           p_circle: Vec2<f32>, r: f32)
                            -> bool {
     let rot_mat = Mat2::new(angle.cos(), -angle.sin(),
                             angle.sin(), angle.cos());
@@ -111,10 +146,10 @@ pub fn rect_sphere_overlap(p_rect: Vec2<f32>, w: f32, h: f32, angle: f32,
     let p3 = p_rect + u + v;
     let p4 = p_rect - u + v;
 
-    let s1 = line_segment_sphere_intersection(p1, p2, p_sphere, r);
-    let s2 = line_segment_sphere_intersection(p2, p3, p_sphere, r);
-    let s3 = line_segment_sphere_intersection(p3, p4, p_sphere, r);
-    let s4 = line_segment_sphere_intersection(p4, p1, p_sphere, r);
+    let s1 = line_segment_circle_intersection(p1, p2, p_circle, r);
+    let s2 = line_segment_circle_intersection(p2, p3, p_circle, r);
+    let s3 = line_segment_circle_intersection(p3, p4, p_circle, r);
+    let s4 = line_segment_circle_intersection(p4, p1, p_circle, r);
 
     s1.is_some() || s2.is_some() || s3.is_some() || s4.is_some()
 }
