@@ -8,7 +8,7 @@ use util::CachedAspect;
 use net::TimedPlayerInput;
 use player::PlayerInputKey;
 use services::HasEvents;
-use components::{HasPosition, HasLinearVelocity, HasOrientation, HasAngularVelocity,
+use components::{Shape, HasPosition, HasLinearVelocity, HasOrientation, HasAngularVelocity,
                  HasPlayerState, HasFullPlayerState, HasShape, HasWallPosition, WallPosition};
 
 /// What to do when an entity hits a wall while moving
@@ -45,7 +45,7 @@ pub fn wall_orientation(p: &WallPosition) -> f32 {
     n[1].atan2(n[0])
 }
 
-const STEPBACK: f32 = 0.05;
+const STEPBACK: f32 = 0.1;
 
 /// Moves an entity while checking for intersections with walls.
 /// If there is an intersection, the given `interaction` is called.
@@ -58,14 +58,16 @@ pub fn move_entity<Components: ComponentManager,
                    c: &mut DataHelper<Components, Services>)
         where Components: HasPosition + HasLinearVelocity + HasShape +
                           HasOrientation + HasWallPosition {
+    if delta.norm() == 0.0 {
+        return;
+    }
+
+    let shape = c.shape()[e].clone();
     let a = c.position()[e].p;
-    let b = a + delta;
 
-    // TODO: Proper wall collision
-    let min_r = c.shape[e].radius();
-
-    c.position_mut()[e].p = match line_segment_walls_intersection(a, b, wall_aspect, c) {
-        Some((t, wall)) => {
+    let intersection = moving_shape_walls_intersection(a, delta, &shape, wall_aspect, c);
+    c.position_mut()[e].p = match intersection {
+        Some((t, _, wall)) if t <= 1.0 => {
             // We hit a wall, ask `interaction` what to do
             match interaction.apply(a + delta * t, e, wall, c) {
                 WallInteractionType::Slide => {
@@ -76,21 +78,23 @@ pub fn move_entity<Components: ComponentManager,
                     let v = delta - u;
 
                     // Move into parallel and orthogonal directions individually
-                    let new_a = match line_segment_walls_intersection(a, a + u,
-                                                                      wall_aspect, c) {
-                        Some((t, _)) => {
-                            let s = (t - STEPBACK).max(0.0);
-                            a + u * s
+                    let intersection = moving_shape_walls_intersection(a, u, &shape,
+                                                                       wall_aspect, c);
+                    let new_a = match intersection {
+                        Some((t, _, _)) if t <= 1.0 => {
+                            let t = (t - STEPBACK).max(0.0);
+                            a + u * t
                         }
-                        None => a + u
+                        _ => a + u
                     };
-                    let new_a = match line_segment_walls_intersection(new_a, new_a + v,
-                                                                      wall_aspect, c) {
-                        Some((t, _)) => {
-                            let s = (t - STEPBACK).max(0.0);
-                            new_a + v * s
+                    let intersection = moving_shape_walls_intersection(new_a, v, &shape,
+                                                                       wall_aspect, c);
+                    let new_a = match intersection {
+                        Some((t, _, _)) if t <= 1.0 => {
+                            let t = (t - STEPBACK).max(0.0);
+                            new_a + v * t
                         }
-                        None => new_a + v
+                        _ => new_a + v
                     };
                     new_a
                 }
@@ -100,6 +104,7 @@ pub fn move_entity<Components: ComponentManager,
                     c.orientation_mut()[e].angle =
                         f32::consts::PI + n_angle - (angle - n_angle);
 
+                    // TODO: Force orientation on flip (need shared trait)
                     //data.server_net_entity[e].force(ComponentType::Orientation);
 
                     let speed = c.linear_velocity()[e].v.norm();
@@ -108,18 +113,18 @@ pub fn move_entity<Components: ComponentManager,
                         c.orientation()[e].angle.sin() * (speed + 1.0),
                     );
 
-                    let s = (t - STEPBACK).max(0.0);
-                    a + delta * s
+                    let t = (t - STEPBACK).max(0.0);
+                    a + delta * t
 
                     // TODO: Actually at this point we still might have some 't' left to walk
                 }
                 WallInteractionType::Stop => {
-                    let s = (t - STEPBACK).max(0.0);
-                    a + delta * s
+                    let t = (t - STEPBACK).max(0.0);
+                    a + delta * t
                 }
             }
         }
-        None => b
+        _ => a + delta
     };
 }
 
@@ -290,26 +295,61 @@ pub fn run_player_movement_input<Components: ComponentManager,
     }
 }
 
-pub fn line_segment_walls_intersection<'a,
+pub fn moving_shape_walls_intersection<'a,
                                        Components: ComponentManager,
                                        Services: ServiceManager>
-                                      (a: Vec2<f32>, b: Vec2<f32>,
+                                      (a: Vec2<f32>, delta: Vec2<f32>, shape: &Shape,
                                        wall_aspect: &'a CachedAspect<Components>,
-                                       data: &mut DataHelper<Components, Services>)
-                                       -> Option<(f32, EntityData<'a, Components>)>
+                                       data: &DataHelper<Components, Services>)
+                                      -> Option<(f32, f32, EntityData<'a, Components>)>
+    where Components: HasWallPosition {
+    match *shape {
+        Shape::Circle { radius } => {
+            let mut closest_i = None;
+
+            for wall in wall_aspect.iter::<'a>() {
+                let p = data.wall_position()[wall].clone();
+                let i = math::line_segment_moving_circle_intersection(p.pos_a, p.pos_b,
+                                                                      a, delta, radius);
+                if let Some((t, s)) = i.map(|t| (t, 0.0) /* TODO */) {
+                    closest_i = if let Some((closest_t, _, _)) = closest_i {
+                        if t < closest_t { Some((t, s, wall)) }
+                        else { closest_i }
+                    } else {
+                        Some((t, s, wall))
+                    };
+                }
+            }
+
+            closest_i
+        }
+        _ => {
+            // TODO
+            ray_walls_intersection(a, delta, wall_aspect, data)
+        }
+    }
+}
+
+pub fn ray_walls_intersection<'a,
+                              Components: ComponentManager,
+                              Services: ServiceManager>
+                             (a: Vec2<f32>, delta: Vec2<f32>,
+                              wall_aspect: &'a CachedAspect<Components>,
+                              data: &DataHelper<Components, Services>)
+                              -> Option<(f32, f32, EntityData<'a, Components>)>
         where Components: HasWallPosition {
     let mut closest_i = None;
 
     for wall in wall_aspect.iter::<'a>() {
         let p = data.wall_position()[wall].clone();
-        let i = math::line_segments_intersection(a, b, p.pos_a, p.pos_b);
+        let i = math::ray_line_segment_intersection(a, delta, p.pos_a, p.pos_b);
 
-        if let Some(t) = i {
-            closest_i = if let Some((closest_t, closest_e)) = closest_i {
-                if t < closest_t { Some((t, wall)) }
-                else { Some((closest_t, closest_e)) }
+        if let Some((t, s)) = i {
+            closest_i = if let Some((closest_t, _, _)) = closest_i {
+                if t < closest_t { Some((t, s, wall)) }
+                else { closest_i }
             } else {
-                Some((t, wall))
+                Some((t, s, wall))
             };
         }
     }
