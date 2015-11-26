@@ -431,7 +431,7 @@ impl Game {
         let zoom = 3.0;
 
         // Clip camera position to map size in pixels
-        if self.cam_pos[0] < half_width / zoom {
+        /*if self.cam_pos[0] < half_width / zoom {
             self.cam_pos[0] = half_width / zoom; 
         } else if self.cam_pos[0] + half_width / zoom >
                   self.state.map.width_pixels() as f32 {
@@ -442,7 +442,7 @@ impl Game {
         } else if self.cam_pos[1] + half_height / zoom >
                   self.state.map.height_pixels() as f32 {
             self.cam_pos[1] = self.state.map.height_pixels() as f32 - half_height / zoom;
-        }
+        }*/
 
         let draw_parameters = glium::DrawParameters {
             depth: glium::Depth {

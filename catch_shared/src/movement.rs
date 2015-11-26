@@ -65,7 +65,7 @@ pub fn move_entity<Components: ComponentManager,
     let shape = c.shape()[e].clone();
     let a = c.position()[e].p;
 
-    let intersection = moving_shape_walls_intersection(a, delta, &shape, wall_aspect, c);
+    let intersection = moving_shape_walls_intersection_time(a, delta, &shape, wall_aspect, c);
     c.position_mut()[e].p = match intersection {
         Some((t, _, wall)) if t <= 1.0 => {
             // We hit a wall, ask `interaction` what to do
@@ -78,8 +78,8 @@ pub fn move_entity<Components: ComponentManager,
                     let v = delta - u;
 
                     // Move into parallel and orthogonal directions individually
-                    let intersection = moving_shape_walls_intersection(a, u, &shape,
-                                                                       wall_aspect, c);
+                    let intersection = moving_shape_walls_intersection_time(a, u, &shape,
+                                                                            wall_aspect, c);
                     let new_a = match intersection {
                         Some((t, _, _)) if t <= 1.0 => {
                             let t = (t - STEPBACK).max(0.0);
@@ -87,8 +87,8 @@ pub fn move_entity<Components: ComponentManager,
                         }
                         _ => a + u
                     };
-                    let intersection = moving_shape_walls_intersection(new_a, v, &shape,
-                                                                       wall_aspect, c);
+                    let intersection = moving_shape_walls_intersection_time(new_a, v, &shape,
+                                                                            wall_aspect, c);
                     let new_a = match intersection {
                         Some((t, _, _)) if t <= 1.0 => {
                             let t = (t - STEPBACK).max(0.0);
@@ -120,7 +120,16 @@ pub fn move_entity<Components: ComponentManager,
                 }
                 WallInteractionType::Stop => {
                     let t = (t - STEPBACK).max(0.0);
-                    a + delta * t
+                    println!("moving t: {}, a: {:?}", t, a);
+                    let xx = a + delta * t;
+
+                    let p = c.wall_position()[wall].clone();
+                    let delta = Vec2::new(0.0, 0.0);
+                    let i = math::line_segment_moving_circle_intersection_time(p.pos_a, p.pos_b,
+                                                                               a, delta, shape.radius());
+                    println!("new intersection: {:?}, new a: {:?}", i, xx);
+
+                    xx
                 }
             }
         }
@@ -140,6 +149,7 @@ impl<Components: ComponentManager,
              player: EntityData<Components>, wall: EntityData<Components>,
              data: &mut DataHelper<Components, Services>)
              -> WallInteractionType {
+        //return WallInteractionType::Stop;
         if data.full_player_state()[player].wall_flip {
             let wall_n = wall_normal(&data.wall_position()[wall]);
             let orientation =
@@ -189,7 +199,7 @@ pub fn run_player_movement_input<Components: ComponentManager,
     const MOVE_FRICTION: f32 = 10.0;
     const BACK_ACCEL: f32 = 500.0;
     const STRAFE_ACCEL: f32 = 900.0;
-    const MIN_SPEED: f32 = 0.1;
+    const MIN_SPEED: f32 = 1.0;
     const DASH_SPEED: f32 = 600.0;
     const DASH_DURATION_S: f32 = 0.3;
 
@@ -271,11 +281,8 @@ pub fn run_player_movement_input<Components: ComponentManager,
         c.linear_velocity_mut()[e].v = c.linear_velocity()[e].v + accel * dur_s;
 
         // If velocity is below some limit, set to zero
-        if c.linear_velocity()[e].v[0].abs() <= MIN_SPEED {
-            c.linear_velocity_mut()[e].v[0] = 0.0;
-        }
-        if c.linear_velocity()[e].v[1].abs() <= MIN_SPEED {
-            c.linear_velocity_mut()[e].v[1] = 0.0;
+        if c.linear_velocity()[e].v.norm() <= MIN_SPEED {
+            c.linear_velocity_mut()[e].v = Vec2::new(0.0, 0.0);
         }
 
         // Start dash if the cooldown is ready
@@ -295,13 +302,13 @@ pub fn run_player_movement_input<Components: ComponentManager,
     }
 }
 
-pub fn moving_shape_walls_intersection<'a,
-                                       Components: ComponentManager,
-                                       Services: ServiceManager>
-                                      (a: Vec2<f32>, delta: Vec2<f32>, shape: &Shape,
-                                       wall_aspect: &'a CachedAspect<Components>,
-                                       data: &DataHelper<Components, Services>)
-                                      -> Option<(f32, f32, EntityData<'a, Components>)>
+pub fn moving_shape_walls_intersection_time<'a,
+                                            Components: ComponentManager,
+                                            Services: ServiceManager>
+                                           (a: Vec2<f32>, delta: Vec2<f32>, shape: &Shape,
+                                            wall_aspect: &'a CachedAspect<Components>,
+                                            data: &DataHelper<Components, Services>)
+                                           -> Option<(f32, f32, EntityData<'a, Components>)>
     where Components: HasWallPosition {
     match *shape {
         Shape::Circle { radius } => {
@@ -309,8 +316,8 @@ pub fn moving_shape_walls_intersection<'a,
 
             for wall in wall_aspect.iter::<'a>() {
                 let p = data.wall_position()[wall].clone();
-                let i = math::line_segment_moving_circle_intersection(p.pos_a, p.pos_b,
-                                                                      a, delta, radius);
+                let i = math::line_segment_moving_circle_intersection_time(p.pos_a, p.pos_b,
+                                                                           a, delta, radius);
                 if let Some((t, s)) = i.map(|t| (t, 0.0) /* TODO */) {
                     closest_i = if let Some((closest_t, _, _)) = closest_i {
                         if t < closest_t { Some((t, s, wall)) }

@@ -91,7 +91,6 @@ impl GameState {
     }
 
     fn create_map_objects(&mut self) {
-        return;
         for object in self.map.objects.iter() {
             if &object.type_str == "item_spawn" {
                 let entity = entities::build_net(&object.type_str, 0, &mut self.world.data);
@@ -148,7 +147,7 @@ impl GameState {
         let width = self.map.width_pixels() as f32;
         let height = self.map.height_pixels() as f32;
 
-        /*for _ in 0..num_walls {
+        for _ in 0..num_walls {
             let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
 
             let ax = rand::random::<f32>() * width;
@@ -166,16 +165,16 @@ impl GameState {
                     pos_b: Vec2::new(bx, by), 
                 };
             });
-        }*/
+        }
 
-        /*let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
+        let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
         self.world.with_entity_data(&entity, |e, c| {
             c.wall_position[e] = WallPosition {
                 pos_a: Vec2::new(0.0, 0.0),
                 pos_b: Vec2::new(width, 0.0)
             };
-        });*/
-        /*let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
+        });
+        let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
         self.world.with_entity_data(&entity, |e, c| {
             c.wall_position[e] = WallPosition {
                 pos_a: Vec2::new(0.0, 0.0),
@@ -188,7 +187,7 @@ impl GameState {
                 pos_a: Vec2::new(width, 0.0),
                 pos_b: Vec2::new(width, height)
             };
-        });*/
+        });
         let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
         self.world.with_entity_data(&entity, |e, c| {
             c.wall_position[e] = WallPosition {
