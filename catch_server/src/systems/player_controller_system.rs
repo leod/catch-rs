@@ -154,6 +154,10 @@ impl PlayerControllerSystem {
                     None
                 }
             }
+            Item::Shield => {
+                c.player_state[e].has_shield = true;
+                None
+            }
             item => panic!("item use not implemented: {:?}", item)
         };
 

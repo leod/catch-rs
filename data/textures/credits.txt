@@ -1,0 +1,2 @@
+shield.png: Bonsaiheldin, http://opengameart.org/content/shield-effect
+

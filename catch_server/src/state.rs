@@ -236,6 +236,7 @@ impl GameState {
             c.position[e].p = position;
             c.player_state[e].invulnerable_s = Some(2.5);
             c.player_state[e].is_catcher = is_catcher;
+            c.player_state[e].has_shield = true;
 
             // We'll equip a gun for now
             c.player_state[e].equip(0, Item::Weapon { charges: 20 }); 

@@ -67,7 +67,7 @@ impl Game {
                player_input_map: InputMap,
                display: Display) -> Game {
         let state = GameState::new(connected_client.my_id(), connected_client.game_info());
-        let draw_draw_list = DrawDrawList::new(&display);
+        let draw_draw_list = DrawDrawList::new(&display).unwrap();
         let draw_map = DrawMap::load(&state.map).unwrap();
         let particles = Particles::new(&display);
         let sounds = Sounds::load().unwrap();
@@ -446,7 +446,7 @@ impl Game {
 
         let draw_parameters = glium::DrawParameters {
             depth: glium::Depth {
-                test: glium::draw_parameters::DepthTest::IfLess,
+                test: glium::draw_parameters::DepthTest::Overwrite,
                 write: true,
                 .. Default::default()
             },
@@ -569,7 +569,6 @@ impl Game {
         let draw_size = Vec2::new(target.get_dimensions().0 as f32,
                                   target.get_dimensions().1 as f32);
         let half_size = draw_size / 2.0;
-        let top_left = self.cam_pos - half_size / 3.0;
 
         let players = self.state.players().clone();
         for (&id, info) in players.iter() {
@@ -580,7 +579,8 @@ impl Game {
                     c.position[e].p
                 }).unwrap();
 
-                let p_rel = Vec2::new(p.x - self.cam_pos.x, self.cam_pos.y - p.y) * 3.0 + half_size + Vec2::new(0.0, 20.0);
+                let p_rel = Vec2::new(p.x - self.cam_pos.x, self.cam_pos.y - p.y) * 3.0 +
+                            half_size + Vec2::new(0.0, 30.0);
                 self.draw_text_sub_width(color, p_rel.x, p_rel.y, &info.name, proj_mat, size,
                                          target);
             }
@@ -727,7 +727,6 @@ impl Game {
                               0.0, 1.0, 0.0, h as f32 / 2.0 - y,
                               0.0, 0.0, 1.0, -0.5,
                               0.0, 0.0, 0.0, 1.0);
-        let r = 10.0;
         let scale = Mat4::new(size, 0.0, 0.0, 0.0,
                               0.0, size, 0.0, 0.0,
                               0.0, 0.0, size, 0.0,
@@ -737,15 +736,17 @@ impl Game {
     }
 
     fn item_text(&self, item: &Item) -> String {
-        match item {
-            &Item::Weapon { charges } =>
+        match *item {
+            Item::Weapon { charges } =>
                 format!("weapon ({})", charges),
-            &Item::SpeedBoost { duration_s: s } =>
+            Item::SpeedBoost { duration_s: s } =>
                 format!("speed boost ({})", s),
-            &Item::BlockPlacer { charges } =>
+            Item::BlockPlacer { charges } =>
                 format!("block placer ({})", charges),
-            &Item::BallSpawner { charges } =>
+            Item::BallSpawner { charges } =>
                 format!("ball spawner ({})", charges),
+            Item::Shield =>
+                "shield".to_string()
         }
     }
 

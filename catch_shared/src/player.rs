@@ -16,6 +16,7 @@ pub enum Item {
     BallSpawner {
         charges: usize,
     },
+    Shield
 }
 
 impl Item {
@@ -25,6 +26,7 @@ impl Item {
             Item::SpeedBoost { duration_s: _ } => None,
             Item::BlockPlacer { charges: _ } => Some(5.0),
             Item::BallSpawner { charges: _ } => Some(2.5),
+            Item::Shield => None,
         }
     }
 }
@@ -57,7 +59,8 @@ impl EquippedItem {
     }
 }
 
-// Component attached to any player for both client and server
+/// Component attached to any player for both client and server
+/// TODO: Perhaps split up for more efficient delta encoding
 #[derive(PartialEq, Clone, Default, RustcEncodable, RustcDecodable)]
 pub struct PlayerState { 
     pub color: u32,
@@ -68,6 +71,8 @@ pub struct PlayerState {
     pub items: Vec<Option<EquippedItem>>,
 
     pub is_catcher: bool,
+
+    pub has_shield: bool,
 }
 
 impl PlayerState {

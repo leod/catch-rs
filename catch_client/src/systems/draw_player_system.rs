@@ -2,7 +2,7 @@ use std::f32;
 
 use ecs::{Aspect, System, DataHelper, Process};
 use rand;
-use na::{Vec2, Vec4, Mat2, Mat4, Norm};
+use na::{Vec2, Vec4, Mat2, Mat4, Norm, Inv};
 
 use shared::util::CachedAspect;
 
@@ -99,10 +99,22 @@ impl DrawPlayerSystem {
                                       m.m21, m.m22, 0.0, p.y,
                                       0.0, 0.0, 1.0, 0.0,
                                       0.0, 0.0, 0.0, 1.0);
-            draw_list.push((DrawElement::Circle, DrawAttributes {
-                color: Vec4::new(color[0], color[1], color[2], 1.0),
-                model_mat: model_mat,
-            }));
+            draw_list.push((1, DrawElement::Circle,
+                            DrawAttributes::new(Vec4::new(color[0], color[1], color[2], 1.0),
+                                                model_mat)));
+
+            if data.player_state[entity].has_shield {
+                let s = 2.0*r + 8.0;
+                let scale_mat = Mat2::new(scale_x * s, 0.0,
+                                          0.0, 1.0 / scale_x * s);
+                let m = rot_mat * scale_mat * rot_mat.inv().unwrap();
+                let model_mat = Mat4::new(m.m11, m.m12, 0.0, p.x,
+                                          m.m21, m.m22, 0.0, p.y,
+                                          0.0, 0.0, 1.0, 0.0,
+                                          0.0, 0.0, 0.0, 1.0);
+                draw_list.push((1, DrawElement::TexturedSquare { texture: "shield".to_string() },
+                                DrawAttributes::new(Vec4::new(0.0, 0.0, 0.0, 1.0), model_mat)));
+            }
 
             let scale_mat = Mat2::new(scale_x * r, 0.0,
                                       0.0, 1.0 / scale_x * 2.0);
@@ -112,10 +124,8 @@ impl DrawPlayerSystem {
                                       m.m21, m.m22, 0.0, p.y + o.y,
                                       0.0, 0.0, 1.0, 0.0,
                                       0.0, 0.0, 0.0, 1.0);
-            draw_list.push((DrawElement::Square, DrawAttributes {
-                color: Vec4::new(0.0, 0.0, 0.0, 1.0),
-                model_mat: model_mat,
-            }));
+            draw_list.push((2, DrawElement::Square,
+                            DrawAttributes::new(Vec4::new(0.0, 0.0, 0.0, 1.0), model_mat)));
         }
     }
 }

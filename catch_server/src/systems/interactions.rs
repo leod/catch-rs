@@ -1,7 +1,7 @@
 use std::f32;
 
 use ecs::{EntityData, DataHelper};
-use na::{Norm, Vec2};
+use na::{Vec2, Norm};
 
 use shared::{GameEvent, DeathReason, NEUTRAL_PLAYER_ID};
 use shared::services::HasEvents;
@@ -25,14 +25,26 @@ impl Interaction for PlayerBouncyEnemyInteraction {
              player: EntityData<Components>, enemy: EntityData<Components>,
              data: &mut DataHelper<Components, Services>) -> InteractionResponse {
         if data.player_state[player].vulnerable() {
-            let owner = data.net_entity[player].owner;
-            let position = data.position[player].p;
-            data.services.add_event(&GameEvent::PlayerDied {
-                player_id: owner,
-                position: position,
-                responsible_player_id: NEUTRAL_PLAYER_ID,
-                reason: DeathReason::BouncyBall,
-            });
+            let player_id = data.net_entity[player].owner;
+            let player_killed = 
+                entities::damage_player(player_id,
+                                        NEUTRAL_PLAYER_ID,
+                                        DeathReason::BouncyBall,
+                                        player,
+                                        data);
+            if !player_killed {
+                let delta = data.position[enemy].p - data.position[player].p;
+                let alpha = delta[1].atan2(delta[0]);
+
+                data.orientation[enemy].angle = alpha;
+                let direction = Vec2::new(data.orientation[enemy].angle.cos(),
+                                          data.orientation[enemy].angle.sin());
+                let speed = data.linear_velocity[enemy].v.norm() + 300.0;
+                data.linear_velocity[enemy].v =  direction * speed;
+                InteractionResponse::DisplaceNoOverlap
+            } else {
+                InteractionResponse::None
+            }
         } else {
             assert!(data.player_state[player].dashing.is_some());
 
@@ -42,8 +54,9 @@ impl Interaction for PlayerBouncyEnemyInteraction {
             data.services.add_event(&event);
 
             entities::remove_net(**enemy, data);
+
+            InteractionResponse::None
         }
-        InteractionResponse::None
     }
 }
 
@@ -143,20 +156,17 @@ impl Interaction for ProjectilePlayerInteraction {
              projectile: EntityData<Components>, player: EntityData<Components>,
              data: &mut DataHelper<Components, Services>) -> InteractionResponse {
         let player_id = data.net_entity[player].owner;
-        let position = data.position[player].p;
         let responsible_player_id = data.net_entity[projectile].owner;
-        data.services.add_event(&GameEvent::PlayerDied {
-            player_id: player_id,
-            position: position,
-            responsible_player_id: responsible_player_id,
-            reason: DeathReason::Projectile,
-        });
+        entities::damage_player(player_id,
+                                responsible_player_id,
+                                DeathReason::Projectile,
+                                player,
+                                data);
 
-        let position = data.position[projectile].p;
-        data.services.add_event(&GameEvent::ProjectileImpact {
-            position: position,
-        });
-
+        let event = GameEvent::ProjectileImpact {
+            position: data.position[projectile].p
+        };
+        data.services.add_event(&event);
         entities::remove_net(**projectile, data); 
 
         InteractionResponse::None

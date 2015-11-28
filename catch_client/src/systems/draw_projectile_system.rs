@@ -37,10 +37,8 @@ impl DrawProjectileSystem {
                                       m.m21, m.m22, 0.0, p.y,
                                       0.0, 0.0, 1.0, 0.0,
                                       0.0, 0.0, 0.0, 1.0);
-            draw_list.push((DrawElement::Square, DrawAttributes {
-                color: Vec4::new(0.4, 0.4, 0.4, 1.0),
-                model_mat: model_mat,
-            }));
+            draw_list.push((1, DrawElement::Square,
+                            DrawAttributes::new(Vec4::new(0.4, 0.4, 0.4, 1.0), model_mat)));
         }
     }
 }

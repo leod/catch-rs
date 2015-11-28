@@ -63,6 +63,7 @@ impl ItemSpawnSystem {
                         let choices = vec![
                                            Item::Weapon { charges: 10 },
                                            Item::BallSpawner { charges: 3 },
+                                           Item::Shield,
                                           ];
                         let item = choices[rand::random::<usize>() % choices.len()].clone();
 

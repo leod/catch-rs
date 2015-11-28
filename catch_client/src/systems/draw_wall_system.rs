@@ -40,10 +40,8 @@ impl DrawWallSystem {
                                       m.m21, m.m22, 0.0, p.pos_b.y + o.y,
                                       0.0, 0.0, 1.0, 0.0,
                                       0.0, 0.0, 0.5, 1.0);
-            draw_list.push((DrawElement::Square, DrawAttributes {
-                color: Vec4::new(0.2, 0.2, 0.2, 1.0),
-                model_mat: model_mat,
-            }));
+            draw_list.push((0, DrawElement::Square,
+                            DrawAttributes::new(Vec4::new(0.2, 0.2, 0.2, 1.0), model_mat)));
         }
     }
 }

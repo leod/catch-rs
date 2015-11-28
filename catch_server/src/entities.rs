@@ -2,10 +2,10 @@ use std::f32;
 use std::iter::Iterator;
 
 use ecs;
-use ecs::{BuildData, DataHelper, EntityBuilder};
+use ecs::{BuildData, EntityData, DataHelper, EntityBuilder};
 
 use shared;
-use shared::{PlayerId, GameEvent};
+use shared::{PlayerId, DeathReason, GameEvent};
 use shared::net_components::NetComponents;
 use shared::services::HasEvents;
 
@@ -109,5 +109,26 @@ pub fn remove_net(entity: ecs::Entity, data: &mut DataHelper<Components, Service
                id, data.services.entity_types[type_id as usize].0);
 
         false
+    }
+}
+
+pub fn damage_player(player_id: PlayerId,
+                     responsible_player_id: PlayerId,
+                     death_reason: DeathReason,
+                     player_entity: EntityData<Components>,
+                     data: &mut DataHelper<Components, Services>)
+                     -> bool {
+    if data.player_state[player_entity].has_shield {
+        data.player_state[player_entity].has_shield = false;
+        return false;
+    } else {
+        let event = GameEvent::PlayerDied {
+            player_id: player_id,
+            position: data.position[player_entity].p,
+            responsible_player_id: responsible_player_id,
+            reason: death_reason
+        };
+        data.services.add_event(&event);
+        return true;
     }
 }

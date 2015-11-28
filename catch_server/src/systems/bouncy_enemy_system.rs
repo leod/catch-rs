@@ -4,7 +4,7 @@ use na::{Vec2, Norm};
 
 use shared::util::CachedAspect;
 
-use components::{Components, Shape};
+use components::Components;
 use services::Services;
 
 const MAX_SPEED: f32 = 300.0;

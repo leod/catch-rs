@@ -37,10 +37,7 @@ impl DrawBouncyEnemySystem {
                                       0.0, r, 0.0, p.y,
                                       0.0, 0.0, 1.0, 0.0,
                                       0.0, 0.0, 0.0, 1.0);
-            draw_list.push((DrawElement::Circle, DrawAttributes {
-                color: color,
-                model_mat: model_mat,
-            }));
+            draw_list.push((1, DrawElement::Circle, DrawAttributes::new(color, model_mat)));
         }
     }
 }

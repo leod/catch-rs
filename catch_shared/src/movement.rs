@@ -126,7 +126,8 @@ pub fn move_entity<Components: ComponentManager,
                     let p = c.wall_position()[wall].clone();
                     let delta = Vec2::new(0.0, 0.0);
                     let i = math::line_segment_moving_circle_intersection_time(p.pos_a, p.pos_b,
-                                                                               a, delta, shape.radius());
+                                                                               a, delta,
+                                                                               shape.radius());
                     println!("new intersection: {:?}, new a: {:?}", i, xx);
 
                     xx
