@@ -33,8 +33,8 @@ impl Sounds {
 
     pub fn play(&self, name: &str, p: Vec2<f32>) {
         // TODO: ???
-        //let input = Cursor::new(self.sounds.get(name).unwrap().clone());
-        //rodio::play_once(&self.endpoint, input);
+        let input = Cursor::new(self.sounds.get(name).unwrap().clone());
+        rodio::play_once(&self.endpoint, input).unwrap();
     }
 
     fn load_sound(&mut self, name: &str, file_name: &str) -> Result<(), String> {
@@ -60,5 +60,4 @@ impl Sounds {
 
         Ok(())
     }
-
 }

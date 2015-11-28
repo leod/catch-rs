@@ -12,7 +12,7 @@ time = "0.1.32"
 vecmath = "*"
 bincode = "*"
 rustc-serialize = "*"
-nalgebra = "*"
+nalgebra = "0.3"
 
 [dependencies.ecs]
 git = "https://github.com/HeroesGrave/ecs-rs.git"

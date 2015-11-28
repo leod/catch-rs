@@ -14,7 +14,7 @@ rand = "0.3.11"
 #hprof = "*"
 rustc-serialize = "*"
 bincode = "*"
-nalgebra = "*"
+nalgebra = "0.3"
 clock_ticks = "*"
 
 [dependencies.hprof]

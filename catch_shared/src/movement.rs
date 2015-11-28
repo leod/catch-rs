@@ -344,7 +344,7 @@ pub fn ray_walls_intersection<'a,
                               wall_aspect: &'a CachedAspect<Components>,
                               data: &DataHelper<Components, Services>)
                               -> Option<(f32, f32, EntityData<'a, Components>)>
-        where Components: HasWallPosition {
+    where Components: HasWallPosition {
     let mut closest_i = None;
 
     for wall in wall_aspect.iter::<'a>() {
