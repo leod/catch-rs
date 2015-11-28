@@ -26,7 +26,8 @@ pub fn build_net_custom<B: EntityBuilder<Components>>
                        (type_name: &str,
                         owner: PlayerId,
                         data: &mut DataHelper<Components, Services>,
-                        builder: B) -> ecs::Entity {
+                        builder: B)
+                        -> ecs::Entity {
     let entity_type_id = data.services.entity_type_id(type_name);
     let entity_type = data.services.entity_types[entity_type_id as usize].1.clone();
     let entity_id = data.services.next_entity_id();
@@ -37,7 +38,7 @@ pub fn build_net_custom<B: EntityBuilder<Components>>
     data.services.add_event(
         &GameEvent::CreateEntity(entity_id, entity_type_id, owner));
 
-    data.create_entity(|entity: BuildData<Components>, data: &mut Components| {
+    let entity = data.create_entity(|entity: BuildData<Components>, data: &mut Components| {
         data.net_entity.add(&entity, NetEntity {
             id: entity_id,
             type_id: entity_type_id,
@@ -58,7 +59,11 @@ pub fn build_net_custom<B: EntityBuilder<Components>>
 
         // Possibly add some custom components
         builder.build(entity, data);
-    })
+    });
+
+    data.services.net_entities.on_build(entity_id, entity_type_id, owner, entity);
+
+    entity
 }
 
 /// Adds server-side components that are not synchronized over the net to an entity
@@ -102,6 +107,8 @@ pub fn remove_net(entity: ecs::Entity, data: &mut DataHelper<Components, Service
         data.with_entity_data(&entity, |e, c| {
             c.server_net_entity[e].removed = true;
         });
+
+        data.services.net_entities.on_remove(id);
 
         true
     } else {

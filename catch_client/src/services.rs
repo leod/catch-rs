@@ -2,10 +2,11 @@ use ecs::ServiceManager;
 
 use shared::GameEvent;
 use shared::services::HasEvents;
+use shared::entities::NetEntities;
 
 #[derive(Default)]
 pub struct Services {
-    _x: u32 
+    pub net_entities: NetEntities,
 }
 
 impl ServiceManager for Services {}

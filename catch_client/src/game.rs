@@ -431,7 +431,7 @@ impl Game {
         let zoom = 3.0;
 
         // Clip camera position to map size in pixels
-        /*if self.cam_pos[0] < half_width / zoom {
+        if self.cam_pos[0] < half_width / zoom {
             self.cam_pos[0] = half_width / zoom; 
         } else if self.cam_pos[0] + half_width / zoom >
                   self.state.map.width_pixels() as f32 {
@@ -442,7 +442,7 @@ impl Game {
         } else if self.cam_pos[1] + half_height / zoom >
                   self.state.map.height_pixels() as f32 {
             self.cam_pos[1] = self.state.map.height_pixels() as f32 - half_height / zoom;
-        }*/
+        }
 
         let draw_parameters = glium::DrawParameters {
             depth: glium::Depth {
@@ -572,8 +572,7 @@ impl Game {
 
         let players = self.state.players().clone();
         for (&id, info) in players.iter() {
-            let entity = self.state.world.systems.net_entity_system.inner.as_ref().unwrap()
-                             .get_player_entity(id);
+            let entity = self.get_player_entity(id);
             if let Some(entity) = entity {
                 let p = self.state.world.with_entity_data(&entity, |e, c| {
                     c.position[e].p
@@ -751,15 +750,12 @@ impl Game {
     }
 
     fn get_player_entity(&mut self, player_id: PlayerId) -> Option<ecs::Entity> {
-        self.state.world.systems.net_entity_system.inner
-            .as_ref().unwrap()
-            .get_player_entity(player_id)
+        self.state.world.services.net_entities.get_player_entity(player_id)
     }
     
     fn get_my_player_entity(&mut self) -> Option<ecs::Entity> {
-        self.state.world.systems.net_entity_system.inner
-            .as_ref().unwrap()
-            .get_my_player_entity()
+        let my_id = self.client.my_id();
+        self.get_player_entity(my_id)
     }
 
     fn get_my_player_position(&mut self) -> Option<Vec2<f32>> {

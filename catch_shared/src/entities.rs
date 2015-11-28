@@ -1,5 +1,9 @@
-use ecs::{ComponentManager, BuildData};
+use std::collections::{HashMap, hash_map};
+use std::ops::Index;
 
+use ecs::{self, ComponentManager, BuildData};
+
+use super::{PlayerId, EntityId, EntityTypeId};
 use components::{HasShape, Shape, HasWall, Wall, WallType};
 use net_components::ComponentType;
 
@@ -41,6 +45,83 @@ pub fn build_shared<T: ComponentManager +
         });
     } else {
         panic!("unknown entity type: {}", type_name);
+    }
+}
+
+/// Maps from net entity ids to the local ecs::Entity handles
+pub struct NetEntities {
+    entity_types: EntityTypes,
+    entities: HashMap<EntityId, ecs::Entity>,
+
+    // Stores each player's currently controlled entity
+    player_entities: HashMap<PlayerId, ecs::Entity>,
+
+}
+
+impl Default for NetEntities {
+    fn default() -> NetEntities {
+        NetEntities {
+            entity_types: all_entity_types(),
+            entities: HashMap::new(),
+            player_entities: HashMap::new(),
+        }
+    }
+}
+
+impl NetEntities {
+    pub fn get(&self, id: EntityId) -> Option<ecs::Entity> {
+        self.entities.get(&id).map(|e| e.clone())
+    }
+
+    pub fn get_player_entity(&self, player_id: PlayerId) -> Option<ecs::Entity> {
+        self.player_entities.get(&player_id).map(|e| *e)
+    }
+
+    pub fn iter<'a>(&'a self) -> hash_map::Iter<'a, PlayerId, ecs::Entity> {
+        self.entities.iter()
+    }
+
+    pub fn on_build(&mut self,
+                    id: EntityId, type_id: EntityTypeId, owner: PlayerId,
+                    entity: ecs::Entity) {
+        assert!(self.entities.get(&id).is_none());
+        self.entities.insert(id, entity);
+
+        // HACK: detection of player entities
+        if self.entity_types[type_id as usize].0 == "player" {
+            assert!(self.player_entities.get(&owner).is_none());
+            self.player_entities.insert(owner, entity);
+        }
+    }
+
+    pub fn on_remove(&mut self, id: EntityId) {
+        assert!(self.entities.get(&id).is_some());
+        let entity = self.entities[&id].clone();
+        self.entities.remove(&id);
+
+        // Clear references to the entity
+        {
+            let mut remove_id = None;
+
+            for (&player_id, &player_entity) in self.player_entities.iter() {
+                if player_entity == entity {
+                    assert!(remove_id.is_none()); 
+                    remove_id = Some(player_id);
+                }
+            }
+
+            if let Some(remove_id) = remove_id {
+                self.player_entities.remove(&remove_id);
+            }
+        }
+    }
+}
+
+impl Index<EntityId> for NetEntities {
+    type Output = ecs::Entity;
+
+    fn index(&self, id: EntityId) -> &ecs::Entity {
+        &self.entities[&id]
     }
 }
 

@@ -2,8 +2,9 @@ use std::collections::HashMap;
 
 use ecs::ServiceManager;
 
-use shared::services::HasEvents;
 use shared::{EntityId, EntityTypeId, EntityTypes, TickNumber, PlayerId, GameEvent};
+use shared::services::HasEvents;
+use shared::entities::NetEntities;
 
 // State that can be accessed mutably by systems
 pub struct Services {
@@ -19,6 +20,9 @@ pub struct Services {
     // Game events for the current tick that are to be sent to clients are stored in
     // `next_player_events`.  Each event in `next_events` is also stored for each player here.
     pub next_player_events: HashMap<PlayerId, Vec<GameEvent>>,
+
+    // Net entities
+    pub net_entities: NetEntities,
 
     // Counter for creating net entities
     entity_id_counter: EntityId,
@@ -46,6 +50,7 @@ impl Services {
             tick_dur_s: 0.0, // the correct duration is set by GameState::tick
             next_events: Vec::new(),
             next_player_events: HashMap::new(),
+            net_entities: NetEntities::default(),
             entity_id_counter: 0,
         }
     }
@@ -77,20 +82,6 @@ impl Services {
         self.entity_id_counter
     }
 
-    /*/// Queue event for every player and also execute it on the server.
-    /// For example, a system might want to kill a player. To do that, it would emit a PlayerDied
-    /// event via `add_event_to_run`. The event will be executed on the server at the end of the
-    /// tick.
-    pub fn add_event_to_run(&mut self, event: &GameEvent) {
-        self.add_event(&event);
-        self.next_events.push(event.clone());
-    }
-
-    /*/// Queues an event to be run only locally
-    pub fn add_local_event_to_run(&mut self, event: &GameEvent) {
-        self.next_events.push(event.clone());
-    }*/*/
-    
     /// Queue an event only for one specific player
     pub fn add_player_event(&mut self, player_id: PlayerId, event: &GameEvent) {
         self.next_player_events.get_mut(&player_id).unwrap().push(event.clone());

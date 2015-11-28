@@ -16,7 +16,6 @@ use services::Services;
 pub struct NetEntitySystem {
     aspect: CachedAspect<Components>,
     entity_types: EntityTypes,
-    entities: HashMap<EntityId, ecs::Entity>,
 }
 
 impl NetEntitySystem {
@@ -24,7 +23,6 @@ impl NetEntitySystem {
         NetEntitySystem {
             aspect: CachedAspect::new(aspect),
             entity_types: shared::entities::all_entity_types(),
-            entities: HashMap::new(),
         }
     }
 
@@ -32,34 +30,22 @@ impl NetEntitySystem {
     pub fn remove_player_entities(&mut self,
                                   player_id: PlayerId,
                                   data: &mut DataHelper<Components, Services>) {
-        for (_, entity) in self.entities.iter() {
-            let owner = data.with_entity_data(entity, |e, c| {
-                c.net_entity[e].owner
-            }).unwrap();
-
-            if owner == player_id {
-                entities::remove_net(*entity, data);
+        for entity in self.aspect.iter() {
+            if data.net_entity[entity].owner == player_id {
+                entities::remove_net(**entity, data);
             }
         }
-    }
-
-    pub fn get_entity(&self, net_entity_id: EntityId) -> ecs::Entity {
-        self.entities[&net_entity_id]
     }
 
     /// Queue up CreateEntity events for a freshly connected player
     pub fn replicate_entities(&self, player_id: PlayerId,
                               data: &mut DataHelper<Components, Services>) {
-        for (&net_entity_id, entity) in self.entities.iter() {
-            let (entity_type_id, owner) = data.with_entity_data(entity, |e, c| {
-                assert!(!c.server_net_entity[e].removed);
-                (c.net_entity[e].type_id,
-                 c.net_entity[e].owner)
-            }).unwrap();
-
-            
-            data.services.add_player_event(player_id,
-                &GameEvent::CreateEntity(net_entity_id, entity_type_id, owner));
+        for entity in self.aspect.iter() {
+            assert!(!data.server_net_entity[entity].removed);
+            let event = GameEvent::CreateEntity(data.net_entity[entity].id,
+                                                data.net_entity[entity].type_id,
+                                                data.net_entity[entity].owner);
+            data.services.add_player_event(player_id, &event);
         }
     }
 
@@ -106,40 +92,16 @@ impl System for NetEntitySystem {
     fn activated(&mut self, entity: &EntityData<Components>, components: &Components,
                  _: &mut Services) {
         self.aspect.activated(entity, components);
-        if self.aspect.aspect.check(entity, components) {
-            let net_entity = &components.net_entity[*entity];
-
-            debug!("registering net entity {} of type {} with owner {}",
-                   net_entity.id, net_entity.type_id, net_entity.owner);
-
-            assert!(self.entities.get(&net_entity.id).is_none(),
-                    "already have a net entity with that id");
-
-            self.entities.insert(net_entity.id, ***entity);
-        }
     }
 
     fn reactivated(&mut self, entity: &EntityData<Components>, components: &Components,
                    _: &mut Services) {
         self.aspect.reactivated(entity, components);
-        // TODO I guess
     }
 
     fn deactivated(&mut self, entity: &EntityData<Components>, components: &Components,
                    _: &mut Services) {
         self.aspect.deactivated(entity, components);
-        if self.aspect.aspect.check(entity, components) {
-            let net_entity = &components.net_entity[*entity];
-
-            if self.entities.get(&net_entity.id).is_some() {
-                self.entities.remove(&net_entity.id);
-
-                debug!("unregistering entity with id {}", net_entity.id);
-            } else {
-                panic!("unkown net entity id: {}", net_entity.id)
-            }
-
-        }
     }
 }
 

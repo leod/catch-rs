@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use ecs;
 use ecs::{Aspect, System, DataHelper, BuildData, Process};
 
@@ -15,15 +13,7 @@ use services::Services;
 
 pub struct NetEntitySystem {
     aspect: CachedAspect<Components>,
-
     entity_types: EntityTypes,
-
-    // Map from network entity ids to the local component system's entity id
-    entities: HashMap<EntityId, ecs::Entity>,
-
-    // Store for each player the current entity
-    player_entities: HashMap<PlayerId, ecs::Entity>,
-
     my_id: PlayerId,
 }
 
@@ -33,22 +23,8 @@ impl NetEntitySystem {
         NetEntitySystem {
             aspect: CachedAspect::new(aspect),
             entity_types: entity_types.clone(),
-            entities: HashMap::new(),
-            player_entities: HashMap::new(),
             my_id: my_id,
         }
-    }
-
-    pub fn get_my_player_entity(&self) -> Option<ecs::Entity> {
-        self.get_player_entity(self.my_id)
-    }
-
-    pub fn get_player_entity(&self, player_id: PlayerId) -> Option<ecs::Entity> {
-        self.player_entities.get(&player_id).map(|e| *e)
-    }
-
-    pub fn get_entity(&self, id: EntityId) -> Option<ecs::Entity> {
-        self.entities.get(&id).map(|entity| *entity)
     }
 
     /// Replicates entities created on the server side via `catch_server::entities::build_net`
@@ -59,9 +35,8 @@ impl NetEntitySystem {
                      data: &mut DataHelper<Components, Services>) -> ecs::Entity {
         debug!("creating entity {} of type {} with owner {}", entity_id, entity_type_id, owner);
 
-        assert!(self.entities.get(&entity_id).is_none(), "already have a net entity with that id");
         assert!(self.entity_types.get(entity_type_id as usize).is_some(),
-                "Unknown net entity type id");
+                "unknown net entity type id");
 
         let entity = data.create_entity(|entity: BuildData<Components>, data: &mut Components| {
             data.net_entity.add(&entity, NetEntity {
@@ -103,45 +78,18 @@ impl NetEntitySystem {
             entities::build_client(type_name, entity, data);
         });
 
-        // HACK: detection of player entities
-        if self.entity_types[entity_type_id as usize].0 == "player" {
-            assert!(self.player_entities.get(&owner).is_none());
-            self.player_entities.insert(owner, entity);
-        }
+        data.services.net_entities.on_build(entity_id, entity_type_id, owner, entity);
 
-        self.entities.insert(entity_id, entity);
         entity
     }
 
     fn remove_entity(&mut self,
                      entity_id: EntityId,
                      data: &mut DataHelper<Components, Services>) {
-        if self.entities.get(&entity_id).is_some() {
-            debug!("removing entity with id {}", entity_id);
-
-            let entity = self.entities[&entity_id].clone();
-
-            // Clear references to the entity
-            {
-                let mut remove_id = None;
-
-                for (player_id, player_entity) in self.player_entities.iter_mut() {
-                    if *player_entity == entity {
-                        assert!(remove_id.is_none()); 
-                        remove_id = Some(*player_id);
-                    }
-                }
-
-                if let Some(remove_id) = remove_id {
-                    self.player_entities.remove(&remove_id);
-                }
-            }
-
-            data.remove_entity(entity);
-            self.entities.remove(&entity_id);
-        } else {
-            panic!("unkown net entity id: {}", entity_id);
-        }
+        debug!("removing entity with id {}", entity_id);
+        let entity = data.services.net_entities[entity_id];
+        data.services.net_entities.on_remove(entity_id);
+        data.remove_entity(entity);
     }
 
     /// Creates entities that are new in a tick and removes those that are to be removed
@@ -164,7 +112,7 @@ impl NetEntitySystem {
     pub fn load_tick_state(&mut self, tick: &Tick, c: &mut DataHelper<Components, Services>) {
         for &(net_id, ref net_components) in tick.state.entities.iter() {
             // TODO: Can we avoid these two lookups?
-            let entity = self.entities.get(&net_id).unwrap();
+            let entity = c.services.net_entities[net_id];
             c.with_entity_data(&entity, |e, c| {
                 let entity_type = &self.entity_types[c.net_entity[e].type_id as usize].1;
 
@@ -188,7 +136,7 @@ impl NetEntitySystem {
             match pair {
                 EntityPair::Both(state_a, state_b) => {
                     // TODO: Can we avoid these two lookups?
-                    let entity = self.entities.get(&net_id).unwrap();
+                    let entity = c.services.net_entities[net_id];
                     c.with_entity_data(&entity, |e, c| {
                         let entity_type = &self.entity_types[c.net_entity[e].type_id as usize].1;
 
