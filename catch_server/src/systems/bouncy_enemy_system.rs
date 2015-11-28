@@ -46,12 +46,12 @@ impl BouncyEnemySystem {
                     let target_d = orbit_position - p_orbit;
                     let t = target_d.norm();
 
-                    info!("d: {:?}", d);
+                    /*info!("d: {:?}", d);
                     info!("p_orbit: {:?}", d);
                     info!("target_d: {:?}", target_d);
                     info!("t: {}", t);
                     info!("accel: {:?}", target_d.normalize() * t * ORBIT_SPEED_FACTOR);
-                    info!("");
+                    info!("");*/
 
                     target_d.normalize() * t * ORBIT_SPEED_FACTOR
                     //target_d.normalize() * 10000.0 / (t)

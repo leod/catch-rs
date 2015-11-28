@@ -13,17 +13,13 @@ impl InputMap {
             (VirtualKeyCode::Right, PlayerInputKey::Right),
             (VirtualKeyCode::Up, PlayerInputKey::Forward),
             (VirtualKeyCode::Down, PlayerInputKey::Back),
-
             (VirtualKeyCode::A, PlayerInputKey::StrafeLeft),
             (VirtualKeyCode::D, PlayerInputKey::StrafeRight),
-
             (VirtualKeyCode::LShift, PlayerInputKey::Flip),
             (VirtualKeyCode::Space, PlayerInputKey::Dash),
-
             (VirtualKeyCode::Q, PlayerInputKey::Item1),
             (VirtualKeyCode::W, PlayerInputKey::Item2),
             (VirtualKeyCode::E, PlayerInputKey::Item3),
-
             (VirtualKeyCode::LControl, PlayerInputKey::Equip),
         ];
 

@@ -252,11 +252,11 @@ pub fn run_player_movement_input<Components: ComponentManager,
         if input.has(PlayerInputKey::StrafeLeft) {
             c.angular_velocity_mut()[e].v = 0.0;
             let strafe_direction = Vec2::new(direction[1], -direction[0]);
-            accel = strafe_direction * STRAFE_ACCEL + accel;
+            accel = -strafe_direction * STRAFE_ACCEL + accel;
         } else if input.has(PlayerInputKey::StrafeRight) {
             c.angular_velocity_mut()[e].v = 0.0;
             let strafe_direction = Vec2::new(direction[1], -direction[0]);
-            accel = -strafe_direction * STRAFE_ACCEL + accel;
+            accel = strafe_direction * STRAFE_ACCEL + accel;
         } else {
             // Turn left/right
             let mut ang_accel = c.angular_velocity()[e].v * -TURN_FRICTION;
