@@ -1,5 +1,4 @@
-use ecs;
-use ecs::{Aspect, System, DataHelper, BuildData, Process};
+use ecs::{self, Aspect, System, DataHelper, BuildData, Process};
 
 use shared;
 use shared::util::CachedAspect;

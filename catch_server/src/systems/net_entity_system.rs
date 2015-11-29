@@ -1,12 +1,10 @@
 use std::iter::Iterator;
-use std::collections::HashMap;
 
-use ecs;
 use ecs::{Aspect, Process, System, EntityData, DataHelper};
 
 use shared;
 use shared::net_components::NetComponents;
-use shared::{EntityId, EntityTypes, PlayerId, GameEvent, TickState};
+use shared::{EntityTypes, PlayerId, GameEvent, TickState};
 use shared::util::CachedAspect;
 
 use entities;

@@ -11,7 +11,7 @@ const MAX_SPEED: f32 = 300.0;
 const MOVE_ACCEL: f32 = 150.0;
 const MOVE_FRICTION: f32 = 8.0;
 const ORBIT_SPEED_FACTOR: f32 = 1.0;
-const ORBIT_BUFFER: f32 = 200.0;
+const ORBIT_BUFFER: f32 = 50.0;
 
 pub struct BouncyEnemySystem {
     aspect: CachedAspect<Components>,

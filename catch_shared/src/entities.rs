@@ -28,6 +28,8 @@ pub fn build_shared<T: ComponentManager +
         data.shape_mut().add(&entity, Shape::Circle { radius: 6.0 });
     } else if type_name == "bouncy_enemy" {
         data.shape_mut().add(&entity, Shape::Circle { radius: 10.0 });
+    } else if type_name == "player_ball" {
+        data.shape_mut().add(&entity, Shape::Circle { radius: 5.0 });
     } else if type_name == "item" {
         data.shape_mut().add(&entity, Shape::Square { size: 5.0 });
     } else if type_name == "item_spawn" {
@@ -136,6 +138,11 @@ pub fn all_entity_types() -> EntityTypes {
               owner_component_types: vec![ComponentType::FullPlayerState],
          }),
          ("bouncy_enemy".to_string(), EntityType {
+              component_types: vec![ComponentType::Position,
+                                    ComponentType::Orientation],
+              owner_component_types: vec![],
+         }),
+         ("player_ball".to_string(), EntityType {
               component_types: vec![ComponentType::Position,
                                     ComponentType::Orientation],
               owner_component_types: vec![],

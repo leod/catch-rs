@@ -38,9 +38,6 @@ impl Default for DrawItem {
 }
 
 #[derive(Default)]
-pub struct DrawShadow;
-
-#[derive(Default)]
 pub struct DrawWall;
 
 pub trait Interpolatable {
@@ -93,7 +90,6 @@ components! {
         #[cold] draw_bouncy_enemy: DrawBouncyEnemy,
         #[cold] draw_item: DrawItem,
         #[cold] draw_projectile: DrawProjectile,
-        #[cold] draw_shadow: DrawShadow,
         #[cold] draw_wall: DrawWall,
     }
 }

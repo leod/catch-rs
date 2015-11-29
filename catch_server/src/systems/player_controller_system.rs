@@ -141,7 +141,7 @@ impl PlayerControllerSystem {
                 }
             }
             Item::BallSpawner { charges } => {
-                let orbit_entity = entities::build_net("bouncy_enemy", player_id, c);
+                let orbit_entity = entities::build_net("player_ball", player_id, c);
 
                 c.with_entity_data(&orbit_entity, |e_bouncy, c| {
                     c.position[e_bouncy].p = p + Vec2::new(10.0, 0.0);

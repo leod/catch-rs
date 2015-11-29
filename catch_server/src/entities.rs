@@ -75,7 +75,7 @@ pub fn build_server(type_name: &str,
         //data.rotate.add(&entity, Rotate);
         data.angular_velocity.add(&entity, AngularVelocity::default());
         data.player_controller.add(&entity, PlayerController::default());
-    } else if type_name == "bouncy_enemy" {
+    } else if type_name == "bouncy_enemy" || type_name == "player_ball" {
         //data.interact.add(&entity, Interact);
         data.linear_velocity.add(&entity, LinearVelocity::default());
         data.bouncy_enemy.add(&entity, BouncyEnemy::default());

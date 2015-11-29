@@ -308,7 +308,8 @@ impl Game {
 
                 let num = 100;
                 for _ in 0..num {
-                    self.particles.spawn_cone(0.75, color, color, 3.5 * rand::random::<f32>() + 2.0,
+                    self.particles.spawn_cone(0.45 + rand::random::<f32>() * 0.4,
+                                              color, color, 3.5 * rand::random::<f32>() + 2.0,
                                               position, 0.0, f32::consts::PI * 2.0,
                                               70.0 + rand::random::<f32>() * 40.0,
                                               rand::random::<f32>() * 24.0, 1.0);
@@ -378,7 +379,8 @@ impl Game {
                 let num = 100;
                 let color = [1.0, 0.0, 0.0];
                 for _ in 0..num {
-                    self.particles.spawn_cone(0.5, color, color, 2.5 * rand::random::<f32>() + 1.0,
+                    self.particles.spawn_cone(rand::random::<f32>() * 0.4 + 0.2,
+                                              color, color, 2.5 * rand::random::<f32>() + 1.0,
                                               position, 0.0, f32::consts::PI * 2.0,
                                               70.0 + rand::random::<f32>() * 20.0,
                                               rand::random::<f32>() * 5.0, 1.0);
