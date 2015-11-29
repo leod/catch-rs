@@ -64,6 +64,7 @@ impl DrawPlayerSystem {
                 Shape::Circle { radius } => radius,
                 _ => panic!("player should be circle"),
             };
+            let angle = data.orientation[entity].angle;
 
             let scale_x_target = if data.player_state[entity].dashing.is_some() {
                 data.linear_velocity[entity].v.norm() / 400.0 + 1.0
@@ -88,20 +89,12 @@ impl DrawPlayerSystem {
             data.draw_player[entity].color = color;
 
             let scale_x = data.draw_player[entity].scale_x;
+            let rot_mat = Mat2::new(angle.cos(), -angle.sin(),
+                                    angle.sin(), angle.cos());
 
-            let alpha = data.orientation[entity].angle;
-            let rot_mat = Mat2::new(alpha.cos(), -alpha.sin(),
-                                    alpha.sin(), alpha.cos());
-            let scale_mat = Mat2::new(scale_x * r, 0.0,
-                                      0.0, 1.0 / scale_x * r);
-            let m = rot_mat * scale_mat;
-            let model_mat = Mat4::new(m.m11, m.m12, 0.0, p.x,
-                                      m.m21, m.m22, 0.0, p.y,
-                                      0.0, 0.0, 1.0, 0.0,
-                                      0.0, 0.0, 0.0, 1.0);
-            draw_list.push((1, DrawElement::Circle,
-                            DrawAttributes::new(Vec4::new(color[0], color[1], color[2], 1.0),
-                                                model_mat)));
+            draw_list.push_ellipse(1, Vec4::new(color[0], color[1], color[2], 1.0),
+                                   scale_x * r, 1.0 / scale_x * r,
+                                   p, angle);
 
             if data.player_state[entity].has_shield {
                 let s = 2.0*r + 8.0;
@@ -112,8 +105,8 @@ impl DrawPlayerSystem {
                                           m.m21, m.m22, 0.0, p.y,
                                           0.0, 0.0, 1.0, 0.0,
                                           0.0, 0.0, 0.0, 1.0);
-                draw_list.push((1, DrawElement::TexturedSquare { texture: "shield".to_string() },
-                                DrawAttributes::new(Vec4::new(0.0, 0.0, 0.0, 1.0), model_mat)));
+                draw_list.push(1, DrawElement::TexturedSquare { texture: "shield".to_string() },
+                               DrawAttributes::new(Vec4::new(0.0, 0.0, 0.0, 1.0), model_mat));
             }
 
             let scale_mat = Mat2::new(scale_x * r, 0.0,
@@ -124,8 +117,8 @@ impl DrawPlayerSystem {
                                       m.m21, m.m22, 0.0, p.y + o.y,
                                       0.0, 0.0, 1.0, 0.0,
                                       0.0, 0.0, 0.0, 1.0);
-            draw_list.push((2, DrawElement::Square,
-                            DrawAttributes::new(Vec4::new(0.0, 0.0, 0.0, 1.0), model_mat)));
+            draw_list.push(2, DrawElement::Square,
+                           DrawAttributes::new(Vec4::new(0.0, 0.0, 0.0, 1.0), model_mat));
         }
     }
 }

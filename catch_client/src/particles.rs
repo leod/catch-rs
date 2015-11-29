@@ -147,7 +147,11 @@ impl Particles {
         "#;
 
         let (square_vertex_buffer, square_index_buffer) = draw::new_square(display);
-        let particles_vertex_buffer = glium::VertexBuffer::empty_dynamic(display, MAX_PARTICLES).unwrap();
+        let particles_vertex_buffer =
+            glium::VertexBuffer::empty_dynamic(display, MAX_PARTICLES).unwrap();
+        let program =
+            glium::Program::from_source(display,
+                                        vertex_shader_src, fragment_shader_src, None).unwrap();
 
         Particles {
             particles: Vec::new(),
@@ -157,8 +161,7 @@ impl Particles {
             square_vertex_buffer: square_vertex_buffer,
             square_index_buffer: square_index_buffer,
             particles_vertex_buffer: particles_vertex_buffer,
-            program: glium::Program::from_source(display, vertex_shader_src, fragment_shader_src,
-                                                 None).unwrap(),
+            program: program,
             time_s: 0.0,
         }
     }
@@ -195,8 +198,6 @@ impl Particles {
         }
 
         self.time_s += time_s;
-
-        //debug!("used: {}, free: {}, ps: {}", self.num_used_indices, self.free_indices.len(), self.particles.len());
     }
 
     pub fn draw<'a, S: Surface>(&self, draw_context: &DrawContext<'a>, target: &mut S) {

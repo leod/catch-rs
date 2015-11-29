@@ -90,7 +90,6 @@ impl Server {
             clients: HashMap::new(),
             game_state: GameState::new(game_info),
             tick_timer: PeriodicTimer::new(tick_duration_s),
-
             print_prof_timer: PeriodicTimer::new(5.0),
             sum_tick_size: 0,
             samples_tick_size: 0,
@@ -182,8 +181,7 @@ impl Server {
                     Some(ping_sent_time) =>
                         client.ping = Some(time::get_time() - ping_sent_time),
                     None =>
-                        warn!("received unwarranted pong from {}",
-                                 player_id)
+                        warn!("received unwarranted pong from {}", player_id)
                 };
 
                 client.ping_sent_time = None;

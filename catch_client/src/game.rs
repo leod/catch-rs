@@ -465,7 +465,7 @@ impl Game {
         };
         drop(_g);
 
-        let mut draw_list = Vec::new();
+        let mut draw_list = DrawList::new();
 
         {
             let _g = hprof::enter("entities");

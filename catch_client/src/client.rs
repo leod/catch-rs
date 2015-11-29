@@ -159,7 +159,10 @@ impl Client {
                         match decode_from(&mut data, SizeLimit::Infinite) {
                             Ok(tick) => {
                                 if let Some(delta_tick) = delta_tick {
-                                    assert!(self.last_tick.as_ref().unwrap().tick_number == delta_tick);
+                                    // TODO: When we go for non-reliable transmission of ticks,
+                                    // this will need to change
+                                    assert!(self.last_tick.as_ref().unwrap().tick_number ==
+                                            delta_tick);
                                     self.last_tick.as_mut().unwrap().load_delta(&tick);
                                 } else {
                                     self.last_tick = Some(tick);

@@ -2,7 +2,7 @@ use std::f32;
 use std::collections::HashMap;
 use std::error::Error;
 
-use na::{Vec4, Mat4};
+use na::{Norm, Vec2, Mat2, Vec4, Mat4};
 use glium;
 use image;
 
@@ -44,7 +44,81 @@ impl DrawAttributes {
     }
 }
 
-pub type DrawList = Vec<(usize, DrawElement, DrawAttributes)>;
+pub struct DrawList {
+    list: Vec<(usize, DrawElement, DrawAttributes)>,
+}
+
+impl DrawList {
+    pub fn new() -> DrawList {
+        DrawList {
+            list: Vec::new()
+        }
+    }
+
+    pub fn push(&mut self, layer: usize, element: DrawElement, attributes: DrawAttributes) {
+        self.list.push((layer, element, attributes));
+    }
+
+    pub fn push_line(&mut self,
+                     layer: usize,
+                     color: Vec4<f32>,
+                     size: f32,
+                     a: Vec2<f32>,
+                     b: Vec2<f32>) {
+        let d = b - a;
+        let alpha = d.y.atan2(d.x);
+
+        let rot_mat = Mat2::new(alpha.cos(), -alpha.sin(),
+                                alpha.sin(), alpha.cos());
+        let scale_mat = Mat2::new(d.norm(), 0.0,
+                                  0.0, size);
+        let m = rot_mat * scale_mat;
+        let o = m * Vec2::new(0.5, 0.0);
+        let model_mat = Mat4::new(m.m11, m.m12, 0.0, a.x + o.x,
+                                  m.m21, m.m22, 0.0, a.y + o.y,
+                                  0.0, 0.0, 1.0, 0.0,
+                                  0.0, 0.0, 0.5, 1.0);
+        self.push(layer, DrawElement::Square, DrawAttributes::new(color, model_mat));
+    }
+
+    pub fn push_rect(&mut self,
+                     layer: usize,
+                     color: Vec4<f32>,
+                     width: f32,
+                     height: f32,
+                     p: Vec2<f32>,
+                     angle: f32) {
+        let rot_mat = Mat2::new(angle.cos(), -angle.sin(),
+                                angle.sin(), angle.cos());
+        let scale_mat = Mat2::new(width, 0.0,
+                                  0.0, height);
+        let m = rot_mat * scale_mat;
+        let model_mat = Mat4::new(m.m11, m.m12, 0.0, p.x,
+                                  m.m21, m.m22, 0.0, p.y,
+                                  0.0, 0.0, 1.0, 0.0,
+                                  0.0, 0.0, 0.0, 1.0);
+        self.push(layer, DrawElement::Square, DrawAttributes::new(color, model_mat));
+    }
+
+    pub fn push_ellipse(&mut self,
+                        layer: usize,
+                        color: Vec4<f32>,
+                        width: f32,
+                        height: f32,
+                        p: Vec2<f32>,
+                        angle: f32) {
+        let rot_mat = Mat2::new(angle.cos(), -angle.sin(),
+                                angle.sin(), angle.cos());
+        let scale_mat = Mat2::new(width, 0.0,
+                                  0.0, height);
+        let m = rot_mat * scale_mat;
+        let model_mat = Mat4::new(m.m11, m.m12, 0.0, p.x,
+                                  m.m21, m.m22, 0.0, p.y,
+                                  0.0, 0.0, 1.0, 0.0,
+                                  0.0, 0.0, 0.0, 1.0);
+        self.push(layer, DrawElement::Circle, DrawAttributes::new(color, model_mat));
+    }
+}
 
 pub const SPRITE_VERTEX_BUFFER_SIZE: usize = 1024;
 
@@ -150,7 +224,33 @@ impl DrawDrawList {
         let sprite_vertex_buffer =
             glium::VertexBuffer::empty_dynamic(display, SPRITE_VERTEX_BUFFER_SIZE).unwrap();
 
-        // Try to load textures
+        let program =
+            glium::Program::from_source(display,
+                                        vertex_shader_src,
+                                        fragment_shader_src,
+                                        None).unwrap();
+        let textured_square_program =
+            glium::Program::from_source(display,
+                                        textured_square_vertex_shader_src,
+                                        textured_square_fragment_shader_src,
+                                        None).unwrap();
+        let (texture_ids, texture_array) = try!(DrawDrawList::load_textures(display));
+
+        Ok(DrawDrawList {
+            circle_vertex_buffer: new_circle(display, 32),
+            square_vertex_buffer: square_vertex_buffer,
+            square_index_buffer: square_index_buffer,
+            sprite_vertex_buffers: vec![sprite_vertex_buffer],
+            used_sprite_vertex_buffers: vec![],
+            program: program,
+            textured_square_program: textured_square_program,
+            texture_ids: texture_ids,
+            texture_array: texture_array,
+        })
+    }
+
+    fn load_textures(display: &glium::Display)
+                     -> Result<(HashMap<String, u32>, glium::texture::Texture2dArray), String> {
         let mut texture_ids = HashMap::new();
         let mut images = Vec::new();
 
@@ -184,24 +284,9 @@ impl DrawDrawList {
                 }
             };
         }
-
-        Ok(DrawDrawList {
-            circle_vertex_buffer: new_circle(display, 32),
-            square_vertex_buffer: square_vertex_buffer,
-            square_index_buffer: square_index_buffer,
-            sprite_vertex_buffers: vec![sprite_vertex_buffer],
-            used_sprite_vertex_buffers: vec![],
-            program: glium::Program::from_source(display,
-                                                 vertex_shader_src,
-                                                 fragment_shader_src,
-                                                 None).unwrap(),
-            textured_square_program: glium::Program::from_source(display,
-                                                                 textured_square_vertex_shader_src,
-                                                                 textured_square_fragment_shader_src,
-                                                                 None).unwrap(),
-            texture_ids: texture_ids,
-            texture_array: glium::texture::Texture2dArray::new(display, images).unwrap(),
-        })
+        
+        Ok((texture_ids,
+            glium::texture::Texture2dArray::new(display, images).unwrap()))
     }
 
     fn get_sprite_vertex_buffer(&mut self, display: &glium::Display)
@@ -268,21 +353,21 @@ impl DrawDrawList {
             camera_mat: context.camera_mat,
             textures: &self.texture_array,
         };
-
-        surface.draw((&self.square_vertex_buffer,
-                      square_sprite_buffer.slice(0..square_i).unwrap().per_instance().unwrap()),
-                     &self.square_index_buffer, &self.program, &uniforms,
-                     &context.parameters).unwrap();
-
-        let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan);
-        surface.draw((&self.circle_vertex_buffer,
-                      circle_sprite_buffer.slice(0..circle_i).unwrap().per_instance().unwrap()),
-                     &indices, &self.program, &uniforms, &context.parameters).unwrap();
-
         let parameters = glium::DrawParameters {
             blend: glium::Blend::alpha_blending(),
             .. context.parameters.clone()
         };
+
+        surface.draw((&self.square_vertex_buffer,
+                      square_sprite_buffer.slice(0..square_i).unwrap().per_instance().unwrap()),
+                     &self.square_index_buffer, &self.program, &uniforms,
+                     &parameters).unwrap();
+
+        let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan);
+        surface.draw((&self.circle_vertex_buffer,
+                      circle_sprite_buffer.slice(0..circle_i).unwrap().per_instance().unwrap()),
+                     &indices, &self.program, &uniforms, &parameters).unwrap();
+
         surface.draw((&self.square_vertex_buffer,
                       textured_square_sprite_buffer.slice(0..textured_square_i)
                                                    .unwrap().per_instance().unwrap()),
@@ -300,7 +385,7 @@ impl DrawDrawList {
                 context: &DrawContext<'a>,
                 display: &glium::Display,
                 surface: &mut S) {
-        let max_layer_element = list.iter().max_by(|e| e.0);
+        let max_layer_element = list.list.iter().max_by(|e| e.0);
 
         let max_layer = match max_layer_element {
             Some(element) => element.0,
@@ -310,7 +395,7 @@ impl DrawDrawList {
         let mut used_buffers = Vec::new();
 
         for layer in 0..max_layer+1 {
-            let layer_list = list.iter().filter(|e| e.0 == layer).map(|e| (&e.1, &e.2)); 
+            let layer_list = list.list.iter().filter(|e| e.0 == layer).map(|e| (&e.1, &e.2)); 
             let return_buffers = self.draw_layer(layer_list, context, display, surface);
             for buffer in return_buffers.into_iter() {
                 used_buffers.push(buffer);
