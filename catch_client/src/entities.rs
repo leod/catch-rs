@@ -14,7 +14,7 @@ pub fn build_client(type_name: &str,
         data.draw_bouncy_enemy.add(&entity, DrawBouncyEnemy::default());
     } else if type_name == "item" {
         data.draw_item.add(&entity, DrawItem::default());
-    } else if type_name == "bullet" {
+    } else if type_name == "bullet" || type_name == "frag" || type_name == "shrapnel" {
         data.draw_projectile.add(&entity, DrawProjectile::default());
     } else if type_name == "wall_wood" || type_name == "wall_iron" {
         data.draw_wall.add(&entity, DrawWall::default());

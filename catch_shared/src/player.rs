@@ -1,10 +1,14 @@
 use std::fmt;
 
+use components::Projectile;
 use super::{ItemSlot, NUM_ITEM_SLOTS};
 
 #[derive(PartialEq, Clone, Debug, RustcEncodable, RustcDecodable)]
 pub enum Item {
     Weapon {
+        charges: usize,
+    },
+    FragWeapon {
         charges: usize,
     },
     SpeedBoost {
@@ -22,7 +26,8 @@ pub enum Item {
 impl Item {
     pub fn cooldown_s(&self) -> Option<f32> {
         match *self {
-            Item::Weapon { charges: _ } => Some(0.7),
+            Item::Weapon { charges: _ } => Some(0.5),
+            Item::FragWeapon { charges: _ } => Some(1.5),
             Item::SpeedBoost { duration_s: _ } => None,
             Item::BlockPlacer { charges: _ } => Some(5.0),
             Item::BallSpawner { charges: _ } => Some(2.5),

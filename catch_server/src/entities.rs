@@ -86,6 +86,10 @@ pub fn build_server(type_name: &str,
               type_name == "frag" ||
               type_name == "shrapnel" {
         data.linear_velocity.add(&entity, LinearVelocity::default());
+        if type_name == "frag" || type_name == "shrapnel" {
+            data.angular_velocity.add(&entity, AngularVelocity { v: 1.0 * f32::consts::PI });
+            data.rotate.add(&entity, Rotate);
+        }
     }
 }
 

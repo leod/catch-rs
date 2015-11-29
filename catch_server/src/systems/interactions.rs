@@ -1,7 +1,7 @@
 use std::f32;
 
 use ecs::{EntityData, DataHelper};
-use na::{Vec2, Norm, Dot};
+use na::{Vec2, Norm};
 
 use shared::{GameEvent, DeathReason, NEUTRAL_PLAYER_ID};
 use shared::services::HasEvents;
@@ -10,6 +10,7 @@ use entities;
 use components::Components;
 use services::Services;
 use systems::interaction_system::{InteractionResponse, Interaction};
+use systems::projectile_system;
 
 /// Kill player on hitting enemy, or kill enemy if player is dashing
 pub struct PlayerBouncyEnemyInteraction;
@@ -41,7 +42,7 @@ impl Interaction for PlayerBouncyEnemyInteraction {
                 let direction = Vec2::new(data.orientation[enemy].angle.cos(),
                                           data.orientation[enemy].angle.sin());
                 let speed_factor = (-alpha.abs() / (f32::consts::PI * 2.0)).exp();
-                let speed = data.linear_velocity[enemy].v.norm() + 300.0 + 300.0 * speed_factor ;
+                let speed = data.linear_velocity[enemy].v.norm() + 300.0 + 300.0 * speed_factor;
                 data.linear_velocity[enemy].v =  direction * speed;
                 InteractionResponse::DisplaceNoOverlap
             } else {
@@ -131,14 +132,9 @@ impl Interaction for ProjectileBouncyEnemyInteraction {
         data.services.add_event(&GameEvent::EnemyDied {
             position: position,
         });
-
-        let position = data.position[projectile].p;
-        data.services.add_event(&GameEvent::ProjectileImpact {
-            position: position,
-        });
-
-        entities::remove_net(**projectile, data);
         entities::remove_net(**enemy, data);
+
+        projectile_system::explode(projectile, data);
 
         InteractionResponse::None
     }
@@ -164,12 +160,7 @@ impl Interaction for ProjectilePlayerInteraction {
                                 DeathReason::Projectile,
                                 player,
                                 data);
-
-        let event = GameEvent::ProjectileImpact {
-            position: data.position[projectile].p
-        };
-        data.services.add_event(&event);
-        entities::remove_net(**projectile, data); 
+        projectile_system::explode(projectile, data);
 
         InteractionResponse::None
     }

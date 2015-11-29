@@ -58,8 +58,12 @@ impl<T: ComponentManager> CachedAspect<T> {
         }
     }
 
+    pub fn check(&self, entity: &EntityData<T>, components: &T) -> bool {
+        self.aspect.check(entity, components)
+    }
+
     pub fn activated(&mut self, entity: &EntityData<T>, components: &T) {
-        if self.aspect.check(entity, components) {
+        if self.check(entity, components) {
             self.interested.insert(***entity, (**entity).__clone());
         }
     }
@@ -70,7 +74,7 @@ impl<T: ComponentManager> CachedAspect<T> {
                 self.interested.remove(entity);
             }
         }
-        else if self.aspect.check(entity, components) {
+        else if self.check(entity, components) {
             self.interested.insert(***entity, (**entity).__clone());
         }
     }

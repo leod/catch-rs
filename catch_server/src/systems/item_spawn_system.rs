@@ -5,7 +5,7 @@ use ecs::{Aspect, Process, System, BuildData, DataHelper};
 use shared::Item;
 use shared::util::CachedAspect;
 
-use components::{Components};
+use components::Components;
 use services::Services;
 use entities;
 
@@ -62,6 +62,7 @@ impl ItemSpawnSystem {
                     |item_e: BuildData<Components>, c: &mut Components| {
                         let choices = vec![
                                            Item::Weapon { charges: 10 },
+                                           Item::FragWeapon { charges: 5 },
                                            Item::BallSpawner { charges: 3 },
                                            Item::Shield,
                                           ];

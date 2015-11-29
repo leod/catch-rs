@@ -240,7 +240,8 @@ impl GameState {
 
             // We'll equip a gun for now
             c.player_state[e].equip(0, Item::Weapon { charges: 20 }); 
-            c.player_state[e].equip(1, Item::BallSpawner { charges: 5 }); 
+            c.player_state[e].equip(1, Item::FragWeapon { charges: 5 });
+            //c.player_state[e].equip(1, Item::BallSpawner { charges: 5 }); 
         });
 
         entity

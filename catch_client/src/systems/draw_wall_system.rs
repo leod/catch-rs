@@ -1,5 +1,3 @@
-use std::f32;
-
 use ecs::{Aspect, System, DataHelper, Process};
 use na::Vec4;
 

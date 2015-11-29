@@ -1,13 +1,12 @@
 use ecs::{EntityData, DataHelper};
 use na::Vec2;
 
-use shared::GameEvent;
-use shared::services::HasEvents;
 use shared::movement::{WallInteractionType, WallInteraction};
 
 use components::Components;
 use services::Services;
 use entities;
+use systems::projectile_system;
 
 pub struct ConstWallInteraction(pub WallInteractionType);
 impl WallInteraction<Components, Services> for ConstWallInteraction {
@@ -37,11 +36,7 @@ impl WallInteraction<Components, Services> for ProjectileWallInteraction {
              projectile: EntityData<Components>, _wall: EntityData<Components>,
              data: &mut DataHelper<Components, Services>)
              -> WallInteractionType {
-        let event = &GameEvent::ProjectileImpact {
-            position: p,
-        };
-        data.services.add_event(&event);
-        entities::remove_net(**projectile, data);
+        projectile_system::explode(projectile, data);
         WallInteractionType::Stop
     }
 }

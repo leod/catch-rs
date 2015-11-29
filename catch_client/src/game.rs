@@ -24,6 +24,7 @@ use draw_map::DrawMap;
 use particles::Particles;
 use sounds::Sounds;
 use draw::{DrawList, DrawDrawList, DrawContext};
+use components::Projectile;
 
 pub const MAX_DEATH_MESSAGES: usize = 4;
 
@@ -388,12 +389,20 @@ impl Game {
             }
             &GameEvent::ProjectileImpact {
                 position,
+                strength
             } => {
                 let num = 30;
-                let color = [0.3, 0.3, 0.3];
-                for _ in 0..num {
-                    self.particles.spawn_cone(0.25, color, color,
-                                              1.0 * rand::random::<f32>() + 0.5, position, 0.0,
+                let color =
+                    if strength >= 1.0 { 
+                        [1.0, 0.5, 0.0]
+                    } else {
+                        [0.4, 0.4, 0.4]
+                    };
+
+                for _ in 0..num + (strength as usize * 4)  {
+                    self.particles.spawn_cone(0.25 + strength / 5.0, color, color,
+                                              strength * (1.0 * rand::random::<f32>() + 0.5),
+                                              position, 0.0,
                                               f32::consts::PI * 2.0,
                                               30.0 + rand::random::<f32>() * 15.0,
                                               rand::random::<f32>() * 5.0, 1.0);
@@ -739,7 +748,9 @@ impl Game {
     fn item_text(&self, item: &Item) -> String {
         match *item {
             Item::Weapon { charges } =>
-                format!("weapon ({})", charges),
+                format!("gun ({})", charges),
+            Item::FragWeapon { charges } =>
+                format!("frag launcher ({})", charges),
             Item::SpeedBoost { duration_s: s } =>
                 format!("speed boost ({})", s),
             Item::BlockPlacer { charges } =>

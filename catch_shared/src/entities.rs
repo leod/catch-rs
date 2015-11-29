@@ -38,6 +38,11 @@ pub fn build_shared<T: ComponentManager +
     } else if type_name == "bullet" {
         data.shape_mut().add(&entity, Shape::Rect { width: 8.0, height: 4.0 });
         data.projectile_mut().add(&entity, Projectile::Bullet);
+    } else if type_name == "frag" {
+        data.shape_mut().add(&entity, Shape::Rect { width: 5.0, height: 5.0 });
+        data.projectile_mut().add(&entity, Projectile::Frag(1.5));
+    } else if type_name == "shrapnel" {
+        data.projectile_mut().add(&entity, Projectile::Shrapnel);
     } else if type_name == "wall_wood" {
         data.wall_mut().add(&entity, Wall { 
             wall_type: WallType::Wood,
@@ -162,6 +167,17 @@ pub fn all_entity_types() -> EntityTypes {
          ("bullet".to_string(), EntityType {
               component_types: vec![ComponentType::Position,
                                     ComponentType::Orientation],
+              owner_component_types: vec![],
+         }),
+         ("frag".to_string(), EntityType {
+              component_types: vec![ComponentType::Position,
+                                    ComponentType::Orientation],
+              owner_component_types: vec![],
+         }),
+         ("shrapnel".to_string(), EntityType {
+              component_types: vec![ComponentType::Position,
+                                    ComponentType::Orientation,
+                                    ComponentType::Shape],
               owner_component_types: vec![],
          }),
          ("wall_wood".to_string(), EntityType {

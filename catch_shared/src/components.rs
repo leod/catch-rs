@@ -77,10 +77,10 @@ impl Shape {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, RustcEncodable, RustcDecodable)]
 pub enum Projectile {
     Bullet,
-    Frag,
+    Frag(f32),
     Shrapnel
 }
 

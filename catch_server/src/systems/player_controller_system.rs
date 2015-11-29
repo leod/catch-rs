@@ -140,6 +140,24 @@ impl PlayerControllerSystem {
                     None
                 }
             }
+            Item::FragWeapon { charges } => {
+                let projectile_entity = entities::build_net("frag", player_id, c);
+
+                c.with_entity_data(&projectile_entity, |projectile_e, c| {
+                    c.position[projectile_e].p = p;
+                    c.orientation[projectile_e].angle = angle;
+                    c.linear_velocity[projectile_e].v = Vec2::new(
+                        angle.cos() * PROJECTILE_SPEED,
+                        angle.sin() * PROJECTILE_SPEED
+                    );
+                });
+
+                if charges > 1 {
+                    Some(Item::FragWeapon { charges: charges - 1 })
+                } else {
+                    None
+                }
+            }
             Item::BallSpawner { charges } => {
                 let orbit_entity = entities::build_net("player_ball", player_id, c);
 

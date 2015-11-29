@@ -99,5 +99,6 @@ pub enum GameEvent {
     },
     ProjectileImpact {
         position: na::Vec2<f32>,
+        strength: f32,
     },
 }
