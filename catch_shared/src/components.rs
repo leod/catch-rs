@@ -77,8 +77,12 @@ impl Shape {
     }
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct Projectile;
+#[derive(Debug, Clone)]
+pub enum Projectile {
+    Bullet,
+    Frag,
+    Shrapnel
+}
 
 #[derive(Debug, Clone)]
 pub enum WallType {
@@ -158,4 +162,9 @@ pub trait HasWallPosition: Sized + ComponentManager {
 pub trait HasWall: Sized + ComponentManager {
     fn wall(&self) -> &ComponentList<Self, Wall>;
     fn wall_mut(&mut self) -> &mut ComponentList<Self, Wall>;
+}
+
+pub trait HasProjectile: Sized + ComponentManager {
+    fn projectile(&self) -> &ComponentList<Self, Projectile>;
+    fn projectile_mut(&mut self) -> &mut ComponentList<Self, Projectile>;
 }

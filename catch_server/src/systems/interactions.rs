@@ -1,7 +1,7 @@
 use std::f32;
 
 use ecs::{EntityData, DataHelper};
-use na::{Vec2, Norm};
+use na::{Vec2, Norm, Dot};
 
 use shared::{GameEvent, DeathReason, NEUTRAL_PLAYER_ID};
 use shared::services::HasEvents;
@@ -33,13 +33,15 @@ impl Interaction for PlayerBouncyEnemyInteraction {
                                         player,
                                         data);
             if !player_killed {
+                // Bounce the enemy at us
                 let delta = data.position[enemy].p - data.position[player].p;
                 let alpha = delta[1].atan2(delta[0]);
 
                 data.orientation[enemy].angle = alpha;
                 let direction = Vec2::new(data.orientation[enemy].angle.cos(),
                                           data.orientation[enemy].angle.sin());
-                let speed = data.linear_velocity[enemy].v.norm() + 300.0;
+                let speed_factor = (-alpha.abs() / (f32::consts::PI * 2.0)).exp();
+                let speed = data.linear_velocity[enemy].v.norm() + 300.0 + 300.0 * speed_factor ;
                 data.linear_velocity[enemy].v =  direction * speed;
                 InteractionResponse::DisplaceNoOverlap
             } else {

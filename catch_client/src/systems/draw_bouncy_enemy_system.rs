@@ -44,7 +44,7 @@ impl DrawBouncyEnemySystem {
                 let player_entity = data.services.net_entities.get_player_entity(owner);
                 if let Some(player_entity) = player_entity {
                     data.with_entity_data(&player_entity, |player_e, c| {
-                        draw_list.push_line(0, Vec4::new(0.0, 0.0, 1.0, 0.5), 1.5,
+                        draw_list.push_line(0, Vec4::new(0.0, 0.0, 1.0, 0.25), 0.5,
                                             c.position[player_e].p, c.position[entity].p);
                     });
                 }

@@ -10,7 +10,7 @@ use shared::net_components::NetComponents;
 use shared::services::HasEvents;
 
 use components::{Components, NetEntity, ServerNetEntity, LinearVelocity, BouncyEnemy, ItemSpawn,
-                 AngularVelocity, Rotate, Projectile, PlayerController};
+                 AngularVelocity, Rotate, PlayerController};
 use services::Services;
 
 /// Create a new networked entity, replicating it to the clients
@@ -71,12 +71,10 @@ pub fn build_server(type_name: &str,
                     entity: BuildData<Components>,
                     data: &mut Components) {
     if type_name == "player" {
-        //data.interact.add(&entity, Interact);
-        //data.rotate.add(&entity, Rotate);
         data.angular_velocity.add(&entity, AngularVelocity::default());
         data.player_controller.add(&entity, PlayerController::default());
-    } else if type_name == "bouncy_enemy" || type_name == "player_ball" {
-        //data.interact.add(&entity, Interact);
+    } else if type_name == "bouncy_enemy" ||
+              type_name == "player_ball" {
         data.linear_velocity.add(&entity, LinearVelocity::default());
         data.bouncy_enemy.add(&entity, BouncyEnemy::default());
     } else if type_name == "item_spawn" {
@@ -84,12 +82,10 @@ pub fn build_server(type_name: &str,
     } else if type_name == "item" {
         data.angular_velocity.add(&entity, AngularVelocity { v: f32::consts::PI });
         data.rotate.add(&entity, Rotate);
-    } else if type_name == "bullet" {
+    } else if type_name == "bullet" ||
+              type_name == "frag" ||
+              type_name == "shrapnel" {
         data.linear_velocity.add(&entity, LinearVelocity::default());
-        data.projectile.add(&entity, Projectile::default());
-    } else if type_name == "wall_wood" || type_name == "wall_iron" {
-    } else {
-        panic!("Unknown net entity type: {}", type_name);
     }
 }
 

@@ -5,7 +5,8 @@ use shared::net::TimedPlayerInput;
 use shared::player::Item;
 use shared::net_components::ComponentType;
 use shared::components::{HasPosition, HasOrientation, HasLinearVelocity, HasShape, HasPlayerState,
-                         HasFullPlayerState, HasWallPosition, HasAngularVelocity, HasWall};
+                         HasFullPlayerState, HasWallPosition, HasAngularVelocity, HasWall,
+                         HasProjectile};
 pub use shared::components::{NetEntity, Position, Orientation, LinearVelocity, Shape, PlayerState,
                              Projectile, FullPlayerState, AngularVelocity, Wall, WallPosition};
 
@@ -155,5 +156,14 @@ impl HasWall for Components {
     }
     fn wall_mut(&mut self) -> &mut ComponentList<Components, Wall> {
         &mut self.wall
+    }
+}
+
+impl HasProjectile for Components {
+    fn projectile(&self) -> &ComponentList<Components, Projectile> {
+        &self.projectile
+    }
+    fn projectile_mut(&mut self) -> &mut ComponentList<Components, Projectile> {
+        &mut self.projectile
     }
 }

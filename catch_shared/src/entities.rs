@@ -4,7 +4,7 @@ use std::ops::Index;
 use ecs::{self, ComponentManager, BuildData};
 
 use super::{PlayerId, EntityId, EntityTypeId};
-use components::{HasShape, Shape, HasWall, Wall, WallType};
+use components::{HasShape, Shape, HasWall, Wall, WallType, Projectile, HasProjectile};
 use net_components::ComponentType;
 
 #[derive(Debug, Clone, RustcEncodable, RustcDecodable)]
@@ -20,7 +20,9 @@ pub struct EntityType {
 
 /// Adds shared components that are not synchronized over the net to an entity
 pub fn build_shared<T: ComponentManager +
-                       HasShape + HasWall>
+                       HasShape +
+                       HasWall +
+                       HasProjectile>
                    (type_name: &str,
                     entity: BuildData<T>,
                     data: &mut T) {
@@ -29,12 +31,13 @@ pub fn build_shared<T: ComponentManager +
     } else if type_name == "bouncy_enemy" {
         data.shape_mut().add(&entity, Shape::Circle { radius: 10.0 });
     } else if type_name == "player_ball" {
-        data.shape_mut().add(&entity, Shape::Circle { radius: 5.0 });
+        data.shape_mut().add(&entity, Shape::Circle { radius: 7.0 });
     } else if type_name == "item" {
         data.shape_mut().add(&entity, Shape::Square { size: 5.0 });
     } else if type_name == "item_spawn" {
     } else if type_name == "bullet" {
         data.shape_mut().add(&entity, Shape::Rect { width: 8.0, height: 4.0 });
+        data.projectile_mut().add(&entity, Projectile::Bullet);
     } else if type_name == "wall_wood" {
         data.wall_mut().add(&entity, Wall { 
             wall_type: WallType::Wood,

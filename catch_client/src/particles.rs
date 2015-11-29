@@ -30,14 +30,14 @@ struct Particle {
     friction: f32,
 }
 
+implement_vertex!(Particle, start_time_s, progress_per_s, color_a, color_b, size, world_position,
+                  orientation, velocity, ang_velocity, friction);
+
 #[derive(Clone)]
 struct ParticleInfo {
     particle: Particle,
     is_new: bool,
 }
-
-implement_vertex!(Particle, start_time_s, progress_per_s, color_a, color_b, size, world_position,
-                  orientation, velocity, ang_velocity, friction);
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 struct Index(usize);

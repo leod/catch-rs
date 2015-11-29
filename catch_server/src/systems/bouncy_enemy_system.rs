@@ -12,9 +12,9 @@ use entities;
 
 const MAX_SPEED: f32 = 300.0;
 const MOVE_ACCEL: f32 = 150.0;
-const MOVE_FRICTION: f32 = 8.0;
-const ORBIT_SPEED_FACTOR: f32 = 1.0;
-const ORBIT_BUFFER: f32 = 50.0;
+const MOVE_FRICTION: f32 = 4.0;
+const ORBIT_SPEED_FACTOR: f32 = 2.0;
+const ORBIT_BUFFER: f32 = 14.0;
 
 pub struct BouncyEnemySystem {
     aspect: CachedAspect<Components>,
@@ -46,18 +46,20 @@ impl BouncyEnemySystem {
                         } else {
                             d
                         };
-                        let p_orbit = data.position[e].p - d.normalize() * (r + ORBIT_BUFFER);
-                        let target_d = orbit_position - p_orbit;
+                        let p_orbit = orbit_position - d.normalize() * (r + ORBIT_BUFFER);
+                        let target_d = p_orbit - data.position[e].p;
                         let t = target_d.norm();
 
-                        /*info!("d: {:?}", d);
-                        info!("p_orbit: {:?}", d);
-                        info!("target_d: {:?}", target_d);
-                        info!("t: {}", t);
-                        info!("accel: {:?}", target_d.normalize() * t * ORBIT_SPEED_FACTOR);
-                        info!("");*/
+                        target_d.normalize() * t * t * t * ORBIT_SPEED_FACTOR -
+                            data.linear_velocity[e].v * 1.4
 
-                        target_d.normalize() * t * t * ORBIT_SPEED_FACTOR
+                        /*let f = d.norm();
+                        let x = if f >= r + ORBIT_BUFFER {
+                            d * ORBIT_SPEED_FACTOR * f
+                        } else {
+                            -d * ORBIT_SPEED_FACTOR * f
+                        };
+                        x - data.linear_velocity[e].v * MOVE_FRICTION*/
                     } else {
                         let event = GameEvent::EnemyDied {
                             position: data.position[e].p

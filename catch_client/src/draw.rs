@@ -132,7 +132,6 @@ pub struct DrawDrawList {
     square_index_buffer: glium::IndexBuffer<u16>,
 
     sprite_vertex_buffers: Vec<glium::VertexBuffer<DrawAttributes>>,
-    used_sprite_vertex_buffers: Vec<glium::VertexBuffer<DrawAttributes>>,
 
     program: glium::Program,
     textured_square_program: glium::Program,
@@ -241,7 +240,6 @@ impl DrawDrawList {
             square_vertex_buffer: square_vertex_buffer,
             square_index_buffer: square_index_buffer,
             sprite_vertex_buffers: vec![sprite_vertex_buffer],
-            used_sprite_vertex_buffers: vec![],
             program: program,
             textured_square_program: textured_square_program,
             texture_ids: texture_ids,
