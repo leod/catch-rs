@@ -1,5 +1,3 @@
-#![feature(iter_cmp)]
-
 #[macro_use] extern crate log;
 extern crate env_logger;
 extern crate renet as enet;

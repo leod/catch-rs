@@ -1,137 +1,14 @@
-use std::f32;
-use std::collections::HashMap;
 use std::error::Error;
-use std::slice;
+use std::collections::HashMap;
 
-use na::{Norm, Vec2, Mat2, Vec4, Mat4};
 use glium;
 use image;
 
-pub struct DrawContext<'a> {
-    pub proj_mat: Mat4<f32>,
-    pub camera_mat: Mat4<f32>,
-    pub parameters: glium::DrawParameters<'a>,
-}
-
-#[derive(Copy, Clone)]
-pub struct Vertex {
-    pub position: [f32; 2],
-}
+use draw::{self, DrawContext, DrawList, DrawElement, DrawAttributes, Vertex};
 
 implement_vertex!(Vertex, position);
 
-#[derive(Clone, Debug)]
-pub enum DrawElement {
-    Circle,
-    Square,
-    TexturedSquare { texture: String },
-}
-
-#[derive(Copy, Clone, Debug)]
-pub struct DrawAttributes {
-    pub z: f32,
-    pub color: Vec4<f32>,
-    pub model_mat: Mat4<f32>,
-    pub texture_id: u32,
-}
-implement_vertex!(DrawAttributes, z, color, model_mat, texture_id);
-
-impl DrawAttributes {
-    pub fn new(z: f32, color: Vec4<f32>, model_mat: Mat4<f32>) -> DrawAttributes {
-        DrawAttributes {
-            z: z,
-            color: color,
-            model_mat: model_mat,
-            texture_id: 0,
-        }
-    }
-}
-
-pub struct DrawList {
-    list: Vec<(DrawElement, DrawAttributes)>,
-}
-
-impl DrawList {
-    pub fn new() -> DrawList {
-        DrawList {
-            list: Vec::new()
-        }
-    }
-
-    pub fn iter(&self) -> slice::Iter<(DrawElement, DrawAttributes)> {
-        self.list.iter()
-    }
-
-    pub fn sort_by_z(&mut self) {
-        self.list.sort_by(|a, b| a.1.z.partial_cmp(&b.1.z).unwrap());
-    }
-
-    pub fn push(&mut self, element: DrawElement, attributes: DrawAttributes) {
-        self.list.push((element, attributes));
-    }
-
-    pub fn push_line(&mut self,
-                     color: Vec4<f32>,
-                     size: f32,
-                     a: Vec2<f32>,
-                     b: Vec2<f32>,
-                     z: f32) {
-        let d = b - a;
-        let alpha = d.y.atan2(d.x);
-
-        let rot_mat = Mat2::new(alpha.cos(), -alpha.sin(),
-                                alpha.sin(), alpha.cos());
-        let scale_mat = Mat2::new(d.norm(), 0.0,
-                                  0.0, size);
-        let m = rot_mat * scale_mat;
-        let o = m * Vec2::new(0.5, 0.0);
-        let model_mat = Mat4::new(m.m11, m.m12, 0.0, a.x + o.x,
-                                  m.m21, m.m22, 0.0, a.y + o.y,
-                                  0.0, 0.0, 1.0, 0.0,
-                                  0.0, 0.0, 0.5, 1.0);
-        self.push(DrawElement::Square, DrawAttributes::new(z, color, model_mat));
-    }
-
-    pub fn push_rect(&mut self,
-                     color: Vec4<f32>,
-                     width: f32,
-                     height: f32,
-                     p: Vec2<f32>,
-                     z: f32,
-                     angle: f32) {
-        let rot_mat = Mat2::new(angle.cos(), -angle.sin(),
-                                angle.sin(), angle.cos());
-        let scale_mat = Mat2::new(width, 0.0,
-                                  0.0, height);
-        let m = rot_mat * scale_mat;
-        let model_mat = Mat4::new(m.m11, m.m12, 0.0, p.x,
-                                  m.m21, m.m22, 0.0, p.y,
-                                  0.0, 0.0, 1.0, 0.0,
-                                  0.0, 0.0, 0.0, 1.0);
-        self.push(DrawElement::Square, DrawAttributes::new(z, color, model_mat));
-    }
-
-    pub fn push_ellipse(&mut self,
-                        color: Vec4<f32>,
-                        width: f32,
-                        height: f32,
-                        p: Vec2<f32>,
-                        z: f32,
-                        angle: f32) {
-        let rot_mat = Mat2::new(angle.cos(), -angle.sin(),
-                                angle.sin(), angle.cos());
-        let scale_mat = Mat2::new(width, 0.0,
-                                  0.0, height);
-        let m = rot_mat * scale_mat;
-        let model_mat = Mat4::new(m.m11, m.m12, 0.0, p.x,
-                                  m.m21, m.m22, 0.0, p.y,
-                                  0.0, 0.0, 1.0, 0.0,
-                                  0.0, 0.0, 0.0, 1.0);
-        self.push(DrawElement::Circle, DrawAttributes::new(z, color, model_mat));
-    }
-}
-
-pub const SPRITE_VERTEX_BUFFER_SIZE: usize = 1024;
+const SPRITE_VERTEX_BUFFER_SIZE: usize = 1024;
 
 const TEXTURES: &'static [&'static str] = &[
     "shield"
@@ -236,7 +113,7 @@ impl DrawDrawList {
             }
         "#;
 
-        let (square_vertex_buffer, square_index_buffer) = new_square(display);
+        let (square_vertex_buffer, square_index_buffer) = draw::new_square(display);
         let sprite_vertex_buffer =
             glium::VertexBuffer::empty_dynamic(display, SPRITE_VERTEX_BUFFER_SIZE).unwrap();
 
@@ -253,7 +130,7 @@ impl DrawDrawList {
         let (texture_ids, texture_array) = try!(DrawDrawList::load_textures(display));
 
         Ok(DrawDrawList {
-            circle_vertex_buffer: new_circle(display, 32),
+            circle_vertex_buffer: draw::new_circle(display, 32),
             square_vertex_buffer: square_vertex_buffer,
             square_index_buffer: square_index_buffer,
             sprite_vertex_buffers: vec![sprite_vertex_buffer],
@@ -409,36 +286,4 @@ impl DrawDrawList {
             self.sprite_vertex_buffers.push(buffer);
         }
     }
-}
-
-/// Returns a triangle strip for a circle with radius 1
-pub fn new_circle(display: &glium::Display, num_segments: usize) -> glium::VertexBuffer<Vertex> {
-    let mut shape = Vec::with_capacity(num_segments + 1);
-    
-    shape.push(Vertex { position: [0.0, 0.0] });
-
-    let alpha = 2.0 * f32::consts::PI / ((num_segments - 1) as f32);
-    for i in 0..num_segments {
-        let beta = alpha * i as f32;
-        let p = [beta.cos(), beta.sin()];
-        shape.push(Vertex { position: p });
-    }
-
-    glium::VertexBuffer::new(display, &shape).unwrap()
-}
-
-/// Returns a centered 1x1 square
-pub fn new_square(display: &glium::Display) -> (glium::VertexBuffer<Vertex>,
-                                                glium::IndexBuffer<u16>) {
-    let vertices = vec![
-        Vertex { position: [-0.5, -0.5] },
-        Vertex { position: [-0.5, 0.5] },
-        Vertex { position: [0.5, 0.5] },
-        Vertex { position: [0.5, -0.5] },
-    ];
-    let indices = vec![0, 1, 2,
-                       0, 2, 3];
-    
-    (glium::VertexBuffer::new(display, &vertices).unwrap(),
-     glium::IndexBuffer::new(display, glium::index::PrimitiveType::TrianglesList, &indices).unwrap())
 }
