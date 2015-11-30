@@ -27,7 +27,7 @@ impl DrawProjectileSystem {
             let angle = data.orientation[entity].angle;
             let p = data.position[entity].p;
 
-            draw_list.push_rect(1, Vec4::new(0.4, 0.4, 0.4, 1.0), width, height, p, angle);
+            draw_list.push_rect(Vec4::new(0.4, 0.4, 0.4, 1.0), width, height, p, 1.0, angle);
         }
     }
 }

@@ -92,9 +92,9 @@ impl DrawPlayerSystem {
             let rot_mat = Mat2::new(angle.cos(), -angle.sin(),
                                     angle.sin(), angle.cos());
 
-            draw_list.push_ellipse(1, Vec4::new(color[0], color[1], color[2], 1.0),
+            draw_list.push_ellipse(Vec4::new(color[0], color[1], color[2], 1.0),
                                    scale_x * r, 1.0 / scale_x * r,
-                                   p, angle);
+                                   p, 1.0, angle);
 
             if data.player_state[entity].has_shield {
                 let s = 2.0*r + 8.0;
@@ -105,8 +105,8 @@ impl DrawPlayerSystem {
                                           m.m21, m.m22, 0.0, p.y,
                                           0.0, 0.0, 1.0, 0.0,
                                           0.0, 0.0, 0.0, 1.0);
-                draw_list.push(1, DrawElement::TexturedSquare { texture: "shield".to_string() },
-                               DrawAttributes::new(Vec4::new(0.0, 0.0, 0.0, 1.0), model_mat));
+                draw_list.push(DrawElement::TexturedSquare { texture: "shield".to_string() },
+                               DrawAttributes::new(1.0, Vec4::new(0.0, 0.0, 0.0, 1.0), model_mat));
             }
 
             let scale_mat = Mat2::new(scale_x * r, 0.0,
@@ -117,8 +117,8 @@ impl DrawPlayerSystem {
                                       m.m21, m.m22, 0.0, p.y + o.y,
                                       0.0, 0.0, 1.0, 0.0,
                                       0.0, 0.0, 0.0, 1.0);
-            draw_list.push(2, DrawElement::Square,
-                           DrawAttributes::new(Vec4::new(0.0, 0.0, 0.0, 1.0), model_mat));
+            draw_list.push(DrawElement::Square,
+                           DrawAttributes::new(2.0, Vec4::new(0.0, 0.0, 0.0, 1.0), model_mat));
         }
     }
 }

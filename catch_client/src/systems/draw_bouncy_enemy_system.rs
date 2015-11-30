@@ -37,15 +37,15 @@ impl DrawBouncyEnemySystem {
                                       0.0, r, 0.0, p.y,
                                       0.0, 0.0, 1.0, 0.0,
                                       0.0, 0.0, 0.0, 1.0);
-            draw_list.push(3, DrawElement::Circle, DrawAttributes::new(color, model_mat));
+            draw_list.push(DrawElement::Circle, DrawAttributes::new(3.0, color, model_mat));
 
             let owner = data.net_entity[entity].owner;
             if owner != NEUTRAL_PLAYER_ID {
                 let player_entity = data.services.net_entities.get_player_entity(owner);
                 if let Some(player_entity) = player_entity {
                     data.with_entity_data(&player_entity, |player_e, c| {
-                        draw_list.push_line(0, Vec4::new(0.0, 0.0, 1.0, 0.25), 0.5,
-                                            c.position[player_e].p, c.position[entity].p);
+                        draw_list.push_line(Vec4::new(0.0, 0.0, 1.0, 0.25), 0.5,
+                                            c.position[player_e].p, c.position[entity].p, 0.0);
                     });
                 }
             }

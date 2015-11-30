@@ -1,6 +1,7 @@
 use std::f32;
 use std::collections::HashMap;
 use std::error::Error;
+use std::slice;
 
 use na::{Norm, Vec2, Mat2, Vec4, Mat4};
 use glium;
@@ -19,24 +20,26 @@ pub struct Vertex {
 
 implement_vertex!(Vertex, position);
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum DrawElement {
     Circle,
     Square,
     TexturedSquare { texture: String },
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct DrawAttributes {
+    pub z: f32,
     pub color: Vec4<f32>,
     pub model_mat: Mat4<f32>,
     pub texture_id: u32,
 }
-implement_vertex!(DrawAttributes, color, model_mat, texture_id);
+implement_vertex!(DrawAttributes, z, color, model_mat, texture_id);
 
 impl DrawAttributes {
-    pub fn new(color: Vec4<f32>, model_mat: Mat4<f32>) -> DrawAttributes {
+    pub fn new(z: f32, color: Vec4<f32>, model_mat: Mat4<f32>) -> DrawAttributes {
         DrawAttributes {
+            z: z,
             color: color,
             model_mat: model_mat,
             texture_id: 0,
@@ -45,7 +48,7 @@ impl DrawAttributes {
 }
 
 pub struct DrawList {
-    list: Vec<(usize, DrawElement, DrawAttributes)>,
+    list: Vec<(DrawElement, DrawAttributes)>,
 }
 
 impl DrawList {
@@ -55,16 +58,24 @@ impl DrawList {
         }
     }
 
-    pub fn push(&mut self, layer: usize, element: DrawElement, attributes: DrawAttributes) {
-        self.list.push((layer, element, attributes));
+    pub fn iter(&self) -> slice::Iter<(DrawElement, DrawAttributes)> {
+        self.list.iter()
+    }
+
+    pub fn sort_by_z(&mut self) {
+        self.list.sort_by(|a, b| a.1.z.partial_cmp(&b.1.z).unwrap());
+    }
+
+    pub fn push(&mut self, element: DrawElement, attributes: DrawAttributes) {
+        self.list.push((element, attributes));
     }
 
     pub fn push_line(&mut self,
-                     layer: usize,
                      color: Vec4<f32>,
                      size: f32,
                      a: Vec2<f32>,
-                     b: Vec2<f32>) {
+                     b: Vec2<f32>,
+                     z: f32) {
         let d = b - a;
         let alpha = d.y.atan2(d.x);
 
@@ -78,15 +89,15 @@ impl DrawList {
                                   m.m21, m.m22, 0.0, a.y + o.y,
                                   0.0, 0.0, 1.0, 0.0,
                                   0.0, 0.0, 0.5, 1.0);
-        self.push(layer, DrawElement::Square, DrawAttributes::new(color, model_mat));
+        self.push(DrawElement::Square, DrawAttributes::new(z, color, model_mat));
     }
 
     pub fn push_rect(&mut self,
-                     layer: usize,
                      color: Vec4<f32>,
                      width: f32,
                      height: f32,
                      p: Vec2<f32>,
+                     z: f32,
                      angle: f32) {
         let rot_mat = Mat2::new(angle.cos(), -angle.sin(),
                                 angle.sin(), angle.cos());
@@ -97,15 +108,15 @@ impl DrawList {
                                   m.m21, m.m22, 0.0, p.y,
                                   0.0, 0.0, 1.0, 0.0,
                                   0.0, 0.0, 0.0, 1.0);
-        self.push(layer, DrawElement::Square, DrawAttributes::new(color, model_mat));
+        self.push(DrawElement::Square, DrawAttributes::new(z, color, model_mat));
     }
 
     pub fn push_ellipse(&mut self,
-                        layer: usize,
                         color: Vec4<f32>,
                         width: f32,
                         height: f32,
                         p: Vec2<f32>,
+                        z: f32,
                         angle: f32) {
         let rot_mat = Mat2::new(angle.cos(), -angle.sin(),
                                 angle.sin(), angle.cos());
@@ -116,7 +127,7 @@ impl DrawList {
                                   m.m21, m.m22, 0.0, p.y,
                                   0.0, 0.0, 1.0, 0.0,
                                   0.0, 0.0, 0.0, 1.0);
-        self.push(layer, DrawElement::Circle, DrawAttributes::new(color, model_mat));
+        self.push(DrawElement::Circle, DrawAttributes::new(z, color, model_mat));
     }
 }
 
@@ -150,6 +161,7 @@ impl DrawDrawList {
             uniform mat4 proj_mat;
             uniform mat4 camera_mat;
 
+            in float z;
             in vec4 color;
             in mat4 model_mat;
 
@@ -157,7 +169,9 @@ impl DrawDrawList {
             
             void main() {
                 color_v = color;
-                gl_Position = proj_mat * camera_mat * model_mat * vec4(position, 0.0, 1.0);
+                vec4 p = camera_mat * model_mat * vec4(position, 0.0, 1.0);
+                p.z = z;
+                gl_Position = proj_mat * p;
             }
         "#;
 
@@ -181,6 +195,7 @@ impl DrawDrawList {
             uniform mat4 proj_mat;
             uniform mat4 camera_mat;
 
+            in float z;
             in mat4 model_mat;
             in uint texture_id;
 
@@ -200,7 +215,9 @@ impl DrawDrawList {
 
                 texture_id_v = texture_id;
 
-                gl_Position = proj_mat * camera_mat * model_mat * vec4(position, 0.0, 1.0);
+                vec4 p = camera_mat * model_mat * vec4(position, 0.0, 1.0);
+                p.z = z;
+                gl_Position = proj_mat * p;
             }
         "#;
 
@@ -297,18 +314,16 @@ impl DrawDrawList {
         }
     }
 
-    fn draw_layer<'a,
-                  'b,
-                  I: Iterator<Item=(&'b DrawElement, &'b DrawAttributes)>,
-                  S: glium::Surface>
+    fn draw_some<'a,
+                 'b,
+                 I: Iterator<Item=&'b (DrawElement, DrawAttributes)>,
+                 S: glium::Surface>
                  (&mut self,
                   list: I,
                   context: &DrawContext<'a>,
                   display: &glium::Display,
                   surface: &mut S)
                   -> Vec<glium::VertexBuffer<DrawAttributes>> {
-        // TODO: This stops working as soon as we require more than one buffer of a type.
-
         let mut circle_sprite_buffer = self.get_sprite_vertex_buffer(display);
         let mut square_sprite_buffer = self.get_sprite_vertex_buffer(display);
         let mut textured_square_sprite_buffer = self.get_sprite_vertex_buffer(display);
@@ -323,7 +338,7 @@ impl DrawDrawList {
             let mut textured_square_mapping = textured_square_sprite_buffer.map();
 
             // Create batches
-            for (element, attributes) in list {
+            for &(ref element, ref attributes) in list {
                 match element {
                     &DrawElement::Circle => {
                         if circle_i == SPRITE_VERTEX_BUFFER_SIZE {
@@ -379,26 +394,16 @@ impl DrawDrawList {
     pub fn draw<'a,
                 S: glium::Surface>
                (&mut self,
-                list: &DrawList,
+                list: DrawList,
                 context: &DrawContext<'a>,
                 display: &glium::Display,
                 surface: &mut S) {
-        let max_layer_element = list.list.iter().max_by(|e| e.0);
+        // TODO: This stops working as soon as we require more than one buffer of a type.
 
-        let max_layer = match max_layer_element {
-            Some(element) => element.0,
-            None => return
-        };
+        let mut list = list;
+        list.sort_by_z();
 
-        let mut used_buffers = Vec::new();
-
-        for layer in 0..max_layer+1 {
-            let layer_list = list.list.iter().filter(|e| e.0 == layer).map(|e| (&e.1, &e.2)); 
-            let return_buffers = self.draw_layer(layer_list, context, display, surface);
-            for buffer in return_buffers.into_iter() {
-                used_buffers.push(buffer);
-            }
-        }
+        let used_buffers = self.draw_some(list.iter(), context, display, surface);
 
         for buffer in used_buffers.into_iter() {
             self.sprite_vertex_buffers.push(buffer);

@@ -24,7 +24,6 @@ use draw_map::DrawMap;
 use particles::Particles;
 use sounds::Sounds;
 use draw::{DrawList, DrawDrawList, DrawContext};
-use components::Projectile;
 
 pub const MAX_DEATH_MESSAGES: usize = 4;
 
@@ -430,7 +429,7 @@ impl Game {
 
         {
             let _g = hprof::enter("clear");
-            target.clear_color_and_depth((0.1, 0.1, 0.1, 1.0), 1.0);
+            target.clear_color_and_depth((0.1, 0.1, 0.1, 1.0), -1.0);
         }
 
         self.cam_pos = self.get_my_player_position().unwrap_or(self.cam_pos);
@@ -457,15 +456,21 @@ impl Game {
 
         let draw_parameters = glium::DrawParameters {
             depth: glium::Depth {
-                test: glium::draw_parameters::DepthTest::Overwrite,
+                test: glium::draw_parameters::DepthTest::IfMore,
                 write: true,
                 .. Default::default()
             },
             .. Default::default()
         };
 
+        let far = -10.0;
+        let near = 1.0;
         let draw_context = DrawContext {
-            proj_mat: OrthoMat3::new(draw_width as f32, draw_height as f32, -1.0, 1.0).to_mat(),
+            proj_mat: Mat4::new(2.0 / (draw_width as f32), 0.0, 0.0, 0.0,
+                                0.0, 2.0 / (draw_height as f32), 0.0, 0.0,
+                                0.0, 0.0, -2.0 / (far - near), -(far + near) / (far - near),
+                                0.0, 0.0, 0.0, 1.0),
+                //OrthoMat3::new(draw_width as f32, draw_height as f32, 10.0, 0.0).to_mat(),
             camera_mat: Mat4::new(zoom, 0.0, 0.0, -self.cam_pos.x * zoom,
                                   0.0, zoom, 0.0, -self.cam_pos.y * zoom,
                                   0.0, 0.0, zoom, 0.0, 
@@ -500,7 +505,7 @@ impl Game {
 
         {
             let _g = hprof::enter("draw list");
-            self.draw_draw_list.draw(&draw_list, &draw_context, &self.display, &mut target);
+            self.draw_draw_list.draw(draw_list, &draw_context, &self.display, &mut target);
         }
 
         {
