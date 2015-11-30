@@ -13,10 +13,6 @@ use components::{Components, Projectile, Shape};
 use services::Services;
 use entities;
 
-pub struct ProjectileSystem {
-    aspect: CachedAspect<Components>,
-}
-
 pub fn explode(projectile: EntityData<Components>, data: &mut DataHelper<Components, Services>) {
     const NUM_SHRAPNELS: usize = 15;
 
@@ -53,6 +49,10 @@ pub fn explode(projectile: EntityData<Components>, data: &mut DataHelper<Compone
     };
     data.services.add_event(&event);
     entities::remove_net(**projectile, data); 
+}
+
+pub struct ProjectileSystem {
+    aspect: CachedAspect<Components>,
 }
 
 impl ProjectileSystem {

@@ -122,7 +122,8 @@ impl Interaction for ProjectileBouncyEnemyInteraction {
     fn condition(&self,
                  projectile: EntityData<Components>, enemy: EntityData<Components>,
                  data: &mut DataHelper<Components, Services>) -> bool {
-        data.net_entity[projectile].owner != data.net_entity[enemy].owner
+        data.net_entity[projectile].owner != data.net_entity[enemy].owner ||
+        data.projectile[projectile].lethal_to_owner()
     }
 
     fn apply(&self,
@@ -146,7 +147,8 @@ impl Interaction for ProjectilePlayerInteraction {
     fn condition(&self,
                  projectile: EntityData<Components>, player: EntityData<Components>,
                  data: &mut DataHelper<Components, Services>) -> bool {
-        data.net_entity[projectile].owner != data.net_entity[player].owner &&
+        (data.net_entity[projectile].owner != data.net_entity[player].owner ||
+         data.projectile[projectile].lethal_to_owner()) &&
         data.player_state[player].vulnerable()
     }
 

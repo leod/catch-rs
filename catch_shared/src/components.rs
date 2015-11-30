@@ -84,6 +84,16 @@ pub enum Projectile {
     Shrapnel
 }
 
+impl Projectile {
+    pub fn lethal_to_owner(&self) -> bool {
+        match *self {
+            Projectile::Bullet => false,
+            Projectile::Frag(_) => false,
+            Projectile::Shrapnel => true,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum WallType {
     Iron,

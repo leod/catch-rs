@@ -1,6 +1,5 @@
 use std::fmt;
 
-use components::Projectile;
 use super::{ItemSlot, NUM_ITEM_SLOTS};
 
 #[derive(PartialEq, Clone, Debug, RustcEncodable, RustcDecodable)]

@@ -5,7 +5,6 @@ use shared::movement::{WallInteractionType, WallInteraction};
 
 use components::Components;
 use services::Services;
-use entities;
 use systems::projectile_system;
 
 pub struct ConstWallInteraction(pub WallInteractionType);
@@ -22,10 +21,13 @@ impl WallInteraction<Components, Services> for ConstWallInteraction {
 pub struct BouncyEnemyWallInteraction;
 impl WallInteraction<Components, Services> for BouncyEnemyWallInteraction {
     fn apply(&self, _p: Vec2<f32>,
-             _enemy: EntityData<Components>, _wall: EntityData<Components>,
-             _data: &mut DataHelper<Components, Services>)
+             enemy: EntityData<Components>, _wall: EntityData<Components>,
+             data: &mut DataHelper<Components, Services>)
              -> WallInteractionType {
-        WallInteractionType::Flip
+        match data.bouncy_enemy[enemy].orbit {
+            Some(_) => WallInteractionType::Slide,
+            None => WallInteractionType::Flip
+        }
     }
 }
 
