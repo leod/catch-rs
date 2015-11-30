@@ -1,7 +1,10 @@
 use std::f32;
 
 use na::Mat4;
-use glium;
+
+use glium::{self, VertexBuffer, IndexBuffer};
+use glium::backend::Facade;
+use glium::index::PrimitiveType;
 
 mod draw_list;
 mod draw_draw_list;
@@ -14,6 +17,16 @@ pub struct Vertex {
     pub position: [f32; 2],
 }
 
+implement_vertex!(Vertex, position);
+
+#[derive(Copy, Clone)]
+pub struct TexVertex {
+    pub position: [f32; 2],
+    pub tex_coords: [f32; 2],
+}
+
+implement_vertex!(TexVertex, position, tex_coords);
+
 pub struct DrawContext<'a> {
     pub proj_mat: Mat4<f32>,
     pub camera_mat: Mat4<f32>,
@@ -21,7 +34,7 @@ pub struct DrawContext<'a> {
 }
 
 /// Returns a triangle strip for a circle with radius 1
-pub fn new_circle(display: &glium::Display, num_segments: usize) -> glium::VertexBuffer<Vertex> {
+pub fn new_circle<F: Facade + Clone>(facade: &F, num_segments: usize) -> VertexBuffer<Vertex> {
     let mut shape = Vec::with_capacity(num_segments + 1);
     
     shape.push(Vertex { position: [0.0, 0.0] });
@@ -33,12 +46,11 @@ pub fn new_circle(display: &glium::Display, num_segments: usize) -> glium::Verte
         shape.push(Vertex { position: p });
     }
 
-    glium::VertexBuffer::new(display, &shape).unwrap()
+    VertexBuffer::new(facade, &shape).unwrap()
 }
 
 /// Returns a centered 1x1 square
-pub fn new_square(display: &glium::Display) -> (glium::VertexBuffer<Vertex>,
-                                                glium::IndexBuffer<u16>) {
+pub fn new_square<F: Facade + Clone>(facade: &F) -> (VertexBuffer<Vertex>, IndexBuffer<u16>) {
     let vertices = vec![
         Vertex { position: [-0.5, -0.5] },
         Vertex { position: [-0.5, 0.5] },
@@ -48,8 +60,6 @@ pub fn new_square(display: &glium::Display) -> (glium::VertexBuffer<Vertex>,
     let indices = vec![0, 1, 2,
                        0, 2, 3];
     
-    (glium::VertexBuffer::new(display, &vertices).unwrap(),
-     glium::IndexBuffer::new(display,
-                             glium::index::PrimitiveType::TrianglesList,
-                             &indices).unwrap())
+    (VertexBuffer::new(facade, &vertices).unwrap(),
+     IndexBuffer::new(facade, PrimitiveType::TrianglesList, &indices).unwrap())
 }

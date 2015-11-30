@@ -1,12 +1,14 @@
 use std::error::Error;
 use std::collections::HashMap;
 
-use glium;
+use glium::{self, Surface, VertexBuffer, IndexBuffer, Program};
+use glium::index::{PrimitiveType, NoIndices};
+use glium::backend::Facade;
+use glium::texture::{Texture2dArray, RawImage2d};
+
 use image;
 
 use draw::{self, DrawContext, DrawList, DrawElement, DrawAttributes, Vertex};
-
-implement_vertex!(Vertex, position);
 
 const SPRITE_VERTEX_BUFFER_SIZE: usize = 1024;
 
@@ -15,21 +17,21 @@ const TEXTURES: &'static [&'static str] = &[
 ];
 
 pub struct DrawDrawList {
-    circle_vertex_buffer: glium::VertexBuffer<Vertex>,
-    square_vertex_buffer: glium::VertexBuffer<Vertex>,
-    square_index_buffer: glium::IndexBuffer<u16>,
+    circle_vertex_buffer: VertexBuffer<Vertex>,
+    square_vertex_buffer: VertexBuffer<Vertex>,
+    square_index_buffer: IndexBuffer<u16>,
 
-    sprite_vertex_buffers: Vec<glium::VertexBuffer<DrawAttributes>>,
+    sprite_vertex_buffers: Vec<VertexBuffer<DrawAttributes>>,
 
-    program: glium::Program,
-    textured_square_program: glium::Program,
+    program: Program,
+    textured_square_program: Program,
 
     texture_ids: HashMap<String, u32>,
-    texture_array: glium::texture::Texture2dArray,
+    texture_array: Texture2dArray,
 }
 
 impl DrawDrawList {
-    pub fn new(display: &glium::Display) -> Result<DrawDrawList, String> {
+    pub fn new<F: Facade + Clone>(facade: &F) -> Result<DrawDrawList, String> {
         let vertex_shader_src = r#"
             #version 140
 
@@ -113,24 +115,20 @@ impl DrawDrawList {
             }
         "#;
 
-        let (square_vertex_buffer, square_index_buffer) = draw::new_square(display);
+        let (square_vertex_buffer, square_index_buffer) = draw::new_square(facade);
         let sprite_vertex_buffer =
-            glium::VertexBuffer::empty_dynamic(display, SPRITE_VERTEX_BUFFER_SIZE).unwrap();
+            VertexBuffer::empty_dynamic(facade, SPRITE_VERTEX_BUFFER_SIZE).unwrap();
 
-        let program =
-            glium::Program::from_source(display,
-                                        vertex_shader_src,
-                                        fragment_shader_src,
-                                        None).unwrap();
-        let textured_square_program =
-            glium::Program::from_source(display,
-                                        textured_square_vertex_shader_src,
-                                        textured_square_fragment_shader_src,
-                                        None).unwrap();
-        let (texture_ids, texture_array) = try!(DrawDrawList::load_textures(display));
+        let program = Program::from_source(facade, vertex_shader_src, fragment_shader_src,
+                                           None).unwrap();
+        let textured_square_program = Program::from_source(facade,
+                                                           textured_square_vertex_shader_src,
+                                                           textured_square_fragment_shader_src,
+                                                           None).unwrap();
+        let (texture_ids, texture_array) = try!(DrawDrawList::load_textures(facade));
 
         Ok(DrawDrawList {
-            circle_vertex_buffer: draw::new_circle(display, 32),
+            circle_vertex_buffer: draw::new_circle(facade, 32),
             square_vertex_buffer: square_vertex_buffer,
             square_index_buffer: square_index_buffer,
             sprite_vertex_buffers: vec![sprite_vertex_buffer],
@@ -141,8 +139,9 @@ impl DrawDrawList {
         })
     }
 
-    fn load_textures(display: &glium::Display)
-                     -> Result<(HashMap<String, u32>, glium::texture::Texture2dArray), String> {
+    fn load_textures<F: Facade + Clone>
+                    (facade: &F)
+                    -> Result<(HashMap<String, u32>, Texture2dArray), String> {
         let mut texture_ids = HashMap::new();
         let mut images = Vec::new();
 
@@ -160,7 +159,7 @@ impl DrawDrawList {
                             info!("loaded texture \"{}\" with dimensions {:?} (id: {})",
                                   texture_name, dimensions, id);
 
-                            glium::texture::RawImage2d::from_raw_rgba(raw, dimensions)
+                            RawImage2d::from_raw_rgba(raw, dimensions)
                         }
                         _ => {
                             return Err(format!("unsupported image: {}",
@@ -177,33 +176,33 @@ impl DrawDrawList {
             };
         }
         
-        Ok((texture_ids,
-            glium::texture::Texture2dArray::new(display, images).unwrap()))
+        Ok((texture_ids, Texture2dArray::new(facade, images).unwrap()))
     }
 
-    fn get_sprite_vertex_buffer(&mut self, display: &glium::Display)
-                                -> glium::VertexBuffer<DrawAttributes> {
+    fn get_sprite_vertex_buffer<F: Facade + Clone>(&mut self, facade: &F)
+                                -> VertexBuffer<DrawAttributes> {
         if let Some(vertex_buffer) = self.sprite_vertex_buffers.pop() {
             vertex_buffer
         } else {
             info!("creating new vertex buffer for draw list");
-            glium::VertexBuffer::empty_dynamic(display, SPRITE_VERTEX_BUFFER_SIZE).unwrap()
+            VertexBuffer::empty_dynamic(facade, SPRITE_VERTEX_BUFFER_SIZE).unwrap()
         }
     }
 
     fn draw_some<'a,
                  'b,
                  I: Iterator<Item=&'b (DrawElement, DrawAttributes)>,
-                 S: glium::Surface>
-                 (&mut self,
-                  list: I,
-                  context: &DrawContext<'a>,
-                  display: &glium::Display,
-                  surface: &mut S)
-                  -> Vec<glium::VertexBuffer<DrawAttributes>> {
-        let mut circle_sprite_buffer = self.get_sprite_vertex_buffer(display);
-        let mut square_sprite_buffer = self.get_sprite_vertex_buffer(display);
-        let mut textured_square_sprite_buffer = self.get_sprite_vertex_buffer(display);
+                 F: Facade + Clone,
+                 S: Surface>
+                (&mut self,
+                 list: I,
+                 context: &DrawContext<'a>,
+                 facade: &F,
+                 surface: &mut S)
+                 -> Vec<glium::VertexBuffer<DrawAttributes>> {
+        let mut circle_sprite_buffer = self.get_sprite_vertex_buffer(facade);
+        let mut square_sprite_buffer = self.get_sprite_vertex_buffer(facade);
+        let mut textured_square_sprite_buffer = self.get_sprite_vertex_buffer(facade);
 
         let mut circle_i = 0;
         let mut square_i = 0;
@@ -253,7 +252,7 @@ impl DrawDrawList {
                      &self.square_index_buffer, &self.program, &uniforms,
                      &parameters).unwrap();
 
-        let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan);
+        let indices = NoIndices(PrimitiveType::TriangleFan);
         surface.draw((&self.circle_vertex_buffer,
                       circle_sprite_buffer.slice(0..circle_i).unwrap().per_instance().unwrap()),
                      &indices, &self.program, &uniforms, &parameters).unwrap();
@@ -269,18 +268,19 @@ impl DrawDrawList {
     }
 
     pub fn draw<'a,
-                S: glium::Surface>
+                S: Surface,
+                F: Facade + Clone>
                (&mut self,
                 list: DrawList,
                 context: &DrawContext<'a>,
-                display: &glium::Display,
+                facade: &F,
                 surface: &mut S) {
         // TODO: This stops working as soon as we require more than one buffer of a type.
 
         let mut list = list;
         list.sort_by_z();
 
-        let used_buffers = self.draw_some(list.iter(), context, display, surface);
+        let used_buffers = self.draw_some(list.iter(), context, facade, surface);
 
         for buffer in used_buffers.into_iter() {
             self.sprite_vertex_buffers.push(buffer);

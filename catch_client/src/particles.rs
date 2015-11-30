@@ -4,7 +4,8 @@ use rand;
 
 use na::{Vec2, Vec3};
 
-use glium::{self, Surface};
+use glium::{self, Surface, VertexBuffer, IndexBuffer, Program};
+use glium::backend::Facade;
 
 use draw::{self, DrawContext, Vertex};
 
@@ -58,16 +59,16 @@ pub struct Particles {
     num: usize,
     num_used_indices: usize,
 
-    square_vertex_buffer: glium::VertexBuffer<Vertex>,
-    square_index_buffer: glium::IndexBuffer<u16>,
-    particles_vertex_buffer: glium::VertexBuffer<Particle>,
-    program: glium::Program,
+    square_vertex_buffer: VertexBuffer<Vertex>,
+    square_index_buffer: IndexBuffer<u16>,
+    particles_vertex_buffer: VertexBuffer<Particle>,
+    program: Program,
 
     time_s: f32,
 }
 
 impl Particles {
-    pub fn new(display: &glium::Display) -> Particles {
+    pub fn new<F: Facade + Clone>(facade: &F) -> Particles {
         /*let geometry_shader_src = r#"
             #version 330
 
@@ -146,12 +147,10 @@ impl Particles {
             }
         "#;
 
-        let (square_vertex_buffer, square_index_buffer) = draw::new_square(display);
-        let particles_vertex_buffer =
-            glium::VertexBuffer::empty_dynamic(display, MAX_PARTICLES).unwrap();
-        let program =
-            glium::Program::from_source(display,
-                                        vertex_shader_src, fragment_shader_src, None).unwrap();
+        let (square_vertex_buffer, square_index_buffer) = draw::new_square(facade);
+        let particles_vertex_buffer = VertexBuffer::empty_dynamic(facade, MAX_PARTICLES).unwrap();
+        let program = Program::from_source(facade, vertex_shader_src, fragment_shader_src,
+                                           None).unwrap();
 
         Particles {
             particles: Vec::new(),
