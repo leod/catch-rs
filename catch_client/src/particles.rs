@@ -208,7 +208,7 @@ impl Particles {
 
         let parameters = glium::DrawParameters {
             blend: glium::Blend::alpha_blending(),
-            .. draw_context.parameters.clone()
+            .. Default::default()
         };
 
         target.draw((&self.square_vertex_buffer,

@@ -1,5 +1,6 @@
 use std::f32;
 use std::thread;
+use std::cell::RefCell;
 use std::fs::File;
 use std::path::Path;
 use std::collections::VecDeque;
@@ -23,7 +24,7 @@ use player_input::{PlayerInput, InputMap};
 use draw_map::DrawMap;
 use particles::Particles;
 use sounds::Sounds;
-use draw::{DrawList, DrawDrawList, DrawContext};
+use draw::{DrawList, DrawDrawList, DrawContext, Post};
 
 pub const MAX_DEATH_MESSAGES: usize = 4;
 
@@ -47,10 +48,13 @@ pub struct Game {
     draw_player_stats: bool,
 
     draw_list: DrawList,
-    draw_draw_list: DrawDrawList,
+    draw_draw_list: RefCell<DrawDrawList>,
     draw_map: DrawMap,
     particles: Particles,
+    draw_post: Post,
+
     sounds: Sounds,
+
 
     text_system: glium_text::TextSystem,
     font: glium_text::FontTexture,
@@ -67,9 +71,10 @@ impl Game {
                player_input_map: InputMap,
                display: Display) -> Game {
         let state = GameState::new(connected_client.my_id(), connected_client.game_info());
-        let draw_draw_list = DrawDrawList::new(&display).unwrap();
+        let draw_draw_list = RefCell::new(DrawDrawList::new(&display).unwrap());
         let draw_map = DrawMap::load(&state.map).unwrap();
         let particles = Particles::new(&display);
+        let draw_post = Post::new(&display);
         let sounds = Sounds::load().unwrap();
         let text_system = glium_text::TextSystem::new(&display);
         let font_file = File::open(&Path::new("data/ProggyClean.ttf"));
@@ -99,6 +104,8 @@ impl Game {
             draw_draw_list: draw_draw_list,
             draw_map: draw_map,
             particles: particles,
+            draw_post: draw_post,
+
             sounds: sounds,
 
             text_system: text_system,
@@ -480,10 +487,10 @@ impl Game {
         drop(_g);
 
         let mut draw_list = DrawList::new();
-
         {
             let _g = hprof::enter("entities");
 
+            // TODO: particle emitters
             self.state.world.systems.draw_player_system
                 .spawn_particles(&mut self.state.world.data, simulation_time_s,
                                  &mut self.particles);
@@ -502,20 +509,31 @@ impl Game {
             self.state.world.systems.draw_item_system
                 .draw(&mut self.state.world.data, &mut draw_list);
         }
-
-        {
-            let _g = hprof::enter("draw list");
-            self.draw_draw_list.draw(draw_list, &draw_context, &self.display, &mut target);
-        }
-
         {
             let _g = hprof::enter("update particles");
             self.particles.update(simulation_time_s);
         }
+
+        {
+            let mut draw_draw_list = self.draw_draw_list.borrow_mut();
+            self.draw_post.draw(&mut target, |target| {
+                let _g = hprof::enter("draw list");
+                target.clear_color_and_depth((0.1, 0.1, 0.1, 1.0), -1.0);
+                draw_draw_list.draw(draw_list.clone(), &draw_context, target);
+                {
+                    let _g = hprof::enter("draw particles");
+                    self.particles.draw(&draw_context, target);
+                }
+            });
+        }
+
+        //target.clear_depth(-1.0);
+        self.draw_draw_list.borrow_mut().draw(draw_list.clone(), &draw_context, &mut target);
         {
             let _g = hprof::enter("draw particles");
             self.particles.draw(&draw_context, &mut target);
         }
+
         {
             let _g = hprof::enter("text");
             self.draw_debug_text(&draw_context.proj_mat, &mut target);

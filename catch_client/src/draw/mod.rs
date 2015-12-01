@@ -8,9 +8,11 @@ use glium::index::PrimitiveType;
 
 mod draw_list;
 mod draw_draw_list;
+mod post;
 
 pub use self::draw_list::{DrawElement, DrawAttributes, DrawList};
 pub use self::draw_draw_list::DrawDrawList;
+pub use self::post::Post;
 
 #[derive(Copy, Clone)]
 pub struct Vertex {

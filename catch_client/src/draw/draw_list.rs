@@ -29,6 +29,7 @@ impl DrawAttributes {
     }
 }
 
+#[derive(Clone)]
 pub struct DrawList {
     list: Vec<(DrawElement, DrawAttributes)>,
 }

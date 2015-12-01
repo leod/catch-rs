@@ -1,9 +1,10 @@
+use std::rc::Rc;
 use std::error::Error;
 use std::collections::HashMap;
 
 use glium::{self, Surface, VertexBuffer, IndexBuffer, Program};
 use glium::index::{PrimitiveType, NoIndices};
-use glium::backend::Facade;
+use glium::backend::{Facade, Context};
 use glium::texture::{Texture2dArray, RawImage2d};
 
 use image;
@@ -17,6 +18,8 @@ const TEXTURES: &'static [&'static str] = &[
 ];
 
 pub struct DrawDrawList {
+    context: Rc<Context>,
+
     circle_vertex_buffer: VertexBuffer<Vertex>,
     square_vertex_buffer: VertexBuffer<Vertex>,
     square_index_buffer: IndexBuffer<u16>,
@@ -128,6 +131,7 @@ impl DrawDrawList {
         let (texture_ids, texture_array) = try!(DrawDrawList::load_textures(facade));
 
         Ok(DrawDrawList {
+            context: facade.get_context().clone(),
             circle_vertex_buffer: draw::new_circle(facade, 32),
             square_vertex_buffer: square_vertex_buffer,
             square_index_buffer: square_index_buffer,
@@ -179,30 +183,24 @@ impl DrawDrawList {
         Ok((texture_ids, Texture2dArray::new(facade, images).unwrap()))
     }
 
-    fn get_sprite_vertex_buffer<F: Facade + Clone>(&mut self, facade: &F)
-                                -> VertexBuffer<DrawAttributes> {
+    fn get_sprite_vertex_buffer(&mut self) -> VertexBuffer<DrawAttributes> {
         if let Some(vertex_buffer) = self.sprite_vertex_buffers.pop() {
             vertex_buffer
         } else {
             info!("creating new vertex buffer for draw list");
-            VertexBuffer::empty_dynamic(facade, SPRITE_VERTEX_BUFFER_SIZE).unwrap()
+            VertexBuffer::empty_dynamic(&self.context, SPRITE_VERTEX_BUFFER_SIZE).unwrap()
         }
     }
 
     fn draw_some<'a,
                  'b,
                  I: Iterator<Item=&'b (DrawElement, DrawAttributes)>,
-                 F: Facade + Clone,
                  S: Surface>
-                (&mut self,
-                 list: I,
-                 context: &DrawContext<'a>,
-                 facade: &F,
-                 surface: &mut S)
+                (&mut self, list: I, context: &DrawContext<'a>, surface: &mut S)
                  -> Vec<glium::VertexBuffer<DrawAttributes>> {
-        let mut circle_sprite_buffer = self.get_sprite_vertex_buffer(facade);
-        let mut square_sprite_buffer = self.get_sprite_vertex_buffer(facade);
-        let mut textured_square_sprite_buffer = self.get_sprite_vertex_buffer(facade);
+        let mut circle_sprite_buffer = self.get_sprite_vertex_buffer();
+        let mut square_sprite_buffer = self.get_sprite_vertex_buffer();
+        let mut textured_square_sprite_buffer = self.get_sprite_vertex_buffer();
 
         let mut circle_i = 0;
         let mut square_i = 0;
@@ -268,19 +266,14 @@ impl DrawDrawList {
     }
 
     pub fn draw<'a,
-                S: Surface,
-                F: Facade + Clone>
-               (&mut self,
-                list: DrawList,
-                context: &DrawContext<'a>,
-                facade: &F,
-                surface: &mut S) {
+                S: Surface>
+               (&mut self, list: DrawList, context: &DrawContext<'a>, surface: &mut S) {
         // TODO: This stops working as soon as we require more than one buffer of a type.
 
         let mut list = list;
         list.sort_by_z();
 
-        let used_buffers = self.draw_some(list.iter(), context, facade, surface);
+        let used_buffers = self.draw_some(list.iter(), context, surface);
 
         for buffer in used_buffers.into_iter() {
             self.sprite_vertex_buffers.push(buffer);
