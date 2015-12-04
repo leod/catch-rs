@@ -3,7 +3,7 @@ use na::Vec4;
 
 use shared::util::CachedAspect;
 
-use components::{Components, Shape};
+use components::{Components, Projectile, Shape};
 use services::Services;
 use draw::DrawList;
 
@@ -27,7 +27,15 @@ impl DrawProjectileSystem {
             let angle = data.orientation[entity].angle;
             let p = data.position[entity].p;
 
-            draw_list.push_rect(Vec4::new(0.4, 0.4, 0.4, 1.0), width, height, p, 1.0, angle);
+            match data.projectile[entity] {
+                Projectile::Frag(_) => {
+                    
+                }
+                _ => {}
+            }
+
+            draw_list.push_rect(data.draw_projectile[entity].color, width, height,
+                                p, 1.0, angle);
         }
     }
 }

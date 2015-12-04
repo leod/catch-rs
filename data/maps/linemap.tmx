@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" width="32" height="32" tilewidth="32" tileheight="32">
+ <layer name="Tile Layer 1" width="32" height="32">
+  <data encoding="base64" compression="zlib">
+   eJztwQENAAAAwqD3T20PBxQAAADwbhAAAAE=
+  </data>
+ </layer>
+ <objectgroup name="Object Layer 1" width="32" height="32">
+  <object x="1" y="130">
+   <polyline points="0,0 182,263"/>
+  </object>
+  <object x="162" y="5">
+   <polyline points="0,0 163,254 160,59 255,61 255,220 449,123 255,61"/>
+  </object>
+  <object x="909" y="2">
+   <polyline points="0,0 -354,249 -304,323 52,0"/>
+  </object>
+  <object x="1027" y="275">
+   <polyline points="0,0 -362,138 -114,459 -5,531"/>
+  </object>
+  <object x="189" y="482">
+   <polyline points="0,0 -17,307"/>
+  </object>
+  <object x="256" y="484">
+   <polyline points="0,0 330,3"/>
+  </object>
+  <object x="626" y="530">
+   <polyline points="0,0 -4,248"/>
+  </object>
+  <object x="206" y="828">
+   <polyline points="0,0 371,-12"/>
+  </object>
+  <object x="304" y="589">
+   <polyline points="0,0 -13,139 47,145"/>
+  </object>
+  <object x="304" y="591">
+   <polyline points="0,0 45,-1"/>
+  </object>
+  <object x="394" y="591">
+   <polyline points="0,0 48,-1 48,139 -7,143"/>
+  </object>
+  <object x="350" y="645">
+   <polyline points="0,0 -50,2"/>
+  </object>
+  <object x="295" y="690">
+   <polyline points="0,0 127,-8"/>
+  </object>
+  <object x="352" y="594">
+   <polyline points="0,0 74,42"/>
+  </object>
+  <object x="209" y="837">
+   <polyline points="0,0 -45,165 348,55 367,-19"/>
+  </object>
+  <object x="143" y="840">
+   <polyline points="0,0 -143,-393"/>
+  </object>
+  <object type="item_spawn" x="313" y="668"/>
+  <object type="item_spawn" x="343" y="708"/>
+  <object type="item_spawn" x="417" y="665"/>
+  <object type="item_spawn" x="421" y="717"/>
+  <object type="item_spawn" x="423" y="609"/>
+  <object type="item_spawn" x="335" y="621"/>
+  <object type="item_spawn" x="588" y="522"/>
+  <object type="item_spawn" x="185" y="805"/>
+  <object type="item_spawn" x="7" y="9"/>
+  <object type="item_spawn" x="1015" y="12"/>
+  <object type="item_spawn" x="1019" y="1021"/>
+  <object type="item_spawn" x="161" y="1019"/>
+  <object type="item_spawn" x="11" y="1019"/>
+  <object x="255" y="485">
+   <polyline points="0,0 -38,-50"/>
+  </object>
+  <object x="185" y="393">
+   <polyline points="0,0 16,20"/>
+  </object>
+  <object x="189" y="483">
+   <polyline points="0,0 -5,-31"/>
+  </object>
+  <object x="131" y="453">
+   <polyline points="0,0 52,-1"/>
+  </object>
+  <object x="86" y="453">
+   <polyline points="0,0 -85,-6"/>
+  </object>
+  <object x="40" y="557">
+   <polyline points="0,0 75,63 50,139"/>
+  </object>
+  <object x="183" y="599">
+   <polyline points="0,0 -51,-145"/>
+  </object>
+  <object x="666" y="413">
+   <polyline points="0,0 -21,-36"/>
+  </object>
+  <object x="673" y="263">
+   <polyline points="0,0 61,85"/>
+  </object>
+  <object x="812" y="356">
+   <polyline points="0,0 -65,-113"/>
+  </object>
+  <object x="769" y="176">
+   <polyline points="0,0 75,129"/>
+  </object>
+  <object x="891" y="325">
+   <polyline points="0,0 -79,-134"/>
+  </object>
+  <object x="795" y="155">
+   <polyline points="0,0 165,85"/>
+  </object>
+  <object type="player_spawn" x="728" y="948"/>
+  <object type="player_spawn" x="761" y="876"/>
+  <object type="player_spawn" x="867" y="765"/>
+  <object type="player_spawn" x="155" y="87"/>
+  <object type="player_spawn" x="75" y="145"/>
+  <object type="player_spawn" x="229" y="500"/>
+  <object type="player_spawn" x="545" y="765"/>
+ </objectgroup>
+</map>

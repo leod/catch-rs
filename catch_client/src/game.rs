@@ -527,7 +527,7 @@ impl Game {
             });
         }
 
-        //target.clear_depth(-1.0);
+        target.clear_depth(-1.0);
         self.draw_draw_list.borrow_mut().draw(draw_list.clone(), &draw_context, &mut target);
         {
             let _g = hprof::enter("draw particles");
@@ -623,7 +623,7 @@ impl Game {
     fn draw_player_stats<S: Surface>(&mut self, proj_mat: &Mat4<f32>, target: &mut S) {
         let (w, h) = target.get_dimensions();
         let x1 = w as f32 / 2.0 - 200.0;
-        let mut y = h as f32 / 2.0 - 200.0;
+        let mut y = 100.0; //h as f32 / 2.0 - 400.0;
         let x2 = x1 + 100.0;
         let x3 = x2 + 100.0;
 

@@ -1,3 +1,4 @@
+use na::Vec4;
 use ecs::ComponentList;
 
 use shared::util::PeriodicTimer;
@@ -24,7 +25,20 @@ impl Default for DrawPlayer {
 }
 
 #[derive(Default)] pub struct DrawBouncyEnemy;
-#[derive(Default)] pub struct DrawProjectile;
+
+pub struct DrawProjectile {
+    pub blink_timer: PeriodicTimer,
+    pub color: Vec4<f32>,
+}
+
+impl Default for DrawProjectile {
+    fn default() -> DrawProjectile {
+        DrawProjectile {
+            blink_timer: PeriodicTimer::new(0.25),
+            color: Vec4::new(0.4, 0.4, 0.4, 1.0),
+        }
+    }
+}
 
 pub struct DrawItem {
     pub particle_timer: PeriodicTimer,

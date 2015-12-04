@@ -333,12 +333,12 @@ fn main() {
 
     let entity_types = shared::entities::all_entity_types();
     let game_info = GameInfo {
-        map_name: "data/maps/desert.tmx".to_string(),
+        map_name: "data/maps/linemap.tmx".to_string(),
         entity_types: entity_types,
         ticks_per_second: 30,
     };
 
-    match Server::start(&game_info, 9988, 32).as_mut() {
+    match Server::start(&game_info, 9988, 128).as_mut() {
         Ok(server) =>
             server.run(),
         Err(error) =>

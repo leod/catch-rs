@@ -161,17 +161,26 @@ pub fn line_moving_circle_intersection_time(a: Vec2<f32>, b: Vec2<f32>,
 pub fn line_segment_moving_circle_intersection_time(a: Vec2<f32>, b: Vec2<f32>,
                                                     c: Vec2<f32>, d: Vec2<f32>, r: f32)
                                                     -> Option<f32> {
-    let t_line = line_moving_circle_intersection_time(a, b, c, d, r);
-    let t_line_hit =
-        t_line.map_or(false, |t| point_line_segment_distance(c + d*t, a, b) <= r + 0.001);
-    let t_a = point_moving_circle_intersection_time(a, c, d, r);
-    let t_b = point_moving_circle_intersection_time(b, c, d, r);
+    let check = |t| {
+        match t {
+            Some(t) => {
+                let distance = point_line_segment_distance(c + d*t, a, b);
+                println!("DISTANCE DISTANCE DISTANCE: {}", distance);
+                if distance <= r + 0.001 {
+                    Some(t)
+                } else {
+                    None
+                }
+            }
+            None => None
+        }
+    };
 
-    if t_line_hit {
-        min_option(t_line, min_option(t_a, t_b))
-    } else {
-        min_option(t_a, t_b)
-    }
+    let t_line = check(line_moving_circle_intersection_time(a, b, c, d, r));
+    let t_a = None; //check(point_moving_circle_intersection_time(a, c, d, r));
+    let t_b = None; //check(point_moving_circle_intersection_time(b, c, d, r));
+
+    min_option(t_line, min_option(t_a, t_b))
 }
 
 pub fn point_moving_circle_intersection_time(p: Vec2<f32>, c: Vec2<f32>, d: Vec2<f32>, r: f32)

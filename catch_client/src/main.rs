@@ -65,10 +65,11 @@ fn main() {
     enet::initialize().unwrap();
     let port = 9988;
     info!("connecting to {}:{}", address, port);
+    let name = if dummy { "bot" } else { "leo" };
     let mut client = Client::connect(5000,
                                      address,
                                      9988,
-                                     "leo".to_string()).unwrap();
+                                     name.to_string()).unwrap();
     client.finish_connecting(5000).unwrap();
 
     info!("connected to server! My id: {}", client.my_id());

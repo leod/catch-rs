@@ -109,6 +109,16 @@ impl GameState {
                 warn!("ignoring unknown entity type {} in map", object.type_str);
             }
         }
+
+        for &(pos_a, pos_b) in self.map.lines.iter() {
+            let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
+            self.world.with_entity_data(&entity, |e, c| {
+                c.wall_position[e] = WallPosition {
+                    pos_a: pos_a,
+                    pos_b: pos_b
+                };
+            });
+        }
     }
 
     // For adding test entities and stuff
@@ -147,7 +157,7 @@ impl GameState {
         let width = self.map.width_pixels() as f32;
         let height = self.map.height_pixels() as f32;
 
-        for _ in 0..num_walls {
+        /*for _ in 0..num_walls {
             let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
 
             let ax = rand::random::<f32>() * width;
@@ -165,7 +175,7 @@ impl GameState {
                     pos_b: Vec2::new(bx, by), 
                 };
             });
-        }
+        }*/
 
         let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
         self.world.with_entity_data(&entity, |e, c| {
@@ -240,8 +250,8 @@ impl GameState {
 
             // We'll equip a gun for now
             c.player_state[e].equip(0, Item::Weapon { charges: 20 }); 
-            c.player_state[e].equip(1, Item::FragWeapon { charges: 5 });
-            //c.player_state[e].equip(1, Item::BallSpawner { charges: 5 }); 
+            c.player_state[e].equip(1, Item::FragWeapon { charges: 2 });
+            c.player_state[e].equip(2, Item::BallSpawner { charges: 3 }); 
         });
 
         entity
@@ -505,7 +515,11 @@ impl GameState {
 
             if is_catcher {
                 let responsible_entity = 
-                    self.players.get(&responsible_player_id).map(|player| player.entity);
+                    if responsible_player_id != player_id {
+                        self.players.get(&responsible_player_id).map(|player| player.entity)
+                    } else {
+                        None
+                    };
 
                 if let Some(Some(responsible_entity)) = responsible_entity {
                     // If we were killed by another player, that one becomes the catcher

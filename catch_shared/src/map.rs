@@ -1,6 +1,8 @@
 use std::fs::File;
 use std::path::Path;
 
+use na::Vec2;
+
 use tiled;
 
 #[derive(Copy, Clone)]
@@ -17,8 +19,9 @@ struct Layer {
 
 pub struct Map {
     map: tiled::Map,
-    layers: Vec<Layer>,
+    //layers: Vec<Layer>,
     pub objects: Vec<MapObject>,
+    pub lines: Vec<(Vec2<f32>, Vec2<f32>)>,
 }
 
 /// Information about an entity on a map
@@ -74,7 +77,7 @@ impl Map {
         x < self.map.width as usize && y < self.map.height as usize
     }
 
-    pub fn get_tile(&self, layer_id: LayerId, x: usize, y: usize) -> Option<Tile> {
+    /*pub fn get_tile(&self, layer_id: LayerId, x: usize, y: usize) -> Option<Tile> {
         self.layers[layer_id.to_index()].tiles[y][x]
     }
 
@@ -82,7 +85,7 @@ impl Map {
         self.map.tilesets.iter()
             .map(|tileset| tileset.images[0].source.clone())
             .collect()
-    }
+    }*/
 
     /// Loads a tiled map from the given path. If the file is not found or has an invalid format,
     /// Err is returned.
@@ -101,24 +104,25 @@ impl Map {
     }
 
     fn from_tiled(map: tiled::Map) -> Result<Map, String> {
-        if map.layers.len() != 2 {
+        /*if map.layers.len() != 2 {
             return Err("Too many layers in the map".to_string());
         }
 
         let layers = map.layers.iter().map(|layer| {
             Map::convert_layer(&map.tilesets, &layer)
-        }).collect();
+        }).collect();*/
 
-        let objects = try!(Map::convert_objects(&map.object_groups));
+        let (objects, lines) = try!(Map::convert_objects(&map.object_groups));
 
         Ok(Map {
             map: map,
-            layers: layers,
+            //layers: layers,
             objects: objects,
+            lines: lines,
         })
     }
 
-    fn tile_from_number(tilesets: &Vec<tiled::Tileset>,
+    /*fn tile_from_number(tilesets: &Vec<tiled::Tileset>,
                         number: u32) 
                         -> Option<Tile> {
         for (i, tileset) in tilesets.iter().enumerate() {
@@ -156,12 +160,13 @@ impl Map {
         Layer {
             tiles: tiles,
         }
-    }
+    }*/
 
     /// Converts from tiled's MapObject to ours
     fn convert_objects(object_groups: &Vec<tiled::ObjectGroup>) 
-                       -> Result<Vec<MapObject>, String> {
+                       -> Result<(Vec<MapObject>, Vec<(Vec2<f32>, Vec2<f32>)>), String> {
         let mut objects = Vec::new();
+        let mut lines = Vec::new();
         for object_group in object_groups.iter() {
             for object in object_group.objects.iter() {
                 match object {
@@ -175,12 +180,21 @@ impl Map {
                             type_str: type_str.clone(),
                         });
                     }
+                    &tiled::Object::Polyline { ref x, ref y, ref points, visible: _ } => {
+                        for i in 0..points.len()-1 {
+                            let ax = x + points[i].0;
+                            let ay = y + points[i].1;
+                            let bx = x + points[i+1].0;
+                            let by = y + points[i+1].1;
+                            lines.push((Vec2::new(ax, ay), Vec2::new(bx, by)));
+                        }
+                    }
                     _ =>
                         return Err("Only rectangle objects can be used".to_string())
                 }
             }
         }
 
-        Ok(objects)
+        Ok((objects, lines))
     }
 }

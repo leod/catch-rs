@@ -39,7 +39,7 @@ pub fn explode(projectile: EntityData<Components>, data: &mut DataHelper<Compone
             }
             4.0
         }
-        Projectile::Shrapnel => 0.9,
+        Projectile::Shrapnel => 0.5,
         Projectile::Bullet => 1.0,
     };
 

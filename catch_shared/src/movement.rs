@@ -120,15 +120,15 @@ pub fn move_entity<Components: ComponentManager,
                 }
                 WallInteractionType::Stop => {
                     let t = (t - STEPBACK).max(0.0);
-                    println!("moving t: {}, a: {:?}", t, a);
+                    //println!("delta: {:?}, moving t: {:.16}, a: {:?}", delta, t, a);
                     let xx = a + delta * t;
 
                     let p = c.wall_position()[wall].clone();
-                    let delta = Vec2::new(0.0, 0.0);
+                    let delta = delta;
                     let i = math::line_segment_moving_circle_intersection_time(p.pos_a, p.pos_b,
-                                                                               a, delta,
+                                                                               xx, delta,
                                                                                shape.radius());
-                    println!("new intersection: {:?}, new a: {:?}", i, xx);
+                    //println!("new intersection: {:?}, new a: {:?}", i, xx);
 
                     xx
                 }
@@ -140,11 +140,10 @@ pub fn move_entity<Components: ComponentManager,
 
 /// Player interaction with wall
 pub struct PlayerWallInteraction(PlayerId);
-impl<Components: ComponentManager,
-     Services: ServiceManager>
+impl<Components: ComponentManager, Services: ServiceManager>
     WallInteraction<Components, Services> for PlayerWallInteraction
-    where Components: HasPosition + HasOrientation + HasLinearVelocity +
-                      HasPlayerState + HasFullPlayerState + HasWallPosition,
+    where Components: HasPosition + HasOrientation + HasLinearVelocity + HasPlayerState +
+                      HasFullPlayerState + HasWallPosition,
           Services: HasEvents {
     fn apply(&self, p: Vec2<f32>,
              player: EntityData<Components>, wall: EntityData<Components>,
