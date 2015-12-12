@@ -37,6 +37,8 @@ impl Post {
         "#;
 
         let fragment_shader_src = r#"
+            #version 140
+
             uniform vec2 resolution;
             uniform sampler2D tex;
 
