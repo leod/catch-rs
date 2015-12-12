@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" width="32" height="32" tilewidth="32" tileheight="32">
+ <layer name="Tile Layer 1" width="32" height="32">
+  <data encoding="base64" compression="zlib">
+   eJztwQENAAAAwqD3T20PBxQAAADwbhAAAAE=
+  </data>
+ </layer>
+ <objectgroup name="Object Layer 1" width="32" height="32">
+  <object type="wall_wood" x="341" y="541">
+   <polyline points="0,0 0,200"/>
+  </object>
+  <object type="player_spawn" x="329" y="515"/>
+ </objectgroup>
+</map>

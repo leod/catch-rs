@@ -87,6 +87,24 @@ impl SecondDegZero {
 pub fn solve_second_deg(u: f32, v: f32, w: f32) -> SecondDegZero {
     let det = v*v - 4.0*u*w;
 
+    if det == 0.0 {
+        SecondDegZero::One(-v / (2.0 * u))
+    } else if det > 0.0 {
+        let det_sqrt = det.sqrt();
+
+        if v >= 0.0 {
+            SecondDegZero::Two((-v - det_sqrt) / (2.0 * u),
+                               (2.0 * w) / (-v - det_sqrt))
+        } else {
+            SecondDegZero::Two((2.0 * w) / (-v + det_sqrt),
+                               (-v + det_sqrt) / (2.0 * u))
+        }
+    } else {
+        SecondDegZero::None
+    }
+
+    /*let det = v*v - 4.0*u*w;
+
     if det == 0.0 { // TODO: Epsilon?
         SecondDegZero::One(-v / (2.0 * u))
     } else if det > 0.0 {
@@ -95,7 +113,7 @@ pub fn solve_second_deg(u: f32, v: f32, w: f32) -> SecondDegZero {
                            (-v - det_sqrt) / (2.0 * u))
     } else {
         SecondDegZero::None
-    }
+    }*/
 }
 
 /// If the line segment a+b*s (0 <= `s` <= 1) and the circle at position `c` with radius `r`
@@ -133,6 +151,7 @@ pub fn lerp_project_point_onto_line(p: Vec2<f32>, a: Vec2<f32>, b: Vec2<f32>) ->
 
 pub fn point_line_segment_distance(p: Vec2<f32>, a: Vec2<f32>, b: Vec2<f32>) -> f32 {
     let s = lerp_project_point_onto_line(p, a, b);
+    //println!("point on line: {:?}, s: {}", a+(b-a)*s, s);
     if s < 0.0 {
         (p - a).norm()
     } else if s > 1.0 {
@@ -164,8 +183,9 @@ pub fn line_segment_moving_circle_intersection_time(a: Vec2<f32>, b: Vec2<f32>,
     let check = |t| {
         match t {
             Some(t) => {
+                //println!("point on: {:?}", c + d*t);
                 let distance = point_line_segment_distance(c + d*t, a, b);
-                println!("DISTANCE DISTANCE DISTANCE: {}", distance);
+                //println!("distance to point: {}, t: {}", distance, t);
                 if distance <= r + 0.001 {
                     Some(t)
                 } else {
@@ -176,9 +196,15 @@ pub fn line_segment_moving_circle_intersection_time(a: Vec2<f32>, b: Vec2<f32>,
         }
     };
 
+    //println!("LINE");
     let t_line = check(line_moving_circle_intersection_time(a, b, c, d, r));
-    let t_a = None; //check(point_moving_circle_intersection_time(a, c, d, r));
-    let t_b = None; //check(point_moving_circle_intersection_time(b, c, d, r));
+    //println!("AA");
+    let t_a = check(point_moving_circle_intersection_time(a, c, d, r));
+    let t_a = point_moving_circle_intersection_time(a, c, d, r);
+    //println!("BB");
+    let t_b = check(point_moving_circle_intersection_time(b, c, d, r));
+    let t_b = point_moving_circle_intersection_time(b, c, d, r);
+    //println!("{:?} {:?} {:?}", t_line, t_a, t_b);
 
     min_option(t_line, min_option(t_a, t_b))
 }

@@ -177,7 +177,7 @@ impl GameState {
             });
         }*/
 
-        let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
+        /*let entity = entities::build_net("wall_wood", 0, &mut self.world.data);
         self.world.with_entity_data(&entity, |e, c| {
             c.wall_position[e] = WallPosition {
                 pos_a: Vec2::new(0.0, 0.0),
@@ -204,7 +204,7 @@ impl GameState {
                 pos_a: Vec2::new(0.0, height), 
                 pos_b: Vec2::new(width, height)
             };
-        });
+        });*/
 
         self.world.flush_queue();
     }
@@ -249,9 +249,9 @@ impl GameState {
             c.player_state[e].has_shield = true;
 
             // We'll equip a gun for now
-            c.player_state[e].equip(0, Item::Weapon { charges: 20 }); 
-            c.player_state[e].equip(1, Item::FragWeapon { charges: 2 });
-            c.player_state[e].equip(2, Item::BallSpawner { charges: 3 }); 
+            //c.player_state[e].equip(0, Item::Weapon { charges: 20 }); 
+            //c.player_state[e].equip(1, Item::FragWeapon { charges: 2 });
+            //c.player_state[e].equip(2, Item::BallSpawner { charges: 3 }); 
         });
 
         entity
@@ -289,7 +289,7 @@ impl GameState {
         self.check_integrity();
 
         self.tick_number += 1;
-        self.world.services.tick_dur_s = 1.0 / (self.game_info.ticks_per_second as f32); 
+        self.world.services.tick_dur_s = 1.0 / (self.game_info.ticks_per_second as f32);
 
         // The order of the following operations is important, in order to avoid sending
         // invalid or duplicate events to players.

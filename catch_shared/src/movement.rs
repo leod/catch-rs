@@ -45,7 +45,17 @@ pub fn wall_orientation(p: &WallPosition) -> f32 {
     n[1].atan2(n[0])
 }
 
-const STEPBACK: f32 = 0.1;
+const STEPBACK: f32 = 3.0;
+
+fn stepback(t: f32, r: f32) -> f32 {
+    let d = t * r;
+
+    if d <= STEPBACK {
+        0.0
+    } else {
+        (d - STEPBACK) / r
+    }
+}
 
 /// Moves an entity while checking for intersections with walls.
 /// If there is an intersection, the given `interaction` is called.
@@ -64,6 +74,9 @@ pub fn move_entity<Components: ComponentManager,
 
     let shape = c.shape()[e].clone();
     let a = c.position()[e].p;
+    let r = shape.radius();
+
+    //println!("moving a {:?} by {:?}", shape, delta);
 
     let intersection = moving_shape_walls_intersection_time(a, delta, &shape, wall_aspect, c);
     c.position_mut()[e].p = match intersection {
@@ -81,18 +94,29 @@ pub fn move_entity<Components: ComponentManager,
                     let intersection = moving_shape_walls_intersection_time(a, u, &shape,
                                                                             wall_aspect, c);
                     let new_a = match intersection {
-                        Some((t, _, _)) if t <= 1.0 => {
-                            let t = (t - STEPBACK).max(0.0);
-                            a + u * t
+                        Some((t, _, wall)) if t <= 1.0 => {
+                            let xx = a + u * stepback(t, r);
+                            let p = c.wall_position()[wall].clone();
+                            let i = math::line_segment_moving_circle_intersection_time(p.pos_a, p.pos_b,
+                                                                                       xx, delta,
+                                                                                       shape.radius());
+                            assert!(i.is_none() || i.unwrap() > 0.0);
+                            xx
                         }
                         _ => a + u
                     };
+
                     let intersection = moving_shape_walls_intersection_time(new_a, v, &shape,
                                                                             wall_aspect, c);
                     let new_a = match intersection {
-                        Some((t, _, _)) if t <= 1.0 => {
-                            let t = (t - STEPBACK).max(0.0);
-                            new_a + v * t
+                        Some((t, _, wall)) if t <= 1.0 => {
+                            let xx = new_a + v * stepback(t, r);
+                            let p = c.wall_position()[wall].clone();
+                            let i = math::line_segment_moving_circle_intersection_time(p.pos_a, p.pos_b,
+                                                                                       xx, delta,
+                                                                                       shape.radius());
+                            assert!(i.is_none() || i.unwrap() > 0.0);
+                            xx
                         }
                         _ => new_a + v
                     };
@@ -113,22 +137,23 @@ pub fn move_entity<Components: ComponentManager,
                         c.orientation()[e].angle.sin() * (speed + 1.0),
                     );
 
-                    let t = (t - STEPBACK).max(0.0);
-                    a + delta * t
+                    a + delta * stepback(t, r)
 
                     // TODO: Actually at this point we still might have some 't' left to walk
                 }
                 WallInteractionType::Stop => {
-                    let t = (t - STEPBACK).max(0.0);
-                    //println!("delta: {:?}, moving t: {:.16}, a: {:?}", delta, t, a);
+                    let t = stepback(t, r); //(t - STEPBACK).max(0.0);
                     let xx = a + delta * t;
+                    //println!("delta: {:?}, moving t: {:.32}, a: {:?} -> p: {:?}", delta, t, a, xx);
 
+                    c.linear_velocity_mut()[e].v = Vec2::new(0.0, 0.0);
                     let p = c.wall_position()[wall].clone();
                     let delta = delta;
-                    let i = math::line_segment_moving_circle_intersection_time(p.pos_a, p.pos_b,
+                    /*let i = math::line_segment_moving_circle_intersection_time(p.pos_a, p.pos_b,
                                                                                xx, delta,
                                                                                shape.radius());
-                    //println!("new intersection: {:?}, new a: {:?}", i, xx);
+                    println!("new intersection: {:?}", i);
+                    assert!(i.is_none() || i.unwrap() > 0.0);*/
 
                     xx
                 }
@@ -136,6 +161,7 @@ pub fn move_entity<Components: ComponentManager,
         }
         _ => a + delta
     };
+    //println!("------------------------------------");
 }
 
 /// Player interaction with wall
@@ -149,7 +175,6 @@ impl<Components: ComponentManager, Services: ServiceManager>
              player: EntityData<Components>, wall: EntityData<Components>,
              data: &mut DataHelper<Components, Services>)
              -> WallInteractionType {
-        //return WallInteractionType::Stop;
         if data.full_player_state()[player].wall_flip {
             let wall_n = wall_normal(&data.wall_position()[wall]);
             let orientation =
@@ -199,7 +224,7 @@ pub fn run_player_movement_input<Components: ComponentManager,
     const MOVE_FRICTION: f32 = 10.0;
     const BACK_ACCEL: f32 = 500.0;
     const STRAFE_ACCEL: f32 = 900.0;
-    const MIN_SPEED: f32 = 1.0;
+    const MIN_SPEED: f32 = 5.0;
     const DASH_SPEED: f32 = 600.0;
     const DASH_DURATION_S: f32 = 0.3;
 

@@ -11,7 +11,7 @@ use image;
 
 use draw::{self, DrawContext, DrawList, DrawElement, DrawAttributes, Vertex};
 
-const SPRITE_VERTEX_BUFFER_SIZE: usize = 1024;
+const SPRITE_VERTEX_BUFFER_SIZE: usize = 4096;
 
 const TEXTURES: &'static [&'static str] = &[
     "shield"
