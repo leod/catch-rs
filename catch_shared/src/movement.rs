@@ -45,7 +45,7 @@ pub fn wall_orientation(p: &WallPosition) -> f32 {
     n[1].atan2(n[0])
 }
 
-const STEPBACK: f32 = 3.0;
+const STEPBACK: f32 = 10.0;
 
 fn stepback(t: f32, r: f32) -> f32 {
     let d = t * r;
@@ -98,9 +98,12 @@ pub fn move_entity<Components: ComponentManager,
                             let xx = a + u * stepback(t, r);
                             let p = c.wall_position()[wall].clone();
                             let i = math::line_segment_moving_circle_intersection_time(p.pos_a, p.pos_b,
-                                                                                       xx, delta,
+                                                                                       xx, u,
                                                                                        shape.radius());
-                            assert!(i.is_none() || i.unwrap() > 0.0);
+                            if !(i.is_none() || i.unwrap() > 0.0) {
+                                println!("ERROR! shape: {:?}, pos_a: {:?}, pos_b: {:?}, a: {:?}, delta: {:?}, t: {}", shape, p.pos_a, p.pos_b, a, u, t);
+                                assert!(false);
+                            }
                             xx
                         }
                         _ => a + u
@@ -113,9 +116,13 @@ pub fn move_entity<Components: ComponentManager,
                             let xx = new_a + v * stepback(t, r);
                             let p = c.wall_position()[wall].clone();
                             let i = math::line_segment_moving_circle_intersection_time(p.pos_a, p.pos_b,
-                                                                                       xx, delta,
+                                                                                       xx, v,
                                                                                        shape.radius());
-                            assert!(i.is_none() || i.unwrap() > 0.0);
+                            //assert!(i.is_none() || i.unwrap() > 0.0);
+                            if !(i.is_none() || i.unwrap() > 0.0) {
+                                println!("ERROR! shape: {:?}, pos_a: {:?}, pos_b: {:?}, a: {:?}, delta: {:?}, t: {}", shape, p.pos_a, p.pos_b, a, v, t);
+                                assert!(false);
+                            }
                             xx
                         }
                         _ => new_a + v
@@ -137,7 +144,17 @@ pub fn move_entity<Components: ComponentManager,
                         c.orientation()[e].angle.sin() * (speed + 1.0),
                     );
 
-                    a + delta * stepback(t, r)
+                    let xx = a + delta * stepback(t, r);
+                    let p = c.wall_position()[wall].clone();
+                    let i = math::line_segment_moving_circle_intersection_time(p.pos_a, p.pos_b,
+                                                                               xx, delta,
+                                                                               shape.radius());
+                    if !(i.is_none() || i.unwrap() > 0.0) {
+                        println!("ERROR! shape: {:?}, pos_a: {:?}, pos_b: {:?}, a: {:?}, delta: {:?}, t: {}", shape, p.pos_a, p.pos_b, a, delta, t);
+                        assert!(false);
+                    }
+
+                    xx
 
                     // TODO: Actually at this point we still might have some 't' left to walk
                 }
