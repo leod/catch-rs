@@ -36,7 +36,7 @@ git = "https://github.com/bjz/color-rs.git"
 path = "../catch_shared"
 
 [dependencies.renet]
-path = "../../renet"
+git = "https://github.com/leod/renet.git"
 
 [dependencies.image]
 version = "*"

@@ -18,7 +18,7 @@ nalgebra = "0.3"
 git = "https://github.com/HeroesGrave/ecs-rs.git"
 
 [dependencies.tiled]
-path = "../../rs-tiled"
+git = "https://github.com/leod/rs-tiled.git"
 
 [dependencies.renet]
-path = "../../renet"
+git = "https://github.com/leod/renet.git"

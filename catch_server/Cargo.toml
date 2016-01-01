@@ -28,4 +28,4 @@ git = "https://github.com/HeroesGrave/ecs-rs.git"
 path = "../catch_shared"
 
 [dependencies.renet]
-path = "../../renet"
+git = "https://github.com/leod/renet.git"
