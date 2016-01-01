@@ -2,7 +2,7 @@ use std::f32;
 
 use na::Mat4;
 
-use glium::{self, VertexBuffer, IndexBuffer};
+use glium::{self, Surface, VertexBuffer, IndexBuffer};
 use glium::backend::Facade;
 use glium::index::PrimitiveType;
 
@@ -10,9 +10,9 @@ mod draw_list;
 mod draw_draw_list;
 mod post;
 
-pub use self::draw_list::{DrawElement, DrawAttributes, DrawList};
+pub use self::draw_list::{DrawFlags, FLAG_NONE, FLAG_BLUR, DrawElement, DrawAttributes, DrawList};
 pub use self::draw_draw_list::DrawDrawList;
-pub use self::post::Post;
+pub use self::post::{Post, PostSettings};
 
 #[derive(Copy, Clone)]
 pub struct Vertex {
@@ -33,6 +33,11 @@ pub struct DrawContext<'a> {
     pub proj_mat: Mat4<f32>,
     pub camera_mat: Mat4<f32>,
     pub parameters: glium::DrawParameters<'a>,
+}
+
+pub trait DrawOp {
+    type Result;
+    fn draw<S: Surface>(&mut self, target: &mut S) -> Self::Result;
 }
 
 /// Returns a triangle strip for a circle with radius 1

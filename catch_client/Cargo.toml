@@ -19,6 +19,7 @@ bincode = "*"
 nalgebra = "0.3"
 clock_ticks = "*"
 cpal = "*"
+bitflags = "*"
 
 [dependencies.glium_text]
 git = "https://github.com/leod/glium_text.git"

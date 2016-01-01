@@ -15,6 +15,7 @@ extern crate bincode;
 extern crate nalgebra as na;
 extern crate clock_ticks;
 extern crate image;
+#[macro_use] extern crate bitflags;
 
 #[macro_use] extern crate catch_shared as shared;
 
@@ -41,6 +42,7 @@ use glium::DisplayBuild;
 use client::Client;
 use player_input::InputMap;
 use game::Game;
+use draw::PostSettings;
 use dummy::DummyClient;
 
 fn main() {
@@ -60,6 +62,10 @@ fn main() {
         None => "127.0.0.1".to_string()
     };
     let dummy = matches.opt_present("dummy");
+
+    let post_settings = PostSettings {
+        blur: false,
+    };
 
     // Connect
     enet::initialize().unwrap();
@@ -84,6 +90,7 @@ fn main() {
 
         let mut game = Game::new(client,
                                  InputMap::new(),
+                                 post_settings,
                                  display);
         game.run();
     } else {

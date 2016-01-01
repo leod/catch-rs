@@ -9,8 +9,16 @@ pub enum DrawElement {
     TexturedSquare { texture: String },
 }
 
+bitflags! {
+    flags DrawFlags: u32 {
+        const FLAG_NONE = 0b00000000,
+        const FLAG_BLUR = 0b00000001,
+    }
+}
+
 #[derive(Copy, Clone, Debug)]
 pub struct DrawAttributes {
+    pub flags: u32,
     pub z: f32,
     pub color: Vec4<f32>,
     pub model_mat: Mat4<f32>,
@@ -19,8 +27,9 @@ pub struct DrawAttributes {
 implement_vertex!(DrawAttributes, z, color, model_mat, texture_id);
 
 impl DrawAttributes {
-    pub fn new(z: f32, color: Vec4<f32>, model_mat: Mat4<f32>) -> DrawAttributes {
+    pub fn new(flags: DrawFlags, z: f32, color: Vec4<f32>, model_mat: Mat4<f32>) -> DrawAttributes {
         DrawAttributes {
+            flags: flags.bits(),
             z: z,
             color: color,
             model_mat: model_mat,
@@ -54,6 +63,7 @@ impl DrawList {
     }
 
     pub fn push_line(&mut self,
+                     flags: DrawFlags,
                      color: Vec4<f32>,
                      size: f32,
                      a: Vec2<f32>,
@@ -72,10 +82,11 @@ impl DrawList {
                                   m.m21, m.m22, 0.0, a.y + o.y,
                                   0.0, 0.0, 1.0, 0.0,
                                   0.0, 0.0, 0.5, 1.0);
-        self.push(DrawElement::Square, DrawAttributes::new(z, color, model_mat));
+        self.push(DrawElement::Square, DrawAttributes::new(flags, z, color, model_mat));
     }
 
     pub fn push_rect(&mut self,
+                     flags: DrawFlags,
                      color: Vec4<f32>,
                      width: f32,
                      height: f32,
@@ -91,10 +102,11 @@ impl DrawList {
                                   m.m21, m.m22, 0.0, p.y,
                                   0.0, 0.0, 1.0, 0.0,
                                   0.0, 0.0, 0.0, 1.0);
-        self.push(DrawElement::Square, DrawAttributes::new(z, color, model_mat));
+        self.push(DrawElement::Square, DrawAttributes::new(flags, z, color, model_mat));
     }
 
     pub fn push_ellipse(&mut self,
+                        flags: DrawFlags,
                         color: Vec4<f32>,
                         width: f32,
                         height: f32,
@@ -110,7 +122,7 @@ impl DrawList {
                                   m.m21, m.m22, 0.0, p.y,
                                   0.0, 0.0, 1.0, 0.0,
                                   0.0, 0.0, 0.0, 1.0);
-        self.push(DrawElement::Circle, DrawAttributes::new(z, color, model_mat));
+        self.push(DrawElement::Circle, DrawAttributes::new(flags, z, color, model_mat));
     }
 }
 
