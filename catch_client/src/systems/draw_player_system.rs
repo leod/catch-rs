@@ -9,7 +9,7 @@ use shared::util::CachedAspect;
 use components::{Components, Shape};
 use services::Services;
 use particles::Particles;
-use draw::{DrawElement, DrawList, DrawAttributes};
+use draw::{FLAG_NONE, FLAG_BLUR, DrawElement, DrawList, DrawAttributes};
 
 pub struct DrawPlayerSystem {
     aspect: CachedAspect<Components>,
@@ -92,7 +92,7 @@ impl DrawPlayerSystem {
             let rot_mat = Mat2::new(angle.cos(), -angle.sin(),
                                     angle.sin(), angle.cos());
 
-            draw_list.push_ellipse(Vec4::new(color[0], color[1], color[2], 1.0),
+            draw_list.push_ellipse(FLAG_BLUR, Vec4::new(color[0], color[1], color[2], 1.0),
                                    scale_x * r, 1.0 / scale_x * r,
                                    p, 1.0, angle);
 
@@ -106,7 +106,7 @@ impl DrawPlayerSystem {
                                           0.0, 0.0, 1.0, 0.0,
                                           0.0, 0.0, 0.0, 1.0);
                 draw_list.push(DrawElement::TexturedSquare { texture: "shield".to_string() },
-                               DrawAttributes::new(1.0, Vec4::new(0.0, 0.0, 0.0, 1.0), model_mat));
+                               DrawAttributes::new(FLAG_NONE, 1.0, Vec4::new(0.0, 0.0, 0.0, 1.0), model_mat));
             }
 
             let scale_mat = Mat2::new(scale_x * r, 0.0,
@@ -118,7 +118,7 @@ impl DrawPlayerSystem {
                                       0.0, 0.0, 1.0, 0.0,
                                       0.0, 0.0, 0.0, 1.0);
             draw_list.push(DrawElement::Square,
-                           DrawAttributes::new(2.0, Vec4::new(0.0, 0.0, 0.0, 1.0), model_mat));
+                           DrawAttributes::new(FLAG_NONE, 2.0, Vec4::new(0.0, 0.0, 0.0, 1.0), model_mat));
         }
     }
 }

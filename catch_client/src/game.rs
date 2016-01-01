@@ -1,6 +1,6 @@
 use std::f32;
 use std::thread;
-use std::cell::RefCell;
+use std::cell::{RefCell, RefMut};
 use std::fs::File;
 use std::path::Path;
 use std::collections::VecDeque;
@@ -24,9 +24,30 @@ use player_input::{PlayerInput, InputMap};
 use draw_map::DrawMap;
 use particles::Particles;
 use sounds::Sounds;
-use draw::{DrawList, DrawDrawList, DrawContext, Post};
+use draw::{FLAG_BLUR, FLAG_NONE, DrawOp, DrawList, DrawDrawList, DrawContext, Post, PostSettings};
 
 pub const MAX_DEATH_MESSAGES: usize = 4;
+
+struct DrawListsOp<'a, 'b: 'a> {
+    draw_draw_list: RefMut<'a, DrawDrawList>,
+    draw_list: &'a DrawList,
+    particles: &'a Particles,
+    draw_context: &'a DrawContext<'b>,
+}
+
+impl<'a, 'b> DrawOp for DrawListsOp<'a, 'b> {
+    type Result = ();
+
+    fn draw<S: Surface>(&mut self, target: &mut S) {
+        let _g = hprof::enter("draw list");
+        target.clear_color_and_depth((0.1, 0.1, 0.1, 1.0), -1.0);
+        self.draw_draw_list.draw(FLAG_BLUR, self.draw_list.clone(), &self.draw_context, target);
+        {
+            let _g = hprof::enter("draw particles");
+            self.particles.draw(&self.draw_context, target);
+        }
+    }
+}
 
 pub struct Game {
     quit: bool,
@@ -55,7 +76,6 @@ pub struct Game {
 
     sounds: Sounds,
 
-
     text_system: glium_text::TextSystem,
     font: glium_text::FontTexture,
 
@@ -69,12 +89,13 @@ impl Game {
     // The given client is expected to be connected already
     pub fn new(connected_client: Client,
                player_input_map: InputMap,
+               post_settings: PostSettings,
                display: Display) -> Game {
         let state = GameState::new(connected_client.my_id(), connected_client.game_info());
         let draw_draw_list = RefCell::new(DrawDrawList::new(&display).unwrap());
         let draw_map = DrawMap::load(&state.map).unwrap();
         let particles = Particles::new(&display);
-        let draw_post = Post::new(&display);
+        let draw_post = Post::new(post_settings, &display);
         let sounds = Sounds::load().unwrap();
         let text_system = glium_text::TextSystem::new(&display);
         let font_file = File::open(&Path::new("data/ProggyClean.ttf"));
@@ -516,7 +537,14 @@ impl Game {
 
         {
             let mut draw_draw_list = self.draw_draw_list.borrow_mut();
-            self.draw_post.draw(&mut target, |target| {
+            let mut draw_lists_op = DrawListsOp {
+                draw_draw_list: draw_draw_list,
+                draw_list: &draw_list,
+                particles: &self.particles,
+                draw_context: &draw_context,
+            };
+            self.draw_post.draw(&mut target, &mut draw_lists_op);
+            /*self.draw_post.draw(&mut target, |target| {
                 let _g = hprof::enter("draw list");
                 target.clear_color_and_depth((0.1, 0.1, 0.1, 1.0), -1.0);
                 draw_draw_list.draw(draw_list.clone(), &draw_context, target);
@@ -524,11 +552,11 @@ impl Game {
                     let _g = hprof::enter("draw particles");
                     self.particles.draw(&draw_context, target);
                 }
-            });
+            });*/
         }
 
         target.clear_depth(-1.0);
-        self.draw_draw_list.borrow_mut().draw(draw_list.clone(), &draw_context, &mut target);
+        self.draw_draw_list.borrow_mut().draw(FLAG_NONE, draw_list.clone(), &draw_context, &mut target);
         {
             let _g = hprof::enter("draw particles");
             self.particles.draw(&draw_context, &mut target);

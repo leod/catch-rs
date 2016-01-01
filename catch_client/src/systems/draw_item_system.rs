@@ -10,7 +10,7 @@ use shared::util::CachedAspect;
 use components::{Components, Shape};
 use services::Services;
 use particles::Particles;
-use draw::{DrawElement, DrawList, DrawAttributes};
+use draw::{FLAG_BLUR, DrawElement, DrawList, DrawAttributes};
 
 pub struct DrawItemSystem {
     aspect: CachedAspect<Components>,
@@ -63,7 +63,7 @@ impl DrawItemSystem {
                                       0.0, 0.0, 1.0, 0.0,
                                       0.0, 0.0, 0.0, 1.0);
             draw_list.push(DrawElement::Square,
-                           DrawAttributes::new(1.0, Vec4::new(0.0, 1.0, 0.0, 1.0), model_mat));
+                           DrawAttributes::new(FLAG_BLUR, 1.0, Vec4::new(0.0, 1.0, 0.0, 1.0), model_mat));
         }
     }
 }

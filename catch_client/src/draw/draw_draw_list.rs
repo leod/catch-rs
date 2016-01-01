@@ -9,7 +9,7 @@ use glium::texture::{Texture2dArray, RawImage2d};
 
 use image;
 
-use draw::{self, DrawContext, DrawList, DrawElement, DrawAttributes, Vertex};
+use draw::{self, DrawFlags, FLAG_NONE, FLAG_BLUR, DrawContext, DrawList, DrawElement, DrawAttributes, Vertex};
 
 const SPRITE_VERTEX_BUFFER_SIZE: usize = 4096;
 
@@ -267,13 +267,19 @@ impl DrawDrawList {
 
     pub fn draw<'a,
                 S: Surface>
-               (&mut self, list: DrawList, context: &DrawContext<'a>, surface: &mut S) {
+               (&mut self, flags: DrawFlags, list: DrawList, context: &DrawContext<'a>, surface: &mut S) {
         // TODO: This stops working as soon as we require more than one buffer of a type.
 
         let mut list = list;
         list.sort_by_z();
 
-        let used_buffers = self.draw_some(list.iter(), context, surface);
+        let used_buffers = if flags != FLAG_NONE {
+            let iter = list.iter().filter(|&&(_, attributes)| attributes.flags & flags.bits() == flags.bits());
+            self.draw_some(iter, context, surface)
+        } else {
+            let iter = list.iter();
+            self.draw_some(list.iter(), context, surface)
+        };
 
         for buffer in used_buffers.into_iter() {
             self.sprite_vertex_buffers.push(buffer);

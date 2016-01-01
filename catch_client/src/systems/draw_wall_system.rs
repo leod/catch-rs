@@ -5,7 +5,7 @@ use shared::util::CachedAspect;
 
 use components::Components;
 use services::Services;
-use draw::DrawList;
+use draw::{FLAG_NONE, DrawList};
 
 pub struct DrawWallSystem {
     aspect: CachedAspect<Components>,
@@ -21,7 +21,7 @@ impl DrawWallSystem {
     pub fn draw(&mut self, data: &mut DataHelper<Components, Services>, draw_list: &mut DrawList) {
         for entity in self.aspect.iter() {
             let p = data.wall_position[entity].clone();
-            draw_list.push_line(Vec4::new(0.2, 0.2, 0.2, 1.0), 2.0, p.pos_a, p.pos_b, 0.0);
+            draw_list.push_line(FLAG_NONE, Vec4::new(0.2, 0.2, 0.2, 1.0), 2.0, p.pos_a, p.pos_b, 0.0);
         }
     }
 }

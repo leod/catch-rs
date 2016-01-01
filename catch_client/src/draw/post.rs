@@ -7,9 +7,10 @@ use glium::texture::{Texture2d, DepthFormat};
 use glium::index::PrimitiveType;
 use glium::framebuffer::{SimpleFrameBuffer, DepthRenderBuffer};
 
-use draw::TexVertex;
+use draw::{DrawOp, TexVertex};
 
 pub struct Post {
+    settings: PostSettings,
     context: Rc<Context>,
     vertex_buffer: VertexBuffer<TexVertex>,
     index_buffer: IndexBuffer<u16>,
@@ -18,8 +19,12 @@ pub struct Post {
     target_depth: RefCell<Option<DepthRenderBuffer>>,
 }
 
+pub struct PostSettings {
+    pub blur: bool,
+}
+
 impl Post {
-    pub fn new<F: Facade + Clone>(facade: &F) -> Post {
+    pub fn new<F: Facade + Clone>(settings: PostSettings, facade: &F) -> Post {
         // TODO: Blur in two passes
 
         let vertex_shader_src = r#"
@@ -79,6 +84,7 @@ impl Post {
         "#;
 
         Post {
+            settings: settings,
             context: facade.get_context().clone(),
             vertex_buffer: VertexBuffer::new(facade,
                 &[TexVertex { position: [-1.0, -1.0], tex_coords: [0.0, 0.0] },
@@ -95,10 +101,10 @@ impl Post {
     }
 
     pub fn draw<S: Surface,
-                F: FnMut(&mut SimpleFrameBuffer) -> R,
-                R>
-               (&self, target: &mut S, mut draw: F) -> R { 
-        // from https://github.com/tomaka/glium/blob/master/examples/fxaa.rs#L150
+                R,
+                F: DrawOp<Result=R>> 
+               (&self, target: &mut S, mut draw: &mut F) -> R { 
+        // adapted from https://github.com/tomaka/glium/blob/master/examples/fxaa.rs#L150
 
         let target_dimensions = target.get_dimensions();
 
@@ -141,9 +147,9 @@ impl Post {
         }
         let target_depth = target_depth.as_ref().unwrap();
 
-        let output = draw(&mut SimpleFrameBuffer::with_depth_buffer(&self.context,
-                                                                    target_color,
-                                                                    target_depth).unwrap());
+        let result = draw.draw(&mut SimpleFrameBuffer::with_depth_buffer(&self.context,
+                                                                         target_color,
+                                                                         target_depth).unwrap());
 
         let uniforms = uniform! {
             tex: &*target_color,
@@ -153,6 +159,6 @@ impl Post {
         target.draw(&self.vertex_buffer, &self.index_buffer, &self.program, &uniforms,
                     &Default::default()).unwrap();
 
-        output
+        result
     }
 }

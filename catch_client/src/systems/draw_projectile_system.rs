@@ -5,7 +5,7 @@ use shared::util::CachedAspect;
 
 use components::{Components, Projectile, Shape};
 use services::Services;
-use draw::DrawList;
+use draw::{FLAG_BLUR, DrawList};
 
 pub struct DrawProjectileSystem {
     aspect: CachedAspect<Components>,
@@ -34,7 +34,7 @@ impl DrawProjectileSystem {
                 _ => {}
             }
 
-            draw_list.push_rect(data.draw_projectile[entity].color, width, height,
+            draw_list.push_rect(FLAG_BLUR, data.draw_projectile[entity].color, width, height,
                                 p, 1.0, angle);
         }
     }
