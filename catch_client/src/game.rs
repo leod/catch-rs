@@ -40,7 +40,7 @@ impl<'a, 'b> DrawOp for DrawListsOp<'a, 'b> {
 
     fn draw<S: Surface>(&mut self, target: &mut S) {
         let _g = hprof::enter("draw list");
-        target.clear_color_and_depth((0.1, 0.1, 0.1, 1.0), -1.0);
+        target.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), -1.0);
         self.draw_draw_list.draw(FLAG_BLUR, self.draw_list.clone(), &self.draw_context, target);
         {
             let _g = hprof::enter("draw particles");
