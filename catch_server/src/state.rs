@@ -249,9 +249,9 @@ impl GameState {
             c.player_state[e].has_shield = true;
 
             // We'll equip a gun for now
-            //c.player_state[e].equip(0, Item::Weapon { charges: 20 }); 
-            //c.player_state[e].equip(1, Item::FragWeapon { charges: 2 });
-            //c.player_state[e].equip(2, Item::BallSpawner { charges: 3 }); 
+            c.player_state[e].equip(0, Item::Weapon { charges: 20 }); 
+            c.player_state[e].equip(1, Item::FragWeapon { charges: 2 });
+            c.player_state[e].equip(2, Item::BallSpawner { charges: 3 }); 
         });
 
         entity

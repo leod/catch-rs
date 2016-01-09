@@ -102,7 +102,7 @@ pub fn move_entity<Components: ComponentManager,
                                                                                        shape.radius());
                             if !(i.is_none() || i.unwrap() > 0.0) {
                                 println!("ERROR! shape: {:?}, pos_a: {:?}, pos_b: {:?}, a: {:?}, delta: {:?}, t: {}", shape, p.pos_a, p.pos_b, a, u, t);
-                                assert!(false);
+                                //assert!(false);
                             }
                             xx
                         }
@@ -121,7 +121,7 @@ pub fn move_entity<Components: ComponentManager,
                             //assert!(i.is_none() || i.unwrap() > 0.0);
                             if !(i.is_none() || i.unwrap() > 0.0) {
                                 println!("ERROR! shape: {:?}, pos_a: {:?}, pos_b: {:?}, a: {:?}, delta: {:?}, t: {}", shape, p.pos_a, p.pos_b, a, v, t);
-                                assert!(false);
+                                //assert!(false);
                             }
                             xx
                         }
@@ -151,7 +151,7 @@ pub fn move_entity<Components: ComponentManager,
                                                                                shape.radius());
                     if !(i.is_none() || i.unwrap() > 0.0) {
                         println!("ERROR! shape: {:?}, pos_a: {:?}, pos_b: {:?}, a: {:?}, delta: {:?}, t: {}", shape, p.pos_a, p.pos_b, a, delta, t);
-                        assert!(false);
+                        //assert!(false);
                     }
 
                     xx
