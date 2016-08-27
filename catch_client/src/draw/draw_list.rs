@@ -10,7 +10,7 @@ pub enum DrawElement {
 }
 
 bitflags! {
-    flags DrawFlags: u32 {
+    pub flags DrawFlags: u32 {
         const FLAG_NONE = 0b00000000,
         const FLAG_BLUR = 0b00000001,
     }

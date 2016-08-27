@@ -20,19 +20,22 @@ pub use self::draw_wall_system::DrawWallSystem;
 
 systems! {
     struct Systems<Components, Services> {
-        net_entity_system: LazySystem<NetEntitySystem> = LazySystem::new(),
-        interpolation_system: InterpolationSystem = InterpolationSystem::new(
-            aspect!(<Components> all: [position, interp_position]),
-            aspect!(<Components> all: [orientation, interp_orientation])),
-        draw_player_system: DrawPlayerSystem = DrawPlayerSystem::new(
-            aspect!(<Components> all: [draw_player])),
-        draw_bouncy_enemy_system: DrawBouncyEnemySystem = DrawBouncyEnemySystem::new(
-            aspect!(<Components> all: [draw_bouncy_enemy])),
-        draw_item_system: DrawItemSystem = DrawItemSystem::new(
-            aspect!(<Components> all: [draw_item])),
-        draw_projectile_system: DrawProjectileSystem = DrawProjectileSystem::new(
-            aspect!(<Components> all: [draw_projectile])),
-        draw_wall_system: DrawWallSystem = DrawWallSystem::new(
-            aspect!(<Components> all: [draw_wall])),
+        active: {},
+        passive: {
+            net_entity_system: LazySystem<NetEntitySystem> = LazySystem::new(),
+            interpolation_system: InterpolationSystem = InterpolationSystem::new(
+                aspect!(<Components> all: [position, interp_position]),
+                aspect!(<Components> all: [orientation, interp_orientation])),
+            draw_player_system: DrawPlayerSystem = DrawPlayerSystem::new(
+                aspect!(<Components> all: [draw_player])),
+            draw_bouncy_enemy_system: DrawBouncyEnemySystem = DrawBouncyEnemySystem::new(
+                aspect!(<Components> all: [draw_bouncy_enemy])),
+            draw_item_system: DrawItemSystem = DrawItemSystem::new(
+                aspect!(<Components> all: [draw_item])),
+            draw_projectile_system: DrawProjectileSystem = DrawProjectileSystem::new(
+                aspect!(<Components> all: [draw_projectile])),
+            draw_wall_system: DrawWallSystem = DrawWallSystem::new(
+                aspect!(<Components> all: [draw_wall])),
+        }
     }
 }

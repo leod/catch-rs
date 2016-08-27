@@ -22,48 +22,51 @@ pub use self::interaction_system::InteractionSystem;
 
 systems! {
     struct Systems<Components, Services> {
-        net_entity_system: NetEntitySystem = NetEntitySystem::new(
-            aspect!(<Components> all: [net_entity])),
-        player_controller_system: PlayerControllerSystem = PlayerControllerSystem::new(
-            aspect!(<Components> all: [player_controller]),
-            aspect!(<Components> all: [wall])),
-        bouncy_enemy_system: BouncyEnemySystem = BouncyEnemySystem::new(
-            aspect!(<Components> all: [bouncy_enemy])),
-        item_spawn_system: ItemSpawnSystem = ItemSpawnSystem::new(
-            aspect!(<Components> all: [item_spawn])),
-        rotate_system: RotateSystem = RotateSystem::new(
-            aspect!(<Components> all: [rotate])),
-        projectile_system: ProjectileSystem = ProjectileSystem::new(
-            aspect!(<Components> all: [projectile])),
-        movement_system: MovementSystem = MovementSystem::new(
-            aspect!(<Components> all: [wall]),
-            vec![
-                 (aspect!(<Components> all: [bouncy_enemy]),
-                  Box::new(wall_interactions::BouncyEnemyWallInteraction)),
-                 (aspect!(<Components> all: [projectile]),
-                  Box::new(wall_interactions::ProjectileWallInteraction)),
-                ]),
-        interaction_system: InteractionSystem = InteractionSystem::new(
-            aspect!(<Components> all: [wall]),
-            vec![
-                 (aspect!(<Components> all: [player_state]),
-                  aspect!(<Components> all: [bouncy_enemy]),
-                  Box::new(interactions::PlayerBouncyEnemyInteraction)),
-                 (aspect!(<Components> all: [player_state]),
-                  aspect!(<Components> all: [item]),
-                  Box::new(interactions::PlayerItemInteraction)),
-                 (aspect!(<Components> all: [projectile]),
-                  aspect!(<Components> all: [bouncy_enemy]),
-                  Box::new(interactions::ProjectileBouncyEnemyInteraction)),
-                 (aspect!(<Components> all: [projectile]),
-                  aspect!(<Components> all: [player_state]),
-                  Box::new(interactions::ProjectilePlayerInteraction)),
-                ],
-            vec![
-                 (aspect!(<Components> all: [bouncy_enemy]),
-                  Box::new(interactions::BouncyEnemyInteraction)),
-                 (aspect!(<Components> all: [player_state]),
-                  Box::new(interactions::PlayerPlayerInteraction)),
-                ]),
+        active: {},
+        passive: {
+            net_entity_system: NetEntitySystem = NetEntitySystem::new(
+                aspect!(<Components> all: [net_entity])),
+            player_controller_system: PlayerControllerSystem = PlayerControllerSystem::new(
+                aspect!(<Components> all: [player_controller]),
+                aspect!(<Components> all: [wall])),
+            bouncy_enemy_system: BouncyEnemySystem = BouncyEnemySystem::new(
+                aspect!(<Components> all: [bouncy_enemy])),
+            item_spawn_system: ItemSpawnSystem = ItemSpawnSystem::new(
+                aspect!(<Components> all: [item_spawn])),
+            rotate_system: RotateSystem = RotateSystem::new(
+                aspect!(<Components> all: [rotate])),
+            projectile_system: ProjectileSystem = ProjectileSystem::new(
+                aspect!(<Components> all: [projectile])),
+            movement_system: MovementSystem = MovementSystem::new(
+                aspect!(<Components> all: [wall]),
+                vec![
+                     (aspect!(<Components> all: [bouncy_enemy]),
+                      Box::new(wall_interactions::BouncyEnemyWallInteraction)),
+                     (aspect!(<Components> all: [projectile]),
+                      Box::new(wall_interactions::ProjectileWallInteraction)),
+                    ]),
+            interaction_system: InteractionSystem = InteractionSystem::new(
+                aspect!(<Components> all: [wall]),
+                vec![
+                     (aspect!(<Components> all: [player_state]),
+                      aspect!(<Components> all: [bouncy_enemy]),
+                      Box::new(interactions::PlayerBouncyEnemyInteraction)),
+                     (aspect!(<Components> all: [player_state]),
+                      aspect!(<Components> all: [item]),
+                      Box::new(interactions::PlayerItemInteraction)),
+                     (aspect!(<Components> all: [projectile]),
+                      aspect!(<Components> all: [bouncy_enemy]),
+                      Box::new(interactions::ProjectileBouncyEnemyInteraction)),
+                     (aspect!(<Components> all: [projectile]),
+                      aspect!(<Components> all: [player_state]),
+                      Box::new(interactions::ProjectilePlayerInteraction)),
+                    ],
+                vec![
+                     (aspect!(<Components> all: [bouncy_enemy]),
+                      Box::new(interactions::BouncyEnemyInteraction)),
+                     (aspect!(<Components> all: [player_state]),
+                      Box::new(interactions::PlayerPlayerInteraction)),
+                    ]),
+        }
     }
 }
